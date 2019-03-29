@@ -1,0 +1,22 @@
+{
+  "name": "apify-zapier-integration",
+  "version": "1.0.0",
+  "description": "Apify integration for Zapier platform",
+  "homepage": "https://apify.com/",
+  "author": "Jakub Drobník <jakub.drobnik@apify.com>",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --recursive"
+  },
+  "engines": {
+    "node": "8.10.0",
+    "npm": ">=5.6.0"
+  },
+  "dependencies": {
+    "zapier-platform-core": "8.0.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0"
+  }
+}
