@@ -14,12 +14,21 @@ const includeApiToken = (request, z, bundle) => {
  * Parses nested data object into response.json
  */
 const parseDataApiObject = (response) => {
-    const { data } = response.json;
-    response.json = data;
+    response.json = response.json && response.json.data
+        ? response.json.data
+        : {};
+    return response;
+};
+
+const validateApifyApiResponse = (response) => {
+    if (response.status > 300) {
+        throw new Error('Bad request to Apify API!');
+    }
     return response;
 };
 
 module.exports = {
     parseDataApiObject,
     includeApiToken,
+    validateApifyApiResponse,
 };
