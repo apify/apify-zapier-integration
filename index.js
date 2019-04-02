@@ -1,5 +1,6 @@
 const authentication = require('./src/authentication');
 const { parseDataApiObject, includeApiToken } = require('./src/request_helpers');
+const taskTrigger = require('./src/triggers/task');
 
 // We can roll up all our behaviors in an App.
 const App = {
@@ -25,6 +26,7 @@ const App = {
 
   // If you want your trigger to show up, you better include it here!
   triggers: {
+    [taskTrigger.key]: taskTrigger
   },
 
   // If you want your searches to show up, you better include it here!

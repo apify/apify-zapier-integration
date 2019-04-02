@@ -13,6 +13,8 @@
     "npm": ">=5.6.0"
   },
   "dependencies": {
+    "apify-client": "^0.5.10",
+    "apify-shared": "^0.1.22",
     "zapier-platform-core": "8.0.1"
   },
   "devDependencies": {
