@@ -67,25 +67,46 @@ describe('triggers', () => {
 
             expect(taskWebhooks.items.length).to.be.eql(0);
         });
-        it('should attach output and dataset items', async () => {
-            // TODO
-            // const bundle = {
-            //     inputData: {
-            //         style: 'mediterranean'
-            //     },
-            //     cleanedRequest: {
-            //         id: 1,
-            //         name: 'name 1',
-            //         directions: 'directions 1'
-            //     }
-            // };
-            //
-            // const results = await appTester(App.triggers.recipe.operation.perform, bundle);
-            //
-            //
-            //
-            // expect(results.length).to.be.eql(1);
+        it('perform should return task run detail', async () => {
+            const runId = randomString();
+            const bundle = {
+                authData: {
+                    token: process.env.TEST_USER_TOKEN,
+                },
+                inputData: {
+                    taskId: testTaskId,
+                },
+                cleanedRequest: { // Mock webhook payload
+                    resource: {
+                        id: runId,
+                    },
+                },
+            };
 
+            const results = await appTester(App.triggers.taskRunFinished.operation.perform, bundle);
+
+            expect(results.length).to.be.eql(1);
+            expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
+        });
+        it('performList should return task runs', async () => {
+            // Create on task run
+            const taskRun = await apifyClient.tasks.runTask({
+                taskId: testTaskId,
+            });
+
+            const bundle = {
+                authData: {
+                    token: process.env.TEST_USER_TOKEN,
+                },
+                inputData: {
+                    taskId: testTaskId,
+                },
+            };
+
+            const results = await appTester(App.triggers.taskRunFinished.operation.performList, bundle);
+
+            expect(results.length).to.be.eql(1);
+            expect(results[0].id).to.be.eql(taskRun.id);
         });
         after(async () => {
             await apifyClient.tasks.deleteTask({ taskId: testTaskId });
