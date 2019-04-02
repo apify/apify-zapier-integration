@@ -1,5 +1,3 @@
-const ApifyClient = require('apify-client');
-
 /**
  * To include the API key on all outbound requests, simply define a function here.
  * It runs runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
@@ -25,4 +23,3 @@ module.exports = {
     parseDataApiObject,
     includeApiToken,
 };
-

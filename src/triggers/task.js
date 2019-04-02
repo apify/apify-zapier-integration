@@ -1,7 +1,7 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
 
 const subscribeWebkook = async (z, bundle) => {
-    const  { actorTaskId, eventTypes } = bundle.inputData;
+    const { actorTaskId, eventTypes } = bundle.inputData;
     // `z.console.log()` is similar to `console.log()`.
     z.console.log('console says hello world!');
 
@@ -53,7 +53,7 @@ module.exports = {
     noun: 'Task',
     display: {
         label: 'Task Finished',
-        description: 'Trigger when a task is finished.'
+        description: 'Trigger when a task is finished.',
     },
 
     // `operation` is where the business logic goes.
@@ -63,7 +63,7 @@ module.exports = {
         // we'll pass them in as `bundle.inputData` later.
         inputFields: [
             { key: 'taskId', type: 'string', helpText: 'Choose task which trigger action when finished.' },
-            { key: 'state', type: 'string', helpText: 'Choose state.' }
+            { key: 'state', type: 'string', helpText: 'Choose state.' },
         ],
 
         type: 'hook',
@@ -91,12 +91,12 @@ module.exports = {
         // outputFields: () => { return []; }
         // Alternatively, a static field definition should be provided, to specify labels for the fields
         outputFields: [
-            {key: 'id', label: 'ID'},
-            {key: 'createdAt', label: 'Created At'},
-            {key: 'name', label: 'Name'},
-            {key: 'directions', label: 'Directions'},
-            {key: 'authorId', label: 'Author ID'},
-            {key: 'style', label: 'Style'},
-        ]
-    }
+            { key: 'id', label: 'ID' },
+            { key: 'createdAt', label: 'Created At' },
+            { key: 'name', label: 'Name' },
+            { key: 'directions', label: 'Directions' },
+            { key: 'authorId', label: 'Author ID' },
+            { key: 'style', label: 'Style' },
+        ],
+    },
 };

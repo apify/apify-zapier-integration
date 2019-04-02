@@ -6,7 +6,9 @@
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive"
+    "test": "mocha --recursive",
+    "lint": "./node_modules/.bin/eslint ./src --ext .js",
+    "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
     "node": "8.10.0",
@@ -19,6 +21,10 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-promise": "^4.1.1",
     "mocha": "^5.2.0"
   }
 }
