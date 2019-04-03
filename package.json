@@ -17,6 +17,7 @@
   "dependencies": {
     "apify-client": "^0.5.10",
     "apify-shared": "^0.1.22",
+    "bluebird": "^3.5.4",
     "zapier-platform-core": "8.0.1"
   },
   "devDependencies": {

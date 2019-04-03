@@ -1,5 +1,5 @@
 /**
- * To include the API key on all outbound requests, simply define a function here.
+ * Middleware includes the API token on all outbound requests.
  * It runs runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
  */
 const includeApiToken = (request, z, bundle) => {
@@ -11,7 +11,7 @@ const includeApiToken = (request, z, bundle) => {
 };
 
 /**
- * Parses nested data object into response.json
+ * Middleware Parses nested data object into response.json
  */
 const parseDataApiObject = (response) => {
     response.json = response.json && response.json.data
@@ -20,9 +20,13 @@ const parseDataApiObject = (response) => {
     return response;
 };
 
-const validateApifyApiResponse = (response) => {
+/**
+ * This middleware log each bad response from Apify API.
+ */
+const validateApifyApiResponse = (response, z) => {
     if (response.status > 300) {
-        throw new Error('Bad request to Apify API!');
+        z.console.log('Bad response from Apify API', response.content);
+        throw new Error('Bad response from Apify API!');
     }
     return response;
 };

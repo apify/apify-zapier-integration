@@ -20,6 +20,6 @@ module.exports = {
     operation: {
         // since this is a "hidden" trigger, there aren't any inputFields needed
         perform: getTaskList,
-        canPaginate: false, // TODO: Add pagination in next version
+        canPaginate: false, // TODO: Add pagination
     },
 };

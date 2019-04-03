@@ -26,7 +26,7 @@ module.exports = {
     ],
     // The test method allows Zapier to verify that the credentials a user provides are valid.
     test: testAuth,
-    // This label will be shown after user connect his account
+    // This label will be shown after user connect his account.
     connectionLabel: (z, bundle) => {
         return bundle.inputData.username || bundle.inputData.email;
     },

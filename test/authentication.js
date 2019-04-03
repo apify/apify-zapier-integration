@@ -8,8 +8,9 @@ const appTester = zapier.createAppTester(App);
 // Injects all secrets from .env file
 zapier.tools.env.inject();
 
-describe('App.authentication.test', () => {
-    it('passes authentication and returns json', async () => {
+describe('authentication', () => {
+
+    it('passes authentication and returns user', async () => {
         const bundle = {
             authData: {
                 token: process.env.TEST_USER_TOKEN,
