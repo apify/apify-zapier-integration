@@ -1,4 +1,3 @@
-const Promise = require('bluebird');
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
 const { enrichTaskRun } = require('../apify_helpers');
 
@@ -19,8 +18,8 @@ const runTask = async (z, bundle) => {
 };
 
 module.exports = {
-    key: 'taskRun',
-    noun: 'Task',
+    key: 'createTaskRun',
+    noun: 'Task Run',
     display: {
         label: 'Run Task',
         description: 'Run a specified task.',
@@ -31,7 +30,7 @@ module.exports = {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Choose task to run.',
+                helpText: 'Please select your task from the following list:',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
@@ -45,7 +44,8 @@ module.exports = {
             },
             {
                 label: 'Key-value store keys to attach',
-                helpText: 'Following keys from default key-value store will be attach to run detail. The OUTPUT and INPUT are attached by default.',
+                helpText: 'Following keys from default key-value store will be attach to run detail. '
+                    + 'The OUTPUT and the INPUT will be attached by default.',
                 key: 'keyValueStoreKeys',
                 required: false,
                 type: 'string',

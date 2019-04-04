@@ -1,6 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
-const { randomString, apifyClient, createWebScraperTask } = require('./helpers');
+const { apifyClient, createWebScraperTask } = require('./helpers');
 
 const App = require('../index');
 
@@ -31,7 +31,7 @@ describe('creates', () => {
                 },
             };
 
-            const testResult = await appTester(App.creates.taskRun.operation.perform, bundle);
+            const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
 
             expect(testResult.status).to.be.eql('SUCCEEDED');
             expect(testResult.OUTPUT).to.not.equal(null);
@@ -51,7 +51,7 @@ describe('creates', () => {
                 },
             };
 
-            const testResult = await appTester(App.creates.taskRun.operation.perform, bundle);
+            const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
             expect(testResult.finishedAt).to.be.eql(null);
         });
 

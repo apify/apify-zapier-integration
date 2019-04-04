@@ -61,13 +61,13 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Task Finished',
-        description: 'Trigger when a task is finished.',
+        description: 'Trigger when a task run is finishes.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Choose task which trigger action when finished.',
+                helpText: 'Please select your task from the following list:',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
@@ -86,7 +86,8 @@ module.exports = {
             // },
             {
                 label: 'Key-value store keys to attach',
-                helpText: 'Following keys from default key-value store will be attach to run detail. The OUTPUT and INPUT are attached by default.',
+                helpText: 'Following keys from default key-value store will be attach to run detail. '
+                    + 'The OUTPUT and the INPUT will be attached by default.',
                 key: 'keyValueStoreKeys',
                 required: false,
                 type: 'string',

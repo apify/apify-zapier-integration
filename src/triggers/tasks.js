@@ -1,7 +1,7 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
 
 // Fetches a list of tasks
-const getTaskList = async (z, bundle) => {
+const getTaskList = async (z) => {
     const taskListResponse = await z.request(`${APIFY_API_ENDPOINTS.tasks}`);
     return taskListResponse.json.items.map((task) => ({
         id: task.id,
