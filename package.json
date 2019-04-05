@@ -6,17 +6,26 @@
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive"
+    "test": "mocha --recursive",
+    "lint": "./node_modules/.bin/eslint ./src index.js --ext .js",
+    "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
     "node": "8.10.0",
     "npm": ">=5.6.0"
   },
   "dependencies": {
+    "apify-client": "^0.5.10",
+    "apify-shared": "^0.1.22",
+    "bluebird": "^3.5.4",
     "zapier-platform-core": "8.0.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-promise": "^4.1.1",
     "mocha": "^5.2.0"
   }
 }
