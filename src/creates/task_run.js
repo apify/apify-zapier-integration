@@ -25,7 +25,6 @@ module.exports = {
         description: 'Run a specified task.',
     },
 
-    // `operation` is where the business logic goes.
     operation: {
         inputFields: [
             {
@@ -37,21 +36,14 @@ module.exports = {
             },
             {
                 label: 'Run Synchronously',
-                helpText: 'If it checks the Zap waits until task finises. The hard timeout for actor is 60s.',
+                helpText: 'If it checks the Zap waits until task finises. The hard timeout for task run is 60s.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
-            },
-            {
-                label: 'Key-value store keys to attach',
-                helpText: 'Following keys from default key-value store will be attach to run detail. '
-                    + 'The OUTPUT and the INPUT will be attached by default.',
-                key: 'keyValueStoreKeys',
-                required: false,
-                type: 'string',
-                list: true,
+                default: false,
             },
         ],
+
         perform: runTask,
 
         sample: TASK_SAMPLE,

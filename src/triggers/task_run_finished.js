@@ -39,7 +39,7 @@ const unsubscribeWebhook = async (z, bundle) => {
 
 const getTaskRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
-    const enrichRun = await enrichTaskRun(z, run, bundle.inputData.keyValueStoreKeys);
+    const enrichRun = await enrichTaskRun(z, run);
     return [enrichRun];
 };
 
@@ -53,7 +53,7 @@ const getFallbackTaskRuns = async (z, bundle) => {
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => enrichTaskRun(z, run, bundle.inputData.keyValueStoreKeys));
+    return Promise.map(items, (run) => enrichTaskRun(z, run));
 };
 
 module.exports = {
@@ -71,27 +71,6 @@ module.exports = {
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
-            },
-            // TODO: I can not get it work with multiple choice
-            // {
-            //     label: 'State',
-            //     helpText: 'Choose state.',
-            //     key: 'state',
-            //     choices: {
-            //         'ACTOR.RUN.SUCCEEDED': 'Succeeded',
-            //         'ACTOR.RUN.FAILED': 'Failed',
-            //         'ACTOR.RUN.TIMED_OUT': 'Timed out',
-            //         'ACTOR.RUN.ABORTED': 'Aborted',
-            //     },
-            // },
-            {
-                label: 'Key-value store keys to attach',
-                helpText: 'Following keys from default key-value store will be attach to run detail. '
-                    + 'The OUTPUT and the INPUT will be attached by default.',
-                key: 'keyValueStoreKeys',
-                required: false,
-                type: 'string',
-                list: true,
             },
         ],
         type: 'hook',

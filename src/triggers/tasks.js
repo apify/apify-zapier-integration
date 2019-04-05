@@ -1,8 +1,13 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
 
+const DEFAULT_PAGINATION_LIMIT = 100;
+
 // Fetches a list of tasks
-const getTaskList = async (z) => {
-    const taskListResponse = await z.request(`${APIFY_API_ENDPOINTS.tasks}`);
+const getTaskList = async (z, bundle) => {
+    const taskListResponse = await z.request(`${APIFY_API_ENDPOINTS.tasks}`, {
+        limit: DEFAULT_PAGINATION_LIMIT,
+        offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0
+    });
     return taskListResponse.json.items.map((task) => ({
         id: task.id,
         name: task.name,
@@ -20,6 +25,6 @@ module.exports = {
     operation: {
         // since this is a "hidden" trigger, there aren't any inputFields needed
         perform: getTaskList,
-        canPaginate: false, // TODO: Add pagination
+        canPaginate: true,
     },
 };
