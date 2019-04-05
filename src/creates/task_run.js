@@ -40,7 +40,7 @@ module.exports = {
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
-                default: false,
+                default: 'no',
             },
         ],
 
