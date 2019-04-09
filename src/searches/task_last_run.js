@@ -19,7 +19,7 @@ module.exports = {
     key: 'searchTaskRun',
     noun: 'Last task run',
     display: {
-        label: 'Find last task run',
+        label: 'Find Last Task Run',
         description: 'Find the most recent task run based on the status.',
     },
 

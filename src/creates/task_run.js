@@ -21,7 +21,7 @@ module.exports = {
     key: 'createTaskRun',
     noun: 'Task Run',
     display: {
-        label: 'Run task',
+        label: 'Run Task',
         description: 'Run a specified task.',
     },
 
