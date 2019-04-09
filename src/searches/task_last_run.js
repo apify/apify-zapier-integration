@@ -17,9 +17,9 @@ const getLastTaskRun = async (z, bundle) => {
 
 module.exports = {
     key: 'searchTaskRun',
-    noun: 'Last Task Run',
+    noun: 'Last task run',
     display: {
-        label: 'Find Last Task Run',
+        label: 'Find last task run',
         description: 'Find the most recent task run based on the status.',
     },
 

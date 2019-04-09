@@ -17,7 +17,7 @@ module.exports = {
     fields: [
         {
             key: 'token',
-            label: 'API Token',
+            label: 'API token',
             required: true,
             type: 'string',
             helpText: 'You can find your API token at the bottom of your '

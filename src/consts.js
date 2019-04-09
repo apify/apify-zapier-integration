@@ -48,12 +48,12 @@ const TASK_SAMPLE = {
 const TASK_OUTPUT_FIELDS = [
     { key: 'id', label: 'ID' },
     { key: 'buildId', label: 'Build ID' },
-    { key: 'startedAt', label: 'Created At' },
-    { key: 'finishedAt', label: 'Created At' },
+    { key: 'startedAt', label: 'Created at' },
+    { key: 'finishedAt', label: 'Created at' },
     { key: 'status', label: 'Status' },
-    { key: 'defaultKeyValueStoreId', label: 'Default Key Value Store ID' },
-    { key: 'defaultDatasetId', label: 'Default Dataset ID' },
-    { key: 'defaultRequestQueueId', label: 'Default Request Queue ID' },
+    { key: 'defaultKeyValueStoreId', label: 'Default key-value store ID' },
+    { key: 'defaultDatasetId', label: 'Default dataset ID' },
+    { key: 'defaultRequestQueueId', label: 'Default request queue ID' },
 ];
 
 const DEFAULT_KEY_VALUE_STORE_KEYS = ['INPUT', 'OUTPUT'];

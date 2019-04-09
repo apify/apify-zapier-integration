@@ -58,9 +58,9 @@ const getFallbackTaskRuns = async (z, bundle) => {
 
 module.exports = {
     key: 'taskRunFinished',
-    noun: 'Task Run',
+    noun: 'Task run',
     display: {
-        label: 'Task Finished',
+        label: 'Task finished',
         description: 'Trigger when a task run is finishes.',
     },
     operation: {

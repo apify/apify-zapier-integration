@@ -41,7 +41,7 @@ describe('searches', () => {
 
             expect(testResult[0].status).to.be.eql(ACT_JOB_STATUSES.SUCCEEDED);
             expect(testResult[0].id).to.be.eql(taskRun.id);
-        }).timeout(120000);
+        }).timeout(240000);
 
         after(async () => {
             await apifyClient.tasks.deleteTask({ taskId: testTaskId });

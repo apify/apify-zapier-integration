@@ -21,7 +21,7 @@ module.exports = {
     key: 'createTaskRun',
     noun: 'Task Run',
     display: {
-        label: 'Run Task',
+        label: 'Run task',
         description: 'Run a specified task.',
     },
 
@@ -35,7 +35,7 @@ module.exports = {
                 dynamic: 'tasks.id.name',
             },
             {
-                label: 'Run Synchronously',
+                label: 'Run synchronously',
                 helpText: 'If it checks the Zap waits until task finises. The hard timeout for task run is 60s.',
                 key: 'runSync',
                 required: true,

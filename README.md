@@ -15,7 +15,12 @@ You can follow [Apify integration](https://zapier.com/apps/Apify/integrations) p
 You need to specify your Apify API token before you run tests.
 You can do in root dir using file `.env`.
 ```text
-TEST_USER_TOKEN=your_token
+TEST_USER_TOKEN=your_api_token
 ```
 You can set up an environment variable `TEST_USER_TOKEN=your_token npm run test`.
 Then you can run tests using command `npm run test`.
+
+### Deploy
+
+Login account which has access to Apify app using `zapier login`.
+Deploy app to zapier using `zapier push`.
