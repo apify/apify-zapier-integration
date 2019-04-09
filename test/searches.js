@@ -21,6 +21,22 @@ describe('searches', () => {
             testTaskId = task.id;
         });
 
+        it('work for task without run', async () => {
+            const bundle = {
+                authData: {
+                    token: process.env.TEST_USER_TOKEN,
+                },
+                inputData: {
+                    taskId: testTaskId,
+                    status: ACT_JOB_STATUSES.SUCCEEDED,
+                },
+            };
+
+            const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
+
+            expect(testResult.length).to.be.eql(0);
+        }).timeout(240000);
+
         it('work', async () => {
             const bundle = {
                 authData: {

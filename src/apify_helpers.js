@@ -1,12 +1,14 @@
 const Promise = require('bluebird');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS } = require('./consts');
+const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
  * Get items from dataset. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
 const getDatasetItems = async (z, datasetId, limit) => {
-    const itemsResponse = await z.request(`${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`, {
+    const itemsResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
         params: {
             limit,
             clean: true,

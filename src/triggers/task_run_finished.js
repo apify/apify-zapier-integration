@@ -1,5 +1,6 @@
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
 const { enrichTaskRun } = require('../apify_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 
 const subscribeWebkook = async (z, bundle) => {
     const { taskId } = bundle.inputData;
@@ -29,7 +30,7 @@ const unsubscribeWebhook = async (z, bundle) => {
     // bundle.subscribeData contains the parsed response JSON from the subscribe
     const webhookId = bundle.subscribeData.id;
 
-    await z.request({
+    await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.webhooks}/${webhookId}`,
         method: 'DELETE',
     });
@@ -44,7 +45,8 @@ const getTaskRun = async (z, bundle) => {
 };
 
 const getFallbackTaskRuns = async (z, bundle) => {
-    const response = await z.request({ url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs` }, {
+    const response = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
         params: {
             limit: 2,
             desc: true,

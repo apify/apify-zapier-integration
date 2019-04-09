@@ -1,9 +1,12 @@
 const { ME_USER_NAME_PLACEHOLDER } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS } = require('./consts');
+const { wrapRequestWithRetries } = require('./request_helpers');
 
 // This method can return any truthy value to indicate the credentials are valid.
 const testAuth = async (z) => {
-    const response = await z.request(`${APIFY_API_ENDPOINTS.users}/${ME_USER_NAME_PLACEHOLDER}`);
+    const response = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.users}/${ME_USER_NAME_PLACEHOLDER}`,
+    });
 
     if (response.status !== 200) {
         throw new Error('The API Token you supplied is invalid');
