@@ -27,7 +27,7 @@ const parseDataApiObject = (response) => {
 /**
  * This middleware log each bad response from Apify API.
  */
-const validateApifyApiResponse = (response) => {
+const validateApiResponse = (response) => {
     /**
      * NOTE: If we throw RetryableError the request will be retried using exponential back off function
      * in case we wrapped it in wrapRequestWithRetries function.
@@ -62,6 +62,6 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
 module.exports = {
     parseDataApiObject,
     includeApiToken,
-    validateApifyApiResponse,
+    validateApiResponse,
     wrapRequestWithRetries,
 };

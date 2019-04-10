@@ -1,7 +1,7 @@
 const zapierCore = require('zapier-platform-core');
 const apifyApp = require('./package.json');
 const authentication = require('./src/authentication');
-const { parseDataApiObject, includeApiToken, validateApifyApiResponse } = require('./src/request_helpers');
+const { parseDataApiObject, includeApiToken, validateApiResponse } = require('./src/request_helpers');
 const taskRunFinishedTrigger = require('./src/triggers/task_run_finished');
 const tasksTrigger = require('./src/triggers/tasks');
 const taskRunCreate = require('./src/creates/task_run');
@@ -22,7 +22,7 @@ const App = {
 
     afterResponse: [
         parseDataApiObject,
-        validateApifyApiResponse,
+        validateApiResponse,
     ],
 
     // If you want to define optional resources to simplify creation of triggers, searches, creates - do that here!

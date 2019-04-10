@@ -1,3 +1,4 @@
+const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
 const { enrichTaskRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
@@ -6,12 +7,7 @@ const subscribeWebkook = async (z, bundle) => {
     const { taskId } = bundle.inputData;
 
     const webhookOpts = {
-        eventTypes: [
-            'ACTOR.RUN.SUCCEEDED',
-            'ACTOR.RUN.FAILED',
-            'ACTOR.RUN.TIMED_OUT',
-            'ACTOR.RUN.ABORTED',
-        ],
+        eventTypes: Object.values(WEBHOOK_EVENT_TYPES),
         condition: {
             actorTaskId: taskId,
         },
