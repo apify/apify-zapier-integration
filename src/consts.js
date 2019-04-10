@@ -4,12 +4,17 @@
  * we can not use z.request function and we lost logging and other function specific for
  * Zapier platform.
  */
+
+// This is a bit dangerous as you are importing some internal variables from apify-client package.
+// We could either move these definitions to apify-shared and import it from shared here and also in client
+// or we should at least add unit test here that these definitions exist.
 const { BASE_PATH: usersPath } = require('apify-client/build/users');
 const { BASE_PATH: webhooksPath } = require('apify-client/build/webhooks');
 const { BASE_PATH: tasksPath } = require('apify-client/build/tasks');
 const { BASE_PATH: datasetsPath } = require('apify-client/build/datasets');
 const { BASE_PATH: keyValueStoresPath } = require('apify-client/build/key_value_stores');
 
+// This could be also imported from client or shared
 const APIFY_API_BASE_URL = 'https://api.apify.com';
 
 /**
@@ -56,6 +61,7 @@ const TASK_OUTPUT_FIELDS = [
     { key: 'defaultRequestQueueId', label: 'Default request queue ID' },
 ];
 
+// This is in shared under `KEY_VALUE_STORE_KEYS`
 const DEFAULT_KEY_VALUE_STORE_KEYS = ['INPUT', 'OUTPUT'];
 
 module.exports = {

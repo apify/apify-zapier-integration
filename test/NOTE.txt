@@ -1,0 +1,1 @@
+I think that we should replicate directory structure of /src. because this way you have for example tests for all triggers in one file.

@@ -23,7 +23,8 @@ const parseDataApiObject = (response) => {
 /**
  * This middleware log each bad response from Apify API.
  */
-const validateApifyApiResponse = (response, z) => {
+const validateApifyApiResponse = (response, z) => { // Word apify in name is not really needed as it's not in any other helper
+    // Shouldn't this be >= instead of > ?
     if (response.status > 300) {
         z.console.log('Bad response from Apify API', response.content);
         throw new Error('Bad response from Apify API!');

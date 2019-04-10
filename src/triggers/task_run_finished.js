@@ -4,6 +4,7 @@ const { enrichTaskRun } = require('../apify_helpers');
 const subscribeWebkook = async (z, bundle) => {
     const { taskId } = bundle.inputData;
 
+    // Let's import this from shared, we can move event's there
     const webhookOpts = {
         eventTypes: [
             'ACTOR.RUN.SUCCEEDED',

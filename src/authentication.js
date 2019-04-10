@@ -20,6 +20,7 @@ module.exports = {
             label: 'API token',
             required: true,
             type: 'string',
+            // It's not really bottom, I would just write "at your account page"
             helpText: 'You can find your API token at the bottom of your '
                 + '**[Apify account](https://my.apify.com/account#/integrations)** page.',
         },
