@@ -1,13 +1,23 @@
 const { ACT_JOB_STATUSES } = require('apify-shared/consts');
 const { TASK_SAMPLE, TASK_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
 const { enrichTaskRun } = require('../apify_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 
 
 const getLastTaskRun = async (z, bundle) => {
     const { taskId, status } = bundle.inputData;
-    const lastTaskRunResponse = await z.request(`${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`, {
-        params: status ? { status } : {},
-    });
+    let lastTaskRunResponse;
+
+    try {
+        lastTaskRunResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`,
+            params: status ? { status } : {},
+        });
+    } catch (err) {
+        if (err.message.includes('not found')) return [];
+
+        throw err;
+    }
 
     if (!lastTaskRunResponse.json) return [];
 

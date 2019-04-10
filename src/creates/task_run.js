@@ -1,10 +1,12 @@
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
 const { enrichTaskRun } = require('../apify_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 
 const runTask = async (z, bundle) => {
     const { taskId, runSync, keyValueStoreKeys } = bundle.inputData;
 
-    const runResponse = await z.request(`${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs`, {
+    const runResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs`,
         method: 'POST',
         params: runSync ? { waitForFinish: 120 } : {},
     });
