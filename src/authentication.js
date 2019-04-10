@@ -23,7 +23,7 @@ module.exports = {
             label: 'API token',
             required: true,
             type: 'string',
-            helpText: 'You can find your API token at the bottom of your '
+            helpText: 'You can find API token on your '
                 + '**[Apify account](https://my.apify.com/account#/integrations)** page.',
         },
     ],

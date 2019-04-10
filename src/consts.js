@@ -32,28 +32,20 @@ const TASK_SAMPLE = {
     defaultKeyValueStoreId: 'sfAjeR4QmeJCQzTfe',
     defaultDatasetId: '3ZojQDdFTsyE7Moy4',
     defaultRequestQueueId: 'so93g2shcDzK3pA85',
-    INPUT: {
-        foo: 'bar',
-    },
-    OUTPUT: {
-        foo: 'bar',
-    },
-    datasetItems: [
-        {
-            foo: 'bar',
-        },
-    ],
+    INPUT: {},
+    OUTPUT: {},
+    datasetItems: [{}],
 };
 
 const TASK_OUTPUT_FIELDS = [
-    { key: 'id', label: 'ID' },
-    { key: 'buildId', label: 'Build ID' },
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'buildId', label: 'Build ID', type: 'string' },
     { key: 'startedAt', label: 'Created at' },
     { key: 'finishedAt', label: 'Created at' },
-    { key: 'status', label: 'Status' },
-    { key: 'defaultKeyValueStoreId', label: 'Default key-value store ID' },
-    { key: 'defaultDatasetId', label: 'Default dataset ID' },
-    { key: 'defaultRequestQueueId', label: 'Default request queue ID' },
+    { key: 'status', label: 'Status', type: 'string' },
+    { key: 'defaultKeyValueStoreId', label: 'Default key-value store ID', type: 'string' },
+    { key: 'defaultDatasetId', label: 'Default dataset ID', type: 'string' },
+    { key: 'defaultRequestQueueId', label: 'Default request queue ID', type: 'string' },
 ];
 
 const DEFAULT_KEY_VALUE_STORE_KEYS = ['INPUT', 'OUTPUT'];
