@@ -32,7 +32,6 @@ const TASK_SAMPLE = {
     defaultKeyValueStoreId: 'sfAjeR4QmeJCQzTfe',
     defaultDatasetId: '3ZojQDdFTsyE7Moy4',
     defaultRequestQueueId: 'so93g2shcDzK3pA85',
-    INPUT: {},
     OUTPUT: {},
     datasetItems: [{}],
 };
@@ -48,7 +47,7 @@ const TASK_OUTPUT_FIELDS = [
     { key: 'defaultRequestQueueId', label: 'Default request queue ID', type: 'string' },
 ];
 
-const DEFAULT_KEY_VALUE_STORE_KEYS = ['INPUT', 'OUTPUT'];
+const DEFAULT_KEY_VALUE_STORE_KEYS = ['OUTPUT'];
 
 module.exports = {
     APIFY_API_ENDPOINTS,
