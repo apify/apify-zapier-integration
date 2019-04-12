@@ -35,7 +35,6 @@ describe('creates', () => {
 
             expect(testResult.status).to.be.eql('SUCCEEDED');
             expect(testResult.OUTPUT).to.not.equal(null);
-            expect(testResult.INPUT).to.not.equal(null);
             expect(testResult.datasetItems.length).to.be.at.least(1);
             expect(testResult.finishedAt).to.not.equal(null);
         }).timeout(120000);
