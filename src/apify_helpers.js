@@ -37,15 +37,20 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
         return z
             .request(`${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`)
             .then((response) => {
+                if (response.status === 404) {
+                    values[key] = {
+                        error: `Cannot find ${key} in key-value store`,
+                    };
+                    return;
+                }
                 try {
                     const maybeObject = JSON.parse(response.content);
                     values[key] = maybeObject;
                 } catch (err) {
-                    // Ignore this, it can happen if kvs object is not a JSON.
+                    values[key] = {
+                        error: `Cannot parse key-value store item: ${err.message}`,
+                    };
                 }
-            })
-            .catch((err) => {
-                z.console.log(`Skipping error ${err.message}: Can not get ${key} from store ${storeId}`);
             });
     });
 

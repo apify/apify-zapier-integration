@@ -1,10 +1,17 @@
 const ApifyClient = require('apify-client');
 
+const DEFAULT_PAGE_FUNCTION = `
+async function pageFunction({ request, setValue }) {
+    await setValue('OUTPUT', { test: 'foo bar' });
+    return { url: request.url };
+}
+`;
+
 const randomString = () => Math.random().toString(32).split('.')[1];
 
 const apifyClient = new ApifyClient({ token: process.env.TEST_USER_TOKEN });
 
-const createWebScraperTask = async () => {
+const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
     const task = await apifyClient.tasks.createTask({
         task: {
             actId: 'apify/web-scraper',
@@ -19,12 +26,7 @@ const createWebScraperTask = async () => {
                     ],
                     useRequestQueue: true,
                     linkSelector: 'a',
-                    pageFunction: `
-                    async function pageFunction({ request, setValue }) {
-                        await setValue('OUTPUT', { test: 'foo bar' });
-                        return { url: request.url };
-                    }
-                    `,
+                    pageFunction,
                     proxyConfiguration: {
                         useApifyProxy: false,
                     },

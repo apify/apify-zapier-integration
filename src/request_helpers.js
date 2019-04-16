@@ -29,6 +29,13 @@ const parseDataApiObject = (response) => {
  */
 const validateApiResponse = (response) => {
     /**
+     * NOTE: In case key-value store records request we can skip 404 error
+     */
+    if (response.request.method === 'GET' && response.request.url.match(/\/records\//) && response.status === 404) {
+        return response;
+    }
+
+    /**
      * NOTE: If we throw RetryableError the request will be retried using exponential back off function
      * in case we wrapped it in wrapRequestWithRetries function.
      */
