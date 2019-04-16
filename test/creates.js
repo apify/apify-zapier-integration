@@ -24,6 +24,7 @@ describe('creates', () => {
         });
 
         it('runSync work', async () => {
+            const urlToScrape = 'http://example.com';
             const bundle = {
                 authData: {
                     token: process.env.TEST_USER_TOKEN,
@@ -31,6 +32,13 @@ describe('creates', () => {
                 inputData: {
                     taskId: testTask1Id,
                     runSync: true,
+                    rawInput: JSON.stringify({
+                        startUrls: [
+                            {
+                                url: urlToScrape,
+                            },
+                        ],
+                    }),
                 },
             };
 
@@ -39,6 +47,7 @@ describe('creates', () => {
             expect(testResult.status).to.be.eql('SUCCEEDED');
             expect(testResult.OUTPUT).to.not.equal(null);
             expect(testResult.datasetItems.length).to.be.at.least(1);
+            expect(testResult.datasetItems[0].url).be.eql(urlToScrape);
             expect(testResult.finishedAt).to.not.equal(null);
         }).timeout(120000);
 

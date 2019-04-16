@@ -2,18 +2,29 @@ const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../con
 const { enrichTaskRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-const runTask = async (z, bundle) => {
-    const { taskId, runSync, keyValueStoreKeys } = bundle.inputData;
+const RAW_INPUT_LABEL = 'Raw input';
 
-    const runResponse = await wrapRequestWithRetries(z.request, {
+const runTask = async (z, bundle) => {
+    const { taskId, runSync, rawInput } = bundle.inputData;
+
+    const requestOpts = {
         url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs`,
         method: 'POST',
         params: runSync ? { waitForFinish: 120 } : {},
-    });
+    };
+    if (rawInput) {
+        try {
+            const parseInput = JSON.parse(rawInput);
+            requestOpts.body = parseInput;
+        } catch (err) {
+            throw new Error(`Cannot parse JSON value from ${RAW_INPUT_LABEL} field: ${err.message}`);
+        }
+    }
+    const runResponse = await wrapRequestWithRetries(z.request, requestOpts);
 
     let run = runResponse.json;
     if (runSync) {
-        run = await enrichTaskRun(z, run, keyValueStoreKeys);
+        run = await enrichTaskRun(z, run);
     }
 
     return run;
@@ -43,6 +54,13 @@ module.exports = {
                 required: true,
                 type: 'boolean',
                 default: 'no',
+            },
+            {
+                label: RAW_INPUT_LABEL,
+                helpText: 'Advanced: If you want to alter the task input for single run, simply pass a JSON object defining overriden input below.',
+                key: 'rawInput',
+                required: false,
+                type: 'text',
             },
         ],
 
