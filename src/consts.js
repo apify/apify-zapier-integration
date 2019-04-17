@@ -7,6 +7,7 @@
 const { BASE_PATH: usersPath } = require('apify-client/build/users');
 const { BASE_PATH: webhooksPath } = require('apify-client/build/webhooks');
 const { BASE_PATH: tasksPath } = require('apify-client/build/tasks');
+const { BASE_PATH: actorsPath } = require('apify-client/build/acts');
 const { BASE_PATH: datasetsPath } = require('apify-client/build/datasets');
 const { BASE_PATH: keyValueStoresPath } = require('apify-client/build/key_value_stores');
 
@@ -21,6 +22,7 @@ const APIFY_API_ENDPOINTS = {
     tasks: `${APIFY_API_BASE_URL}${tasksPath}`,
     datasets: `${APIFY_API_BASE_URL}${datasetsPath}`,
     keyValueStores: `${APIFY_API_BASE_URL}${keyValueStoresPath}`,
+    actors: `${APIFY_API_BASE_URL}${actorsPath}`,
 };
 
 const TASK_SAMPLE = {
@@ -49,9 +51,12 @@ const TASK_OUTPUT_FIELDS = [
 
 const DEFAULT_KEY_VALUE_STORE_KEYS = ['OUTPUT'];
 
+const DEFAULT_PAGINATION_LIMIT = 100;
+
 module.exports = {
     APIFY_API_ENDPOINTS,
     TASK_SAMPLE,
     TASK_OUTPUT_FIELDS,
     DEFAULT_KEY_VALUE_STORE_KEYS,
+    DEFAULT_PAGINATION_LIMIT,
 };

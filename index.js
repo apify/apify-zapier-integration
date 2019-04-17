@@ -4,6 +4,8 @@ const authentication = require('./src/authentication');
 const { parseDataApiObject, includeApiToken, validateApiResponse } = require('./src/request_helpers');
 const taskRunFinishedTrigger = require('./src/triggers/task_run_finished');
 const tasksTrigger = require('./src/triggers/tasks');
+const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
+const actorsTrigger = require('./src/triggers/actors');
 const taskRunCreate = require('./src/creates/task_run');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 
@@ -33,6 +35,8 @@ const App = {
     triggers: {
         [taskRunFinishedTrigger.key]: taskRunFinishedTrigger,
         [tasksTrigger.key]: tasksTrigger,
+        [actorRunFinishedTrigger.key]: actorRunFinishedTrigger,
+        [actorsTrigger.key]: actorsTrigger,
     },
 
     // If you want your searches to show up, you better include it here!

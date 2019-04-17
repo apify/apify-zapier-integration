@@ -1,46 +1,8 @@
-const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
-const { enrichTaskRun } = require('../apify_helpers');
+const { enrichTaskRun, subscribeWebkook, unsubscribeWebhook, getActorkRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-const subscribeWebkook = async (z, bundle) => {
-    const { taskId } = bundle.inputData;
-
-    const webhookOpts = {
-        eventTypes: Object.values(WEBHOOK_EVENT_TYPES),
-        condition: {
-            actorTaskId: taskId,
-        },
-        requestUrl: bundle.targetUrl,
-    };
-    const response = await z.request({
-        url: APIFY_API_ENDPOINTS.webhooks,
-        method: 'POST',
-        json: webhookOpts,
-    });
-
-    return response.json;
-};
-
-const unsubscribeWebhook = async (z, bundle) => {
-    // bundle.subscribeData contains the parsed response JSON from the subscribe
-    const webhookId = bundle.subscribeData.id;
-
-    await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.webhooks}/${webhookId}`,
-        method: 'DELETE',
-    });
-
-    return {};
-};
-
-const getTaskRun = async (z, bundle) => {
-    const run = bundle.cleanedRequest.resource;
-    const enrichRun = await enrichTaskRun(z, run);
-    return [enrichRun];
-};
-
-const getFallbackTaskRuns = async (z, bundle) => {
+const getFallbackTaskActorRuns = async (z, bundle) => {
     const response = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
         params: {
@@ -72,12 +34,10 @@ module.exports = {
             },
         ],
         type: 'hook',
-        performSubscribe: subscribeWebkook,
+        performSubscribe: (z, bundle) => subscribeWebkook(z, bundle, { actorTaskId: bundle.inputData.taskId }),
         performUnsubscribe: unsubscribeWebhook,
-        // Perform is called after each hit to the webhook API
-        perform: getTaskRun,
-        // PerformList is used to get testing data for users in Zapier app
-        performList: getFallbackTaskRuns,
+        perform: getActorkRun,
+        performList: getFallbackTaskActorRuns,
         sample: TASK_SAMPLE,
         outputFields: TASK_OUTPUT_FIELDS,
     },

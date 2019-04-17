@@ -1,4 +1,5 @@
 const ApifyClient = require('apify-client');
+const zapier = require('zapier-platform-core');
 
 const DEFAULT_PAGE_FUNCTION = `
 async function pageFunction({ request, setValue }) {
@@ -9,7 +10,11 @@ async function pageFunction({ request, setValue }) {
 
 const randomString = () => Math.random().toString(32).split('.')[1];
 
-const apifyClient = new ApifyClient({ token: process.env.TEST_USER_TOKEN });
+// Injects all secrets from .env file
+// There should be token for running local tests
+zapier.tools.env.inject();
+const { TEST_USER_TOKEN } = process.env;
+const apifyClient = new ApifyClient({ token: TEST_USER_TOKEN });
 
 const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
     const task = await apifyClient.tasks.createTask({
@@ -39,8 +44,39 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
     return task;
 };
 
+const createAndBuildActor = async () => {
+    const sourceCode = `
+    const Apify = require('apify');
+    Apify.main(async (context) => {
+        console.log('It works.');
+        await Apify.pushData({ foo: 'bar' });
+        await Apify.setValue('OUTPUT', { foo: 'bar' });
+    });
+    `;
+    const actor = await apifyClient.acts.createAct({
+        act: {
+            name: `zapier-test-${randomString()}`,
+            versions: [
+                {
+                    versionNumber: '0.0',
+                    envVars: [],
+                    sourceType: 'SOURCE_CODE',
+                    baseDockerImage: 'apify/actor-node-basic',
+                    sourceCode,
+                    buildTag: 'latest',
+                },
+            ],
+        },
+    });
+    await apifyClient.acts.buildAct({ actId: actor.id, version: '0.0', waitForFinish: 120 });
+    console.log(`Testing actor with id ${actor.id} was created and built.`);
+    return actor;
+};
+
 module.exports = {
+    TEST_USER_TOKEN,
     randomString,
     apifyClient,
     createWebScraperTask,
+    createAndBuildActor,
 };
