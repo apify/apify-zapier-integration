@@ -113,7 +113,7 @@ const unsubscribeWebhook = async (z, bundle) => {
     return {};
 };
 
-const getActorkRun = async (z, bundle) => {
+const getActorRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
     const enrichRun = await enrichTaskRun(z, run);
     return [enrichRun];
@@ -123,5 +123,5 @@ module.exports = {
     enrichTaskRun,
     subscribeWebkook,
     unsubscribeWebhook,
-    getActorkRun,
+    getActorRun,
 };

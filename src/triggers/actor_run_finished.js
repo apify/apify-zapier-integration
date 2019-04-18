@@ -1,5 +1,5 @@
 const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
-const { enrichTaskRun, subscribeWebkook, unsubscribeWebhook, getActorkRun } = require('../apify_helpers');
+const { enrichTaskRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const getFallbackActorRuns = async (z, bundle) => {
@@ -37,7 +37,7 @@ module.exports = {
         performSubscribe: (z, bundle) => subscribeWebkook(z, bundle, { actorId: bundle.inputData.actorId }),
         performUnsubscribe: unsubscribeWebhook,
         // Perform is called after each hit to the webhook API
-        perform: getActorkRun,
+        perform: getActorRun,
         // PerformList is used to get testing data for users in Zapier app
         performList: getFallbackActorRuns,
         // In cases where Zapier needs to show an example record to the user, but we are unable to get a live example
