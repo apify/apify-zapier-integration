@@ -1,6 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
-const { TEST_USER_TOKEN, apifyClient, createWebScraperTask } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask } = require('../helpers');
 
 const App = require('../../index');
 
@@ -9,6 +9,7 @@ const appTester = zapier.createAppTester(App);
 describe('create task run', () => {
     let testTask1Id;
     let testTask2Id;
+    let testTask3Id;
 
     before(async () => {
         // Create task for testing
@@ -16,6 +17,8 @@ describe('create task run', () => {
         testTask1Id = task1.id;
         const task2 = await createWebScraperTask('() => ({ foo: "bar" })');
         testTask2Id = task2.id;
+        const task3 = await createLegacyCrawlerTask('function pageFunction(context) { return { testedField: "testValue" } }');
+        testTask3Id = task3.id;
     });
 
     it('runSync work', async () => {
@@ -80,8 +83,24 @@ describe('create task run', () => {
         expect(testResult.finishedAt).to.be.eql(null);
     });
 
+    it('run legacy crawler and return simplified items work', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                taskId: testTask3Id,
+                runSync: true,
+            },
+        };
+
+        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        expect(testResult.datasetItems[0].testedField).be.eql('testValue');
+    }).timeout(240000);
+
     after(async () => {
         await apifyClient.tasks.deleteTask({ taskId: testTask1Id });
         await apifyClient.tasks.deleteTask({ taskId: testTask2Id });
+        await apifyClient.tasks.deleteTask({ taskId: testTask3Id });
     });
 });

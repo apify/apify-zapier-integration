@@ -1,19 +1,30 @@
 const Promise = require('bluebird');
 const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
-const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS } = require('./consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
  * Get items from dataset. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
-const getDatasetItems = async (z, datasetId, limit) => {
+const getDatasetItems = async (z, datasetId, limit, actorId) => {
+    const params = {
+        limit,
+    };
+
+    /**
+     * For backwards compatible with old phantomJs crawler we need to use
+     * simplified dataset instead of clean.
+     */
+    if (actorId && actorId === LEGACY_PHANTOM_JS_CRAWLER_ID) {
+        params.simplified = true;
+    } else {
+        params.clean = true;
+    }
+
     const itemsResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
-        params: {
-            limit,
-            clean: true,
-        },
+        params,
     });
 
     const totalItemsCount = itemsResponse.getHeader('x-apify-pagination-total');
@@ -70,7 +81,7 @@ const enrichTaskRun = async (z, run, storeKeysToInclude = []) => {
         run = Object.assign({}, run, keyValueStoreValues);
     }
 
-    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, 500);
+    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, 500, run.actId);
 
     return run;
 };

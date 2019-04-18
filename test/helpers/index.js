@@ -44,6 +44,29 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
     return task;
 };
 
+const createLegacyCrawlerTask = async (pageFunction) => {
+    const task = await apifyClient.tasks.createTask({
+        task: {
+            actId: 'apify/legacy-phantomjs-crawler',
+            name: `zapier-test-${randomString()}`,
+            input: {
+                contentType: 'application/json; charset=utf-8',
+                body: JSON.stringify({
+                    startUrls: [
+                        {
+                            value: 'https://apify.com',
+                        },
+                    ],
+                    clickableElementsSelector: '',
+                    pageFunction,
+                }),
+            },
+        },
+    });
+    console.log(`Testing task legacy-phantomjs-crawler with id ${task.id} created`);
+    return task;
+};
+
 const createAndBuildActor = async () => {
     const sourceCode = `
     const Apify = require('apify');
@@ -79,4 +102,5 @@ module.exports = {
     apifyClient,
     createWebScraperTask,
     createAndBuildActor,
+    createLegacyCrawlerTask,
 };
