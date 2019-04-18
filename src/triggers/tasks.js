@@ -12,7 +12,7 @@ const getTaskList = async (z, bundle) => {
     });
     return taskListResponse.json.items.map((task) => ({
         id: task.id,
-        name: task.name,
+        name: `${task.name} (${task.actName})`,
     }));
 };
 
