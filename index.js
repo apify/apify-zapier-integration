@@ -7,6 +7,7 @@ const tasksTrigger = require('./src/triggers/tasks');
 const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
 const actorsTrigger = require('./src/triggers/actors');
 const taskRunCreate = require('./src/creates/task_run');
+const actorRunCreate = require('./src/creates/actor_run');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 
 /**
@@ -47,6 +48,7 @@ const App = {
     // If you want your creates to show up, you better include it here!
     creates: {
         [taskRunCreate.key]: taskRunCreate,
+        [actorRunCreate.key]: actorRunCreate,
     },
 };
 

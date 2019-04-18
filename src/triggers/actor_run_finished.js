@@ -27,7 +27,7 @@ module.exports = {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select your actor from the following list:',
+                helpText: 'Please select actor from the following list:',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
