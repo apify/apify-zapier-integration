@@ -25,9 +25,9 @@ const APIFY_API_ENDPOINTS = {
     actors: `${APIFY_API_BASE_URL}${actorsPath}`,
 };
 
-const TASK_SAMPLE = {
+const ACTOR_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
-    buildId: 'HG7ML7M8z78YcAPEB',
+    buildId: '7ML7M8zcAPEB78Y',
     startedAt: '2015-11-30T07:34:24.202Z',
     finishedAt: '2015-12-12T09:30:12.202Z',
     status: 'SUCCEEDED',
@@ -38,7 +38,7 @@ const TASK_SAMPLE = {
     datasetItems: [{}],
 };
 
-const TASK_OUTPUT_FIELDS = [
+const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'id', label: 'ID', type: 'string' },
     { key: 'buildId', label: 'Build ID', type: 'string' },
     { key: 'startedAt', label: 'Created at' },
@@ -49,6 +49,10 @@ const TASK_OUTPUT_FIELDS = [
     { key: 'defaultRequestQueueId', label: 'Default request queue ID', type: 'string' },
 ];
 
+const TASK_RUN_SAMPLE = Object.assign({ actorTaskId: 'UJNG9zau8PEB7U' }, ACTOR_RUN_SAMPLE);
+
+const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
+
 const DEFAULT_KEY_VALUE_STORE_KEYS = ['OUTPUT'];
 
 const DEFAULT_PAGINATION_LIMIT = 100;
@@ -58,8 +62,10 @@ const LEGACY_PHANTOM_JS_CRAWLER_ID = 'YPh5JENjSSR6vBf2E';
 
 module.exports = {
     APIFY_API_ENDPOINTS,
-    TASK_SAMPLE,
-    TASK_OUTPUT_FIELDS,
+    ACTOR_RUN_SAMPLE,
+    ACTOR_RUN_OUTPUT_FIELDS,
+    TASK_RUN_SAMPLE,
+    TASK_RUN_OUTPUT_FIELDS,
     DEFAULT_KEY_VALUE_STORE_KEYS,
     DEFAULT_PAGINATION_LIMIT,
     LEGACY_PHANTOM_JS_CRAWLER_ID,

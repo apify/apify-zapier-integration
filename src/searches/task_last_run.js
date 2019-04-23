@@ -1,6 +1,6 @@
 const { ACT_JOB_STATUSES } = require('apify-shared/consts');
-const { TASK_SAMPLE, TASK_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
-const { enrichTaskRun } = require('../apify_helpers');
+const { TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
+const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 
@@ -21,7 +21,7 @@ const getLastTaskRun = async (z, bundle) => {
 
     if (!lastTaskRunResponse.json) return [];
 
-    const enrichRun = await enrichTaskRun(z, lastTaskRunResponse.json);
+    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.json);
     return [enrichRun];
 };
 
@@ -52,7 +52,7 @@ module.exports = {
 
         perform: getLastTaskRun,
 
-        sample: TASK_SAMPLE,
-        outputFields: TASK_OUTPUT_FIELDS,
+        sample: TASK_RUN_SAMPLE,
+        outputFields: TASK_RUN_OUTPUT_FIELDS,
     },
 };

@@ -16,6 +16,9 @@ const getTaskList = async (z, bundle) => {
     }));
 };
 
+/**
+ * This is hidden trigger used to load tasks to dynamic dropdown.
+ */
 module.exports = {
     key: 'tasks',
     noun: 'Tasks',

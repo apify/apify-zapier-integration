@@ -2,6 +2,7 @@ const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 // Fetches a list of actors
+// TODO: Adds logic to load featured actors.
 const getActorList = async (z, bundle) => {
     const actorListResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}`,
@@ -16,6 +17,9 @@ const getActorList = async (z, bundle) => {
     }));
 };
 
+/**
+ * This is hidden trigger used to load actors to dynamic dropdown.
+ */
 module.exports = {
     key: 'actors',
     noun: 'Actors',

@@ -1,5 +1,5 @@
-const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
-const { enrichTaskRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const getFallbackActorRuns = async (z, bundle) => {
@@ -13,7 +13,7 @@ const getFallbackActorRuns = async (z, bundle) => {
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => enrichTaskRun(z, run));
+    return Promise.map(items, (run) => enrichActorRun(z, run));
 };
 
 module.exports = {
@@ -41,7 +41,7 @@ module.exports = {
         // PerformList is used to get testing data for users in Zapier app
         performList: getFallbackActorRuns,
         // In cases where Zapier needs to show an example record to the user, but we are unable to get a live example
-        sample: TASK_SAMPLE,
-        outputFields: TASK_OUTPUT_FIELDS,
+        sample: TASK_RUN_SAMPLE,
+        outputFields: TASK_RUN_OUTPUT_FIELDS,
     },
 };

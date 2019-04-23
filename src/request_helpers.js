@@ -26,6 +26,7 @@ const parseDataApiObject = (response) => {
 
 /**
  * This middleware log each bad response from Apify API.
+ * It uses RetryableError to retry bad responses from Apify API.
  */
 const validateApiResponse = (response) => {
     /**

@@ -70,9 +70,10 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
 };
 
 /**
- * Enriches task run object with data from dataset and key-value store.
+ * Enriches actor run object with data from dataset and key-value store.
+ * It is used for actor runs same as task runs.
  */
-const enrichTaskRun = async (z, run, storeKeysToInclude = []) => {
+const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
     const { defaultKeyValueStoreId, defaultDatasetId } = run;
 
     if (defaultKeyValueStoreId) {
@@ -86,6 +87,7 @@ const enrichTaskRun = async (z, run, storeKeysToInclude = []) => {
     return run;
 };
 
+// Process to subscribe to Apify webhook
 const subscribeWebkook = async (z, bundle, condition) => {
     const webhookOpts = {
         eventTypes: Object.values(WEBHOOK_EVENT_TYPES),
@@ -101,6 +103,7 @@ const subscribeWebkook = async (z, bundle, condition) => {
     return response.json;
 };
 
+// Process to unsubscribe to Apify webhook
 const unsubscribeWebhook = async (z, bundle) => {
     // bundle.subscribeData contains the parsed response JSON from the subscribe
     const webhookId = bundle.subscribeData.id;
@@ -113,14 +116,15 @@ const unsubscribeWebhook = async (z, bundle) => {
     return {};
 };
 
+// Gets actor run from bundle clean request and enriches it.
 const getActorRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
-    const enrichRun = await enrichTaskRun(z, run);
+    const enrichRun = await enrichActorRun(z, run);
     return [enrichRun];
 };
 
 module.exports = {
-    enrichTaskRun,
+    enrichActorRun,
     subscribeWebkook,
     unsubscribeWebhook,
     getActorRun,

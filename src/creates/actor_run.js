@@ -1,6 +1,6 @@
 const { BUILD_TAG_LATEST } = require('apify-shared/consts');
-const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
-const { enrichTaskRun } = require('../apify_helpers');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
+const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const runActor = async (z, bundle) => {
@@ -28,7 +28,7 @@ const runActor = async (z, bundle) => {
 
     let run = runResponse.json;
     if (runSync) {
-        run = await enrichTaskRun(z, run);
+        run = await enrichActorRun(z, run);
     }
 
     return run;
@@ -138,7 +138,7 @@ module.exports = {
 
         perform: runActor,
 
-        sample: TASK_SAMPLE,
-        outputFields: TASK_OUTPUT_FIELDS,
+        sample: ACTOR_RUN_SAMPLE,
+        outputFields: ACTOR_RUN_OUTPUT_FIELDS,
     },
 };
