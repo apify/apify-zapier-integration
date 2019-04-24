@@ -19,7 +19,7 @@ describe('set key-value store value', () => {
             inputData: {
                 storeIdOrName: 'zapier-test',
                 key: expectedKey,
-                value: expectedValue,
+                value: JSON.stringify(expectedValue),
             },
         };
 
@@ -46,7 +46,7 @@ describe('set key-value store value', () => {
             inputData: {
                 storeIdOrName: store.id,
                 key: expectedKey,
-                value: expectedValue,
+                value: JSON.stringify(expectedValue),
             },
         };
 

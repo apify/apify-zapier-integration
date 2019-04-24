@@ -7,10 +7,17 @@ const setValue = async (z, bundle) => {
     const store = await getOrCreateKeyValueStore(z, storeIdOrName);
     const keyValueStoreValueUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`;
 
+    let valueObject;
+    try {
+        valueObject = JSON.parse(value);
+    } catch (err) {
+        throw new Error('Cannot parse value as JSON object.');
+    }
+
     await wrapRequestWithRetries(z.request, {
         url: keyValueStoreValueUrl,
         method: 'PUT',
-        json: value,
+        json: valueObject,
     });
 
     return {
@@ -21,9 +28,9 @@ const setValue = async (z, bundle) => {
 
 module.exports = {
     key: 'keyValueStoreSetValue',
-    noun: 'Key-value Store Value',
+    noun: 'Key-Value Store Value',
     display: {
-        label: 'Set Key-value Store Value',
+        label: 'Set Key-Value Store Value',
         description: 'Set value to key-value store.',
     },
 
@@ -46,7 +53,8 @@ module.exports = {
                 helpText: 'Key-value object can be set as the value. The content-type for this value will be application/json by default.',
                 key: 'value',
                 required: true,
-                type: 'dict',
+                type: 'text',
+                default: '{}',
             },
         ],
 

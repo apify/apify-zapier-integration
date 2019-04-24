@@ -17,14 +17,14 @@ const getValue = async (z, bundle) => {
 
     if (!recordResponse.json) throw new Error('The value is not JSON object.');
 
-    return recordResponse.json;
+    return [recordResponse.json];
 };
 
 module.exports = {
     key: 'keyValueStoreGetValue',
     noun: 'Key-value Store Value',
     display: {
-        label: 'Get Key-value Store Value',
+        label: 'Get Key-Value Store Value',
         description: 'Get value from key-value store.',
     },
 

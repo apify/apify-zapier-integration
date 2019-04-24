@@ -28,7 +28,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
 
     if (params.limit && totalItemsCount > params.limit) {
         items.push({
-            warning: `Some items were omitted! The maximum number of items you can get is ${limit}`,
+            warning: `Some items were omitted! The maximum number of items you can get is ${params.limit}`,
         });
     }
 

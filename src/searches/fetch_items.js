@@ -43,7 +43,7 @@ const getItems = async (z, bundle) => {
             CSV: createDatasetUrl('csv'),
             JSON: createDatasetUrl('json'),
             XLSX: createDatasetUrl('xlsx'),
-        }
+        },
     }];
 };
 
