@@ -8,8 +8,10 @@ const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
 const actorsTrigger = require('./src/triggers/actors');
 const taskRunCreate = require('./src/creates/task_run');
 const actorRunCreate = require('./src/creates/actor_run');
+const setValueCreate = require('./src/creates/set_value');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 const actorLastRunSearch = require('./src/searches/actor_last_run');
+const getValueCreate = require('./src/searches/get_value');
 
 /**
  * Apify APP definition
@@ -45,12 +47,14 @@ const App = {
     searches: {
         [taskLastRunSearch.key]: taskLastRunSearch,
         [actorLastRunSearch.key]: actorLastRunSearch,
+        [getValueCreate.key]: getValueCreate,
     },
 
     // If you want your creates to show up, you better include it here!
     creates: {
         [taskRunCreate.key]: taskRunCreate,
         [actorRunCreate.key]: actorRunCreate,
+        [setValueCreate.key]: setValueCreate,
     },
 };
 

@@ -20,7 +20,7 @@ const includeApiToken = (request, z, bundle) => {
 const parseDataApiObject = (response) => {
     response.json = response.json && response.json.data
         ? response.json.data
-        : {};
+        : response.json;
     return response;
 };
 

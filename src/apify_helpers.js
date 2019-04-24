@@ -123,9 +123,42 @@ const getActorRun = async (z, bundle) => {
     return [enrichRun];
 };
 
+/**
+ * Get store by ID or by name
+ * @param z
+ * @param storeIdOrName - Key-value store ID or name
+ */
+const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
+    let store;
+    // The first try to get store by ID.
+    try {
+        const storeResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.keyValueStores}/${storeIdOrName}`,
+            method: 'GET',
+        });
+        store = storeResponse.json;
+    } catch (err) {
+        if (!err.message.includes('not found')) throw err;
+    }
+
+    // The second creates store with name, in case storeId not found.
+    if (!store) {
+        const storeResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.keyValueStores}`,
+            method: 'POST',
+            params: {
+                name: storeIdOrName,
+            },
+        });
+        store = storeResponse.json;
+    }
+    return store;
+};
+
 module.exports = {
     enrichActorRun,
     subscribeWebkook,
     unsubscribeWebhook,
     getActorRun,
+    getOrCreateKeyValueStore,
 };
