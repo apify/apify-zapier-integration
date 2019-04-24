@@ -11,7 +11,8 @@ const actorRunCreate = require('./src/creates/actor_run');
 const setValueCreate = require('./src/creates/set_value');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 const actorLastRunSearch = require('./src/searches/actor_last_run');
-const getValueCreate = require('./src/searches/get_value');
+const getValueSearch = require('./src/searches/get_value');
+const fetchItemsSearch = require('./src/searches/fetch_items');
 
 /**
  * Apify APP definition
@@ -47,7 +48,8 @@ const App = {
     searches: {
         [taskLastRunSearch.key]: taskLastRunSearch,
         [actorLastRunSearch.key]: actorLastRunSearch,
-        [getValueCreate.key]: getValueCreate,
+        [getValueSearch.key]: getValueSearch,
+        [fetchItemsSearch.key]: fetchItemsSearch,
     },
 
     // If you want your creates to show up, you better include it here!

@@ -7,11 +7,7 @@ const { wrapRequestWithRetries } = require('./request_helpers');
  * Get items from dataset. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
-const getDatasetItems = async (z, datasetId, limit, actorId) => {
-    const params = {
-        limit,
-    };
-
+const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
     /**
      * For backwards compatible with old phantomJs crawler we need to use
      * simplified dataset instead of clean.
@@ -30,7 +26,7 @@ const getDatasetItems = async (z, datasetId, limit, actorId) => {
     const totalItemsCount = itemsResponse.getHeader('x-apify-pagination-total');
     const items = JSON.parse(itemsResponse.content); // NOTE: It looks itemsResponse.json, can not work with json array.
 
-    if (totalItemsCount > limit) {
+    if (params.limit && totalItemsCount > params.limit) {
         items.push({
             warning: `Some items were omitted! The maximum number of items you can get is ${limit}`,
         });
@@ -82,7 +78,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
         run = Object.assign({}, run, keyValueStoreValues);
     }
 
-    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, 500, run.actId);
+    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 500 }, run.actId);
 
     return run;
 };
@@ -161,4 +157,5 @@ module.exports = {
     unsubscribeWebhook,
     getActorRun,
     getOrCreateKeyValueStore,
+    getDatasetItems,
 };

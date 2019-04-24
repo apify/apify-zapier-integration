@@ -4,19 +4,18 @@ const { getOrCreateKeyValueStore } = require('../apify_helpers');
 
 const setValue = async (z, bundle) => {
     const { storeIdOrName, key, value } = bundle.inputData;
-
     const store = await getOrCreateKeyValueStore(z, storeIdOrName);
+    const keyValueStoreValueUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`;
 
     await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,
+        url: keyValueStoreValueUrl,
         method: 'PUT',
         json: value,
     });
 
     return {
         keyValueStore: store,
-        key,
-        value,
+        keyValueStoreValueUrl,
     };
 };
 
