@@ -21,6 +21,9 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
         task: {
             actId: 'apify/web-scraper',
             name: `zapier-test-${randomString()}`,
+            options: {
+                memoryMbytes: 2048,
+            },
             input: {
                 contentType: 'application/json; charset=utf-8',
                 body: JSON.stringify({
@@ -49,6 +52,9 @@ const createLegacyCrawlerTask = async (pageFunction) => {
         task: {
             actId: 'apify/legacy-phantomjs-crawler',
             name: `zapier-test-${randomString()}`,
+            options: {
+                memoryMbytes: 2048,
+            },
             input: {
                 contentType: 'application/json; charset=utf-8',
                 body: JSON.stringify({
@@ -79,6 +85,11 @@ const createAndBuildActor = async () => {
     const actor = await apifyClient.acts.createAct({
         act: {
             name: `zapier-test-${randomString()}`,
+            defaultRunOptions: {
+                build: 'latest',
+                timeoutSecs: 300,
+                memoryMbytes: 512,
+            },
             versions: [
                 {
                     versionNumber: '0.0',
