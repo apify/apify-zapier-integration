@@ -60,6 +60,12 @@ const DEFAULT_PAGINATION_LIMIT = 100;
 // Actor ID of apify/legacy-phantomjs-crawler
 const LEGACY_PHANTOM_JS_CRAWLER_ID = 'YPh5JENjSSR6vBf2E';
 
+// Field to omit from actor run, these are useless in Zapier
+const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats'];
+
+// Field to pick from dataset detail
+const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
+
 module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
@@ -69,4 +75,6 @@ module.exports = {
     DEFAULT_KEY_VALUE_STORE_KEYS,
     DEFAULT_PAGINATION_LIMIT,
     LEGACY_PHANTOM_JS_CRAWLER_ID,
+    OMIT_ACTOR_RUN_FIELDS,
+    DATASET_PUBLISH_FIELDS,
 };

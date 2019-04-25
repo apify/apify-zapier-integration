@@ -1,6 +1,7 @@
 const Promise = require('bluebird');
+const _ = require('underscore');
 const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
-const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID } = require('./consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID, OMIT_ACTOR_RUN_FIELDS } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
@@ -80,7 +81,13 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
 
     if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 500 }, run.actId);
 
-    return run;
+    // Attach Apify app URL to detail of run
+    run.detailsPageUrl = run.actorTaskId
+        ? `https://my.apify.com/tasks/${run.actorTaskId}#/runs/${run.id}`
+        : `https://my.apify.com/actors/${run.actId}#/runs/${run.id}`;
+
+    // Omit fields, which are useless for Zapier users.
+    return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 };
 
 // Process to subscribe to Apify webhook

@@ -41,14 +41,16 @@ const getActorAdditionalFields = async (z, bundle) => {
     const { actorId } = bundle.inputData;
     if (!actorId) return [];
 
-    const actor = await wrapRequestWithRetries(z.request, {
+    const actorResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
     });
+
     /*
     TODO: We need to fetch input schema and prefill input regarding that. But we need to have
     input schema in build detail API. Now we use just defaultRunOptions, exampleRunInput.
      */
 
+    const actor = actorResponse.json;
     const { body, contentType } = actor.exampleRunInput;
     const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
     const defaultActorBuildTag = build || BUILD_TAG_LATEST;

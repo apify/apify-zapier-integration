@@ -1,4 +1,5 @@
-const { APIFY_API_ENDPOINTS, LEGACY_PHANTOM_JS_CRAWLER_ID } = require('../consts');
+const _ = require('underscore');
+const { APIFY_API_ENDPOINTS, LEGACY_PHANTOM_JS_CRAWLER_ID, DATASET_PUBLISH_FIELDS } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 
@@ -32,11 +33,14 @@ const getItems = async (z, bundle) => {
     const cleanParamName = dataset.actId === LEGACY_PHANTOM_JS_CRAWLER_ID ? 'simplified' : 'clean';
 
     const createDatasetUrl = (format) => {
-        return `${APIFY_API_ENDPOINTS.datasets}/${dataset.id}/items?${cleanParamName}=true&attachment=true&forma=${format}`;
+        return `${APIFY_API_ENDPOINTS.datasets}/${dataset.id}/items?${cleanParamName}=true&attachment=true&format=${format}`;
     };
 
+    // Pick some fields to Zapier UI, other fields are useless for Zapier users.
+    const cleanDataset = _.pick(dataset, DATASET_PUBLISH_FIELDS);
+
     return [{
-        ...dataset,
+        ...cleanDataset,
         items,
         itemsFileUrls: {
             XML: createDatasetUrl('xml'),
