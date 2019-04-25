@@ -29,6 +29,9 @@ const getItems = async (z, bundle) => {
         dataset = storeResponse.json;
     }
 
+    // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
+    dataset.id = dataset.id || dataset._id;
+
     const items = await getDatasetItems(z, dataset.id, { limit, offset }, dataset.actId);
     const cleanParamName = dataset.actId === LEGACY_PHANTOM_JS_CRAWLER_ID ? 'simplified' : 'clean';
 
