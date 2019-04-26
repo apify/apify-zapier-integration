@@ -1,5 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
+const _ = require('underscore');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient } = require('../helpers');
 
 const App = require('../../index');
@@ -16,9 +17,41 @@ describe('create actor run', () => {
         testActorId = actor.id;
     });
 
-    // it('loading of dynamic fields work', async () => {
-    //     // TODO
-    // });
+    it('loading of dynamic fields work', async () => {
+        const actorFields = {
+            defaultRunOptions: {
+                build: 'test',
+                timeoutSecs: 300,
+                memoryMbytes: 512,
+            },
+            exampleRunInput: {
+                contentType: 'application/json',
+                body: JSON.stringify({ myField: 'myValue' }),
+            },
+        };
+        await apifyClient.acts.updateAct({
+            actId: testActorId,
+            act: actorFields,
+        });
+
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                actorId: testActorId,
+            },
+        };
+
+        const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
+        const fieldsByKey = _.indexBy(fields, 'key');
+
+        expect(actorFields.defaultRunOptions.build).to.be.eql(fieldsByKey.build.default);
+        expect(actorFields.defaultRunOptions.timeoutSecs).to.be.eql(fieldsByKey.timeoutSecs.default);
+        expect(actorFields.defaultRunOptions.memoryMbytes).to.be.eql(fieldsByKey.memoryMbytes.default);
+        expect(actorFields.exampleRunInput.contentType).to.be.eql(fieldsByKey.inputContentType.default);
+        expect(JSON.parse(actorFields.exampleRunInput.body)).to.be.eql(JSON.parse(fieldsByKey.inputBody.default));
+    });
 
     it('runSync work', async () => {
         const runOptions = {

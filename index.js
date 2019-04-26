@@ -6,6 +6,7 @@ const taskRunFinishedTrigger = require('./src/triggers/task_run_finished');
 const tasksTrigger = require('./src/triggers/tasks');
 const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
 const actorsTrigger = require('./src/triggers/actors');
+const getActorAdditionalFieldsTest = require('./src/triggers/actor_additional_fields');
 const taskRunCreate = require('./src/creates/task_run');
 const actorRunCreate = require('./src/creates/actor_run');
 const setValueCreate = require('./src/creates/set_value');
@@ -42,6 +43,7 @@ const App = {
         [tasksTrigger.key]: tasksTrigger,
         [actorRunFinishedTrigger.key]: actorRunFinishedTrigger,
         [actorsTrigger.key]: actorsTrigger,
+        [getActorAdditionalFieldsTest.key]: getActorAdditionalFieldsTest,
     },
 
     // If you want your searches to show up, you better include it here!

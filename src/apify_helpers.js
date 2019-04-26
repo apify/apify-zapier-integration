@@ -1,6 +1,6 @@
 const Promise = require('bluebird');
 const _ = require('underscore');
-const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
+const { WEBHOOK_EVENT_TYPES, BUILD_TAG_LATEST } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID, OMIT_ACTOR_RUN_FIELDS } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -158,6 +158,87 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
     return store;
 };
 
+/**
+ * This method loads additional input fields regarding actor default values.
+ */
+const getActorAdditionalFields = async (z, bundle) => {
+    const { actorId } = bundle.inputData;
+    if (!actorId) return [];
+
+    const actorResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
+    });
+
+    /*
+    TODO: We need to fetch input schema and prefill input regarding that. But we need to have
+    input schema in build detail API. Now we use just defaultRunOptions, exampleRunInput.
+     */
+
+    const actor = actorResponse.json;
+    const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
+    const defaultActorBuildTag = build || BUILD_TAG_LATEST;
+
+    // Parse and stringify json input body if there is
+    let inputBody; let inputContentType;
+    if (actor.exampleRunInput) {
+        const { body, contentType } = actor.exampleRunInput;
+        inputContentType = contentType;
+        // Try to parse JSON body
+        if (contentType.includes('application/json')) {
+            try {
+                const parsedBody = JSON.parse(body);
+                inputBody = JSON.stringify(parsedBody, null, 2);
+            } catch (err) {
+                // There can be invalid JSON, but show must go on.
+                inputBody = body;
+            }
+        }
+    }
+
+    return [
+        {
+            label: 'Input body',
+            helpText: 'Input data for actor.',
+            key: 'inputBody',
+            required: false,
+            default: inputBody || '',
+            type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
+        },
+        {
+            label: 'Input content type',
+            helpText: 'Content type for actor input body.',
+            key: 'inputContentType',
+            required: false,
+            default: inputContentType || '',
+            type: 'string',
+        },
+        {
+            label: 'Build',
+            helpText: 'Tag or number of the build that you want to run. It can be something like latest, beta or 1.2.34.',
+            key: 'build',
+            required: false,
+            default: defaultActorBuildTag,
+            type: 'string',
+        },
+        {
+            label: 'Timeout',
+            helpText: 'Timeout for the actor run in seconds. Zero value means there is no timeout and the actor runs until completion.',
+            key: 'timeoutSecs',
+            required: false,
+            default: timeoutSecs || 0,
+            type: 'integer',
+        },
+        {
+            label: 'Memory',
+            helpText: 'Amount of memory allocated for the actor run, in megabytes.',
+            key: 'memoryMbytes',
+            required: false,
+            default: memoryMbytes || 1024,
+            type: 'integer',
+        },
+    ];
+};
+
 module.exports = {
     enrichActorRun,
     subscribeWebkook,
@@ -165,4 +246,5 @@ module.exports = {
     getActorRun,
     getOrCreateKeyValueStore,
     getDatasetItems,
+    getActorAdditionalFields,
 };
