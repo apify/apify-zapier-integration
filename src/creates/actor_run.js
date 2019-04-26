@@ -1,4 +1,3 @@
-const { BUILD_TAG_LATEST } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun, getActorAdditionalFields } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
