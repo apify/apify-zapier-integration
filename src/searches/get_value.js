@@ -37,7 +37,7 @@ module.exports = {
                 required: true,
             },
             {
-                label: 'Key',
+                label: 'Record key',
                 key: 'key',
                 required: true,
                 type: 'string',

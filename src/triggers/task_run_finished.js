@@ -21,7 +21,7 @@ module.exports = {
     noun: 'Task run',
     display: {
         label: 'Task Finished',
-        description: 'Trigger when a task run is finishes.',
+        description: 'Trigger when a task run is finished.',
     },
     operation: {
         inputFields: [

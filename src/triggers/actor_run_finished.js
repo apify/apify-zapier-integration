@@ -21,7 +21,7 @@ module.exports = {
     noun: 'Actor run',
     display: {
         label: 'Actor Finished',
-        description: 'Trigger when an actor run is finishes.',
+        description: 'Trigger when an actor run is finished.',
     },
     operation: {
         inputFields: [

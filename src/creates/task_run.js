@@ -49,7 +49,7 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If it checks the Zap waits until task finises. The hard timeout for task run is 60s.',
+                helpText: 'If you choose yes, the zap will wait until task finishes. The hard timeout for task run is 60s.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
@@ -57,7 +57,8 @@ module.exports = {
             },
             {
                 label: RAW_INPUT_LABEL,
-                helpText: 'Advanced: If you want to alter the task input for single run, simply pass a JSON object defining overriden input below.',
+                helpText: 'Advanced: If you want to alter the task input for the single run, '
+                    + 'simply pass a JSON object defining overridden input below.',
                 key: 'rawInput',
                 required: false,
                 type: 'text',

@@ -38,19 +38,19 @@ module.exports = {
         inputFields: [
             {
                 label: 'Key-value store',
-                helpText: 'Key-value store ID or name. If a store doesn\'t exist, it is created.',
+                helpText: 'Key-value store ID or name. If the store doesn\'t exist, it will be created.',
                 key: 'storeIdOrName',
                 required: true,
             },
             {
-                label: 'Key',
+                label: 'Record key',
                 key: 'key',
                 required: true,
                 type: 'string',
             },
             {
-                label: 'Value',
-                helpText: 'Key-value object can be set as the value. The content-type for this value will be application/json by default.',
+                label: 'Record value',
+                helpText: 'The content-type for this value will be application/json by default. You can use any JSON object value.',
                 key: 'value',
                 required: true,
                 type: 'text',
