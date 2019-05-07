@@ -49,7 +49,8 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. Beware that the hard timeout for the run is 60 seconds.',
+                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. '
+                    + 'Beware that the hard timeout for the run is 60 seconds.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
@@ -59,8 +60,8 @@ module.exports = {
                 // TODO: Tasks can have non-JSON input, perhaps we should allow people to enter something non-JSON
                 // here too, similarly as in actor run action
                 label: RAW_INPUT_LABEL,
-                helpText: 'Here you can enter a JSON object to override the task input configuration. ' +
-                    'Only the provided fields will be overridden, the rest will be left unchanged.',
+                helpText: 'Here you can enter a JSON object to override the task input configuration. '
+                    + 'Only the provided fields will be overridden, the rest will be left unchanged.',
                 key: 'rawInput',
                 required: false,
                 type: 'text',

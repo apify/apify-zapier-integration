@@ -53,7 +53,8 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the actor run is finished. Beware that the hard timeout for the run is 60 seconds.',
+                helpText: 'If you choose `yes`, the Zap will wait until the actor run is finished. '
+                    + 'Beware that the hard timeout for the run is 60 seconds.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

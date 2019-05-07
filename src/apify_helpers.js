@@ -220,7 +220,8 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Timeout',
-            helpText: 'Timeout for the actor run in seconds. If `0`, there will be no timeout and the actor will run until completion, perhaps forever.',
+            helpText: 'Timeout for the actor run in seconds. If `0` '
+                + 'there will be no timeout and the actor will run until completion, perhaps forever.',
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
