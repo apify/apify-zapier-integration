@@ -21,13 +21,13 @@ module.exports = {
     noun: 'Task run',
     display: {
         label: 'Task Finished',
-        description: 'Trigger when a task run is finished.',
+        description: 'Triggers whenever a selected task is run and finished.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select your task from the following list:',
+                helpText: 'Please select the task to keep an eye on.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',

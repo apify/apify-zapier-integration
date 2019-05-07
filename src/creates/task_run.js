@@ -2,7 +2,7 @@ const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-const RAW_INPUT_LABEL = 'Raw input';
+const RAW_INPUT_LABEL = 'Input JSON overrides';
 
 const runTask = async (z, bundle) => {
     const { taskId, runSync, rawInput } = bundle.inputData;
@@ -42,7 +42,7 @@ module.exports = {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Select the task from your list:',
+                helpText: 'Please select the task to run.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
@@ -56,9 +56,11 @@ module.exports = {
                 default: 'no',
             },
             {
+                // TODO: Tasks can have non-JSON input, perhaps we should allow people to enter something non-JSON
+                // here too, similarly as in actor run action
                 label: RAW_INPUT_LABEL,
-                helpText: 'Advanced: If you want to alter the task input for the single run, '
-                    + 'simply pass a JSON object defining overridden input below.',
+                helpText: 'Here you can enter a JSON object to override the task input configuration. ' +
+                    'Only the provided fields will be overridden, the rest will be left unchanged.',
                 key: 'rawInput',
                 required: false,
                 type: 'text',
