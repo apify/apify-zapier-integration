@@ -1,7 +1,8 @@
 const Promise = require('bluebird');
 const _ = require('underscore');
 const { WEBHOOK_EVENT_TYPES, BUILD_TAG_LATEST } = require('apify-shared/consts');
-const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID, OMIT_ACTOR_RUN_FIELDS } = require('./consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
@@ -13,7 +14,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
      * For backwards compatible with old phantomJs crawler we need to use
      * simplified dataset instead of clean.
      */
-    if (actorId && actorId === LEGACY_PHANTOM_JS_CRAWLER_ID) {
+    if (actorId === LEGACY_PHANTOM_JS_CRAWLER_ID) {
         params.simplified = true;
     } else {
         params.clean = true;
@@ -79,7 +80,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
         run = Object.assign({}, run, keyValueStoreValues);
     }
 
-    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 500 }, run.actId);
+    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId);
 
     // Attach Apify app URL to detail of run
     run.detailsPageUrl = run.actorTaskId
@@ -122,8 +123,8 @@ const unsubscribeWebhook = async (z, bundle) => {
 // Gets actor run from bundle clean request and enriches it.
 const getActorRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
-    const enrichRun = await enrichActorRun(z, run);
-    return [enrichRun];
+    const enrichedRun = await enrichActorRun(z, run);
+    return [enrichedRun];
 };
 
 /**
@@ -169,17 +170,13 @@ const getActorAdditionalFields = async (z, bundle) => {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
     });
 
-    /*
-    TODO: We need to fetch input schema and prefill input regarding that. But we need to have
-    input schema in build detail API. Now we use just defaultRunOptions, exampleRunInput.
-     */
-
     const actor = actorResponse.json;
     const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
     const defaultActorBuildTag = build || BUILD_TAG_LATEST;
 
     // Parse and stringify json input body if there is
-    let inputBody; let inputContentType;
+    let inputBody;
+    let inputContentType;
     if (actor.exampleRunInput) {
         const { body, contentType } = actor.exampleRunInput;
         inputContentType = contentType;

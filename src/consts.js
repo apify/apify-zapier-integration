@@ -1,3 +1,5 @@
+const { KEY_VALUE_STORE_KEYS } = require('apify-shared/consts');
+
 /**
  * Get paths of Apify API from apify-client
  * NOTE: We don't use ApifyClient from apify-client-js package in integration. Because if we use it,
@@ -53,7 +55,7 @@ const TASK_RUN_SAMPLE = Object.assign({ actorTaskId: 'UJNG9zau8PEB7U' }, ACTOR_R
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
-const DEFAULT_KEY_VALUE_STORE_KEYS = ['OUTPUT'];
+const DEFAULT_KEY_VALUE_STORE_KEYS = [KEY_VALUE_STORE_KEYS.OUTPUT];
 
 const DEFAULT_PAGINATION_LIMIT = 100;
 
@@ -66,6 +68,9 @@ const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats'];
 // Field to pick from dataset detail
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
 
+
+const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 500;
+
 module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
@@ -77,4 +82,5 @@ module.exports = {
     LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS,
     DATASET_PUBLISH_FIELDS,
+    FETCH_DATASET_ITEMS_ITEMS_LIMIT,
 };

@@ -19,8 +19,6 @@ const getLastActorRun = async (z, bundle) => {
         throw err;
     }
 
-    if (!lastActorRunResponse.json) return [];
-
     const enrichRun = await enrichActorRun(z, lastActorRunResponse.json);
     return [enrichRun];
 };
