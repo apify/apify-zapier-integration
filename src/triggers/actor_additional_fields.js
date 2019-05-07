@@ -10,7 +10,7 @@ module.exports = {
     noun: 'Actor Additional Fields',
     display: {
         label: 'Actor Additional Fields',
-        description: 'This is a hidden trigger, and is used to test getActorAdditionalFields function.',
+        description: 'This is a hidden trigger used to test getActorAdditionalFields function.',
         hidden: true,
     },
     operation: {

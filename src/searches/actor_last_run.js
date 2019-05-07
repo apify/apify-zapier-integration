@@ -30,20 +30,21 @@ module.exports = {
     noun: 'Last actor run',
     display: {
         label: 'Find Last Actor Run',
-        description: 'Find the most recent actor run based on the status.',
+        description: 'Get the most recent actor run with a specific status.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select actor from the following list:',
+                helpText: 'Please select the actor, whose last run you want to get.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
             },
             {
-                label: 'Status',
+                // TODO: Can we pre-select "FINISHED" ?
+                label: 'Run status',
                 key: 'status',
                 required: false,
                 choices: Object.values(ACT_JOB_STATUSES),

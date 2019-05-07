@@ -11,7 +11,7 @@ const setValue = async (z, bundle) => {
     try {
         valueObject = JSON.parse(value);
     } catch (err) {
-        throw new Error('Cannot parse value as JSON object.');
+        throw new Error(`Cannot parse the value as JSON: ${err.message}`);
     }
 
     await wrapRequestWithRetries(z.request, {
@@ -30,15 +30,17 @@ module.exports = {
     key: 'keyValueStoreSetValue',
     noun: 'Key-Value Store Value',
     display: {
-        label: 'Set Key-Value Store Value',
-        description: 'Set value to key-value store.',
+        label: 'Set Key-Value Store Record',
+        description: 'Save a record to a key-value store.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Key-value store',
-                helpText: 'Key-value store ID or name. If the store doesn\'t exist, it will be created.',
+                // TODO: We need to make sure if user enters ID, we don't create a named store with that ID.
+                // That can be checked with regex
+                helpText: 'Please enter name or ID of the key-value store. If the store with the name doesn\'t exist, it will be created.',
                 key: 'storeIdOrName',
                 required: true,
             },
@@ -50,7 +52,7 @@ module.exports = {
             },
             {
                 label: 'Record value',
-                helpText: 'The content-type for this value will be application/json by default. You can use any JSON object value.',
+                helpText: 'Please enter a JSON value. The record will have `Content-Type: application/json`.',
                 key: 'value',
                 required: true,
                 type: 'text',
