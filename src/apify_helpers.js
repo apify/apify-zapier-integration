@@ -45,7 +45,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                 }
             })
             .catch((err) => {
-                z.console.log(`Skipping error ${err.message}: Can not get ${key} from store ${storeId}`);
+                z.console.log(`Skipping error ${err.message}: Cannot find "${key}" in the key-value store ${storeId}`);
             });
     });
 

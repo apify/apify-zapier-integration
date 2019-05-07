@@ -24,21 +24,21 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Run a specified task.',
+        description: 'Run a selected actor task.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select your task from the following list:',
+                helpText: 'Select the task from your list:',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If it checks the Zap waits until task finises. The hard timeout for task run is 60s.',
+                helpText: 'If checked, the Zap will wait until the task run is finished. Beware that a hard timeout for the run is 60 seconds.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
