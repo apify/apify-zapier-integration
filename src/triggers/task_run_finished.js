@@ -1,46 +1,8 @@
-const { WEBHOOK_EVENT_TYPES } = require('apify-shared/consts');
-const { APIFY_API_ENDPOINTS, TASK_SAMPLE, TASK_OUTPUT_FIELDS } = require('../consts');
-const { enrichTaskRun } = require('../apify_helpers');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-const subscribeWebkook = async (z, bundle) => {
-    const { taskId } = bundle.inputData;
-
-    const webhookOpts = {
-        eventTypes: Object.values(WEBHOOK_EVENT_TYPES),
-        condition: {
-            actorTaskId: taskId,
-        },
-        requestUrl: bundle.targetUrl,
-    };
-    const response = await z.request({
-        url: APIFY_API_ENDPOINTS.webhooks,
-        method: 'POST',
-        json: webhookOpts,
-    });
-
-    return response.json;
-};
-
-const unsubscribeWebhook = async (z, bundle) => {
-    // bundle.subscribeData contains the parsed response JSON from the subscribe
-    const webhookId = bundle.subscribeData.id;
-
-    await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.webhooks}/${webhookId}`,
-        method: 'DELETE',
-    });
-
-    return {};
-};
-
-const getTaskRun = async (z, bundle) => {
-    const run = bundle.cleanedRequest.resource;
-    const enrichRun = await enrichTaskRun(z, run);
-    return [enrichRun];
-};
-
-const getFallbackTaskRuns = async (z, bundle) => {
+const getFallbackTaskActorRuns = async (z, bundle) => {
     const response = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
         params: {
@@ -51,7 +13,7 @@ const getFallbackTaskRuns = async (z, bundle) => {
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => enrichTaskRun(z, run));
+    return Promise.map(items, (run) => enrichActorRun(z, run));
 };
 
 module.exports = {
@@ -59,26 +21,24 @@ module.exports = {
     noun: 'Task run',
     display: {
         label: 'Task Finished',
-        description: 'Trigger when a task run is finishes.',
+        description: 'Triggers whenever a selected task is run and finished.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select your task from the following list:',
+                helpText: 'Please select the task to keep an eye on.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
             },
         ],
         type: 'hook',
-        performSubscribe: subscribeWebkook,
+        performSubscribe: (z, bundle) => subscribeWebkook(z, bundle, { actorTaskId: bundle.inputData.taskId }),
         performUnsubscribe: unsubscribeWebhook,
-        // Perform is called after each hit to the webhook API
-        perform: getTaskRun,
-        // PerformList is used to get testing data for users in Zapier app
-        performList: getFallbackTaskRuns,
-        sample: TASK_SAMPLE,
-        outputFields: TASK_OUTPUT_FIELDS,
+        perform: getActorRun,
+        performList: getFallbackTaskActorRuns,
+        sample: TASK_RUN_SAMPLE,
+        outputFields: TASK_RUN_OUTPUT_FIELDS,
     },
 };

@@ -1,19 +1,17 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
+const { TEST_USER_TOKEN } = require('./helpers');
 
 const App = require('../index');
 
 const appTester = zapier.createAppTester(App);
-
-// Injects all secrets from .env file
-zapier.tools.env.inject();
 
 describe('authentication', () => {
 
     it('passes authentication and returns user', async () => {
         const bundle = {
             authData: {
-                token: process.env.TEST_USER_TOKEN,
+                token: TEST_USER_TOKEN,
             },
         };
 

@@ -1,6 +1,6 @@
 const { ACT_JOB_STATUSES } = require('apify-shared/consts');
-const { TASK_SAMPLE, TASK_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
-const { enrichTaskRun } = require('../apify_helpers');
+const { TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
+const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 
@@ -21,7 +21,7 @@ const getLastTaskRun = async (z, bundle) => {
 
     if (!lastTaskRunResponse.json) return [];
 
-    const enrichRun = await enrichTaskRun(z, lastTaskRunResponse.json);
+    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.json);
     return [enrichRun];
 };
 
@@ -30,20 +30,21 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Find the most recent task run based on the status.',
+        description: 'Get the most recent task run with a specific status.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select your task from the following list:',
+                helpText: 'Please select the task, whose last run you want to get.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
             },
             {
-                label: 'Status',
+                // TODO: Can we pre-select FINISHED ?
+                label: 'Run status',
                 key: 'status',
                 required: false,
                 choices: Object.values(ACT_JOB_STATUSES),
@@ -52,7 +53,7 @@ module.exports = {
 
         perform: getLastTaskRun,
 
-        sample: TASK_SAMPLE,
-        outputFields: TASK_OUTPUT_FIELDS,
+        sample: TASK_RUN_SAMPLE,
+        outputFields: TASK_RUN_OUTPUT_FIELDS,
     },
 };

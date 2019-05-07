@@ -1,6 +1,6 @@
 const { RetryableError, retryWithExpBackoff } = require('apify-shared/exponential_backoff');
 
-const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Apify API Internal server error. Please report this issue to support@apify.com';
+const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
 /**
  * Middleware includes the API token on all outbound requests.
@@ -20,20 +20,28 @@ const includeApiToken = (request, z, bundle) => {
 const parseDataApiObject = (response) => {
     response.json = response.json && response.json.data
         ? response.json.data
-        : {};
+        : response.json;
     return response;
 };
 
 /**
  * This middleware log each bad response from Apify API.
+ * It uses RetryableError to retry bad responses from Apify API.
  */
 const validateApiResponse = (response) => {
+    /**
+     * NOTE: In case key-value store records request we can skip 404 error
+     */
+    if (response.request.method === 'GET' && response.request.url.match(/\/records\//) && response.status === 404) {
+        return response;
+    }
+
     /**
      * NOTE: If we throw RetryableError the request will be retried using exponential back off function
      * in case we wrapped it in wrapRequestWithRetries function.
      */
     if (response.status >= 500) throw new RetryableError(GENERIC_UNHANDLED_ERROR_MESSAGE);
-    if (response.status === 429) throw new RetryableError('Apify API Rate Limit error. Try it again.');
+    if (response.status === 429) throw new RetryableError('Exceeded rate limit for Apify API. Please try again later.');
 
 
     if (response.status >= 300) {
