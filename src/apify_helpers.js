@@ -232,7 +232,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             // TODO: This should be a drop-down with allowed memory sizes, using values from apify-shared/contants
             label: 'Memory',
-            helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster will your actor run.',
+            helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster your actor will run.',
             key: 'memoryMbytes',
             required: false,
             default: memoryMbytes || 1024,

@@ -24,7 +24,7 @@ module.exports = {
     noun: 'Tasks',
     display: {
         label: 'List of Tasks',
-        description: 'This is a hidden trigger, which is used in a Dynamic Dropdown within this app',
+        description: 'This is a hidden trigger used in a Dynamic Dropdown within this app',
         hidden: true,
     },
     operation: {

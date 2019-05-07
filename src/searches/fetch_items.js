@@ -79,7 +79,7 @@ module.exports = {
             },
             {
                 label: 'Offset',
-                helpText: 'The offset in the dataset where to start fetching the items from. If empty, it will be from the beginning.',
+                helpText: 'The offset in the dataset from where to start fetching the items. If empty, it will be from the beginning.',
                 key: 'offset',
                 required: false,
                 type: 'integer',
