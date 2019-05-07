@@ -30,20 +30,21 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Find the most recent task run based on the status.',
+        description: 'Get the most recent task run with a specific status.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Select the task to run from this list:',
+                helpText: 'Please select the task, whose last run you want to get.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
             },
             {
-                label: 'Status',
+                // TODO: Can we pre-select FINISHED ?
+                label: 'Run status',
                 key: 'status',
                 required: false,
                 choices: Object.values(ACT_JOB_STATUSES),

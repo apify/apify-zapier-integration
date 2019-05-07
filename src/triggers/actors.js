@@ -25,7 +25,7 @@ module.exports = {
     noun: 'Actors',
     display: {
         label: 'List of actors',
-        description: 'This is a hidden trigger, and is used in a Dynamic Dropdown within this app',
+        description: 'This is a hidden trigger, which is used in a Dynamic Dropdown within this app',
         hidden: true,
     },
     operation: {

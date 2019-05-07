@@ -198,15 +198,16 @@ const getActorAdditionalFields = async (z, bundle) => {
     return [
         {
             label: 'Input body',
-            helpText: 'Input data for actor.',
+            helpText: 'Input configuration for the actor.',
             key: 'inputBody',
             required: false,
+            // TODO: I think this value shouldn't be default, but a prefill (not sure if that's possible)
             default: inputBody || '',
             type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
         },
         {
             label: 'Input content type',
-            helpText: 'Content type for actor input body.',
+            helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
             key: 'inputContentType',
             required: false,
             default: inputContentType || '',
@@ -214,7 +215,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Build',
-            helpText: 'Tag or number of the build that you want to run. It can be something like latest, beta or 1.2.34.',
+            helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
             key: 'build',
             required: false,
             default: defaultActorBuildTag,
@@ -222,15 +223,16 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Timeout',
-            helpText: 'Timeout for the actor run in seconds. Zero value means there is no timeout and the actor runs until completion.',
+            helpText: 'Timeout for the actor run in seconds. If `0`, there will be no timeout and the actor will run until completion, perhaps forever.',
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
             type: 'integer',
         },
         {
+            // TODO: This should be a drop-down with allowed memory sizes, using values from apify-shared/contants
             label: 'Memory',
-            helpText: 'Amount of memory allocated for the actor run, in megabytes.',
+            helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster will your actor run.',
             key: 'memoryMbytes',
             required: false,
             default: memoryMbytes || 1024,

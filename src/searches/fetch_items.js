@@ -59,25 +59,27 @@ module.exports = {
     noun: 'Dataset Items',
     display: {
         label: 'Fetch Dataset Items',
-        description: 'Download items from Apify dataset.',
+        description: 'Download items from a dataset.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Dataset',
-                helpText: 'Dataset ID or name.',
+                helpText: 'Please enter the name or ID of the dataset.',
                 key: 'datasetIdOrName',
                 required: true,
             },
             {
                 label: 'Limit',
+                helpText: 'The maximum number of dataset items to fetch. If empty, the default limit will be used.',
                 key: 'limit',
                 required: false,
                 type: 'integer',
             },
             {
                 label: 'Offset',
+                helpText: 'The offset in the dataset where to start fetching the items from. If empty, it will be from the beginning.',
                 key: 'offset',
                 required: false,
                 type: 'integer',

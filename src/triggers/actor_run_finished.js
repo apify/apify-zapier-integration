@@ -21,13 +21,13 @@ module.exports = {
     noun: 'Actor run',
     display: {
         label: 'Actor Finished',
-        description: 'Trigger when an actor run is finished.',
+        description: 'Triggers whenever a selected actor is run and finished.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select actor from the following list:',
+                helpText: 'Please select the actor to keep an eye on.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
