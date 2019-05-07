@@ -37,7 +37,7 @@ module.exports = {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select your task from the following list:',
+                helpText: 'Select the task to run from this list:',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',

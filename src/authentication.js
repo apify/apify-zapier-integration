@@ -9,7 +9,7 @@ const testAuth = async (z) => {
     });
 
     if (response.status !== 200) {
-        throw new Error('The API Token you supplied is invalid');
+        throw new Error('The API token is not valid.');
     }
 
     return response.json;

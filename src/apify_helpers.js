@@ -48,7 +48,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
             .then((response) => {
                 if (response.status === 404) {
                     values[key] = {
-                        error: `Cannot find ${key} in key-value store`,
+                        error: `Cannot find "${key}" in the key-value store`,
                     };
                     return;
                 }
@@ -57,7 +57,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                     values[key] = maybeObject;
                 } catch (err) {
                     values[key] = {
-                        error: `Cannot parse key-value store item: ${err.message}`,
+                        error: `Cannot parse the key-value store record: ${err.message}`,
                     };
                 }
             });
