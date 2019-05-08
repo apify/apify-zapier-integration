@@ -2,7 +2,7 @@ const Promise = require('bluebird');
 const _ = require('underscore');
 const { WEBHOOK_EVENT_TYPES, BUILD_TAG_LATEST } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
-    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT } = require('./consts');
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
@@ -198,7 +198,6 @@ const getActorAdditionalFields = async (z, bundle) => {
             helpText: 'Input configuration for the actor.',
             key: 'inputBody',
             required: false,
-            // TODO: I think this value shouldn't be default, but a prefill (not sure if that's possible)
             default: inputBody || '',
             type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
         },
@@ -228,13 +227,14 @@ const getActorAdditionalFields = async (z, bundle) => {
             type: 'integer',
         },
         {
-            // TODO: This should be a drop-down with allowed memory sizes, using values from apify-shared/contants
             label: 'Memory',
             helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster your actor will run.',
             key: 'memoryMbytes',
             required: false,
-            default: memoryMbytes || 1024,
-            type: 'integer',
+            // NOTE: Zapier UI allows only choices with strings
+            default: (memoryMbytes || 1024).toString(),
+            choices: ALLOWED_MEMORY_MBYTES_LIST.map((val) => val.toString()),
+            type: 'string',
         },
     ];
 };

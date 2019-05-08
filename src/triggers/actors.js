@@ -13,7 +13,7 @@ const getActorList = async (z, bundle) => {
     });
     return actorListResponse.json.items.map((actor) => ({
         id: actor.id,
-        name: actor.name,
+        name: actor.username ? `${actor.username}/${actor.name}` : actor.name,
     }));
 };
 

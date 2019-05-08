@@ -48,7 +48,7 @@ describe('create actor run', () => {
 
         expect(actorFields.defaultRunOptions.build).to.be.eql(fieldsByKey.build.default);
         expect(actorFields.defaultRunOptions.timeoutSecs).to.be.eql(fieldsByKey.timeoutSecs.default);
-        expect(actorFields.defaultRunOptions.memoryMbytes).to.be.eql(fieldsByKey.memoryMbytes.default);
+        expect(actorFields.defaultRunOptions.memoryMbytes).to.be.eql(parseInt(fieldsByKey.memoryMbytes.default));
         expect(actorFields.exampleRunInput.contentType).to.be.eql(fieldsByKey.inputContentType.default);
         expect(JSON.parse(actorFields.exampleRunInput.body)).to.be.eql(JSON.parse(fieldsByKey.inputBody.default));
     });
