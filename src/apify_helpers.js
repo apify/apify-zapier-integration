@@ -160,6 +160,22 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
 };
 
 /**
+ * It pickes from input schema prefill values.
+ * NOTE: Input schema was validated on app, we don't have to check structure here.
+ * @param inputSchemaStringJSON
+ */
+const getPrefilledValuesFromInputSchema = (inputSchemaStringJSON) => {
+    const prefilledObject = {};
+    const { properties } = JSON.parse(inputSchemaStringJSON);
+
+    Object.keys(properties).forEach((propKey) => {
+        if (properties[propKey].prefill) prefilledObject[propKey] = properties[propKey].prefill;
+    });
+
+    return prefilledObject;
+};
+
+/**
  * This method loads additional input fields regarding actor default values.
  */
 const getActorAdditionalFields = async (z, bundle) => {
@@ -174,10 +190,25 @@ const getActorAdditionalFields = async (z, bundle) => {
     const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
     const defaultActorBuildTag = build || BUILD_TAG_LATEST;
 
-    // Parse and stringify json input body if there is
     let inputBody;
     let inputContentType;
-    if (actor.exampleRunInput) {
+    let inputSchema;
+    // Get input schema from build
+    const defaultBuild = actor.taggedBuilds && actor.taggedBuilds[defaultActorBuildTag];
+    if (defaultBuild) {
+        const buildResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/builds/${defaultBuild.buildId}`,
+        });
+        inputSchema = buildResponse.json && buildResponse.json.inputSchema;
+        if (inputSchema) {
+            inputContentType = 'application/json; charset=utf-8';
+            inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema));
+        }
+    }
+
+
+    // Parse and stringify json input body if there is
+    if (actor.exampleRunInput && !inputSchema) {
         const { body, contentType } = actor.exampleRunInput;
         inputContentType = contentType;
         // Try to parse JSON body
@@ -247,4 +278,5 @@ module.exports = {
     getOrCreateKeyValueStore,
     getDatasetItems,
     getActorAdditionalFields,
+    getPrefilledValuesFromInputSchema,
 };
