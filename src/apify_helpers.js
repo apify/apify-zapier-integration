@@ -202,7 +202,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         inputSchema = buildResponse.json && buildResponse.json.inputSchema;
         if (inputSchema) {
             inputContentType = 'application/json; charset=utf-8';
-            inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema));
+            inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);
         }
     }
 
