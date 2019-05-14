@@ -29,6 +29,5 @@ Login account which has access to Apify app using `zapier login`.
 3. Set the version as production using `zapier promote 1.0.0`.
 4. Migrate users to new version using `zapier migrate 1.0.0 1.0.1 100%`.
 or 
-4. Deprecate old version using `zapier deprecate 1.0.0`.
-
+4. Deprecate old version using `zapier deprecate 1.0.0 2019-05-29`.
 
