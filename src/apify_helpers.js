@@ -2,7 +2,8 @@ const Promise = require('bluebird');
 const _ = require('underscore');
 const { WEBHOOK_EVENT_TYPES, BUILD_TAG_LATEST } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
-    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST } = require('./consts');
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
+    DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 /**
@@ -170,6 +171,9 @@ const getPrefilledValuesFromInputSchema = (inputSchemaStringJSON) => {
 
     Object.keys(properties).forEach((propKey) => {
         if (properties[propKey].prefill) prefilledObject[propKey] = properties[propKey].prefill;
+        else if (properties[propKey].type === 'boolean' && _.isBoolean(properties[propKey].default)) {
+            prefilledObject[propKey] = properties[propKey].default;
+        }
     });
 
     return prefilledObject;
@@ -263,7 +267,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             key: 'memoryMbytes',
             required: false,
             // NOTE: Zapier UI allows only choices with strings
-            default: (memoryMbytes || 1024).toString(),
+            default: (memoryMbytes || DEFAULT_ACTOR_MEMORY_MBYTES).toString(),
             choices: ALLOWED_MEMORY_MBYTES_LIST.map((val) => val.toString()),
             type: 'string',
         },

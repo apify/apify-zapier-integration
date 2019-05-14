@@ -16,6 +16,14 @@ describe('apify utils', () => {
             proxyConfiguration: { useApifyProxy: false },
             customData: {},
             initialCookies: [],
+            useRequestQueue: true,
+            injectUnderscore: false,
+            injectJQuery: false,
+            ignoreSslErrors: false,
+            downloadMedia: false,
+            downloadCss: false,
+            debugLog: false,
+            browserLog: false,
         };
         expect(prefillValues).to.be.eql(expected);
     });
