@@ -46,10 +46,10 @@ const getItems = async (z, bundle) => {
         ...cleanDataset,
         items,
         itemsFileUrls: {
-            XML: createDatasetUrl('xml'),
-            CSV: createDatasetUrl('csv'),
-            JSON: createDatasetUrl('json'),
-            XLSX: createDatasetUrl('xlsx'),
+            xml: createDatasetUrl('xml'),
+            csv: createDatasetUrl('csv'),
+            json: createDatasetUrl('json'),
+            xlsx: createDatasetUrl('xlsx'),
         },
     }];
 };

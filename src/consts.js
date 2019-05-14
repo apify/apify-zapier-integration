@@ -1,4 +1,4 @@
-const { KEY_VALUE_STORE_KEYS } = require('apify-shared/consts');
+const { KEY_VALUE_STORE_KEYS, ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES } } = require('apify-shared/consts');
 
 /**
  * Get paths of Apify API from apify-client
@@ -69,7 +69,13 @@ const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats'];
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
 
 
-const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 500;
+const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
+
+// List of allowed memory for actor run 128, 256, 512 ..
+const ALLOWED_MEMORY_MBYTES_LIST = Array.from(Array(Math.log2(MAX_RUN_MEMORY_MBYTES / MIN_RUN_MEMORY_MBYTES) + 1),
+    (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i));
+
+const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
 module.exports = {
     APIFY_API_ENDPOINTS,
@@ -83,4 +89,6 @@ module.exports = {
     OMIT_ACTOR_RUN_FIELDS,
     DATASET_PUBLISH_FIELDS,
     FETCH_DATASET_ITEMS_ITEMS_LIMIT,
+    ALLOWED_MEMORY_MBYTES_LIST,
+    DEFAULT_ACTOR_MEMORY_MBYTES,
 };

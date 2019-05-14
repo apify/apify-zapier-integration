@@ -11,7 +11,7 @@ const runActor = async (z, bundle) => {
         params: {
             build,
             timeout: timeoutSecs,
-            memory: memoryMbytes,
+            memory: parseInt(memoryMbytes, 10),
         },
     };
 

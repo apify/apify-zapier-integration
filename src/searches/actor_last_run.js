@@ -41,10 +41,10 @@ module.exports = {
                 dynamic: 'actors.id.name',
             },
             {
-                // TODO: Can we pre-select "FINISHED" ?
                 label: 'Run status',
                 key: 'status',
                 required: false,
+                default: ACT_JOB_STATUSES.SUCCEEDED,
                 choices: Object.values(ACT_JOB_STATUSES),
             },
         ],

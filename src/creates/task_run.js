@@ -30,6 +30,33 @@ const runTask = async (z, bundle) => {
     return run;
 };
 
+const getRawInputField = async (z, bundle) => {
+    const { taskId } = bundle.inputData;
+    let helpText = 'Here you can enter a JSON object to override the task input configuration. '
+    + 'Only the provided fields will be overridden, the rest will be left unchanged.';
+
+    const { json: task } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+    });
+    const { json: actor } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
+    });
+
+    if (actor && actor.isPublic) {
+        helpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+            + 'for detailed fields description.';
+    }
+
+    return {
+        // TODO: Tasks can have non-JSON input, perhaps we should allow people to enter something non-JSON
+        label: RAW_INPUT_LABEL,
+        helpText,
+        key: 'rawInput',
+        required: false,
+        type: 'text',
+    };
+};
+
 module.exports = {
     key: 'createTaskRun',
     noun: 'Task Run',
@@ -46,6 +73,7 @@ module.exports = {
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
+                altersDynamicFields: true,
             },
             {
                 label: 'Run synchronously',
@@ -56,16 +84,7 @@ module.exports = {
                 type: 'boolean',
                 default: 'no',
             },
-            {
-                // TODO: Tasks can have non-JSON input, perhaps we should allow people to enter something non-JSON
-                // here too, similarly as in actor run action
-                label: RAW_INPUT_LABEL,
-                helpText: 'Here you can enter a JSON object to override the task input configuration. '
-                    + 'Only the provided fields will be overridden, the rest will be left unchanged.',
-                key: 'rawInput',
-                required: false,
-                type: 'text',
-            },
+            getRawInputField,
         ],
 
         perform: runTask,
