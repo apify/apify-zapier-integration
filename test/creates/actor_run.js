@@ -72,7 +72,7 @@ describe('create actor run', () => {
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
 
         expect(Object.keys(JSON.parse(inputSchema).properties)).to.include.all.keys(Object.keys(fields));
-    });
+    }).timeout(120000);
 
     it('runSync work', async () => {
         const runOptions = {
