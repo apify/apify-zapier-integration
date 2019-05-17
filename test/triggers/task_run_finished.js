@@ -1,6 +1,7 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
-const { randomString, apifyClient, createWebScraperTask, TEST_USER_TOKEN } = require('../helpers');
+const { randomString, apifyClient, createWebScraperTask,
+    TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
 
 const App = require('../../index');
 
@@ -8,13 +9,18 @@ const appTester = zapier.createAppTester(App);
 
 
 describe('task run finished trigger', () => {
+    const testedResult = { testedField: 'testValue', url: 'https://apify.com' };
     let testTaskId;
+    let legacyCrawlerTaskId;
     let subscribeData;
 
-    before(async () => {
+    before(async function () {
+        this.timeout(120000);
         // Create task for testing
         const task = await createWebScraperTask();
         testTaskId = task.id;
+        const legacyCrawlerTask = await createLegacyCrawlerTask(`function pageFunction(context) { return ${JSON.stringify(testedResult)} }`);
+        legacyCrawlerTaskId = legacyCrawlerTask.id;
     });
 
     it('subscribe webhook work', async () => {
@@ -102,10 +108,37 @@ describe('task run finished trigger', () => {
         expect(results[0].id).to.be.eql(taskRun.id);
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
+        expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
+    }).timeout(120000);
+
+    it('performList should return task runs (legacy crawler)', async () => {
+        // Create on task run
+        const taskRun = await apifyClient.tasks.runTask({
+            taskId: legacyCrawlerTaskId,
+            waitForFinish: 120,
+        });
+
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                taskId: legacyCrawlerTaskId,
+            },
+        };
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.performList, bundle);
+
+        expect(results.length).to.be.eql(1);
+        expect(results[0].id).to.be.eql(taskRun.id);
+        expect(results[0].datasetItems.length).to.be.at.least(1);
+        expect(results[0].datasetItems[0]).to.be.eql(testedResult);
+        expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
     }).timeout(120000);
 
     after(async () => {
         await apifyClient.tasks.deleteTask({ taskId: testTaskId });
+        await apifyClient.tasks.deleteTask({ taskId: legacyCrawlerTaskId });
     });
 });
 

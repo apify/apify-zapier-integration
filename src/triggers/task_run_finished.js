@@ -11,9 +11,18 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
         },
     });
 
+    const taskDetailResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}`,
+    });
+
     const { items } = response.json;
 
-    return Promise.map(items, (run) => enrichActorRun(z, run));
+    return Promise.map(items, (run) => {
+        // NOTE: We need to attach actId and actorTaskId, because simple run object from list doesn't have it.
+        run.actId = taskDetailResponse.json.actId;
+        run.actorTaskId = bundle.inputData.taskId;
+        return enrichActorRun(z, run);
+    });
 };
 
 module.exports = {

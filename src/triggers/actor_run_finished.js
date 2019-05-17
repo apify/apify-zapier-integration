@@ -13,7 +13,11 @@ const getFallbackActorRuns = async (z, bundle) => {
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => enrichActorRun(z, run));
+    return Promise.map(items, (run) => {
+        // NOTE: We need to attach actId, because simple run object from list doesn't have it.
+        run.actId = bundle.inputData.actorId;
+        return enrichActorRun(z, run);
+    });
 };
 
 module.exports = {

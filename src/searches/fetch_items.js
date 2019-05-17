@@ -1,5 +1,5 @@
 const _ = require('underscore');
-const { APIFY_API_ENDPOINTS, LEGACY_PHANTOM_JS_CRAWLER_ID, DATASET_PUBLISH_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 
@@ -32,25 +32,14 @@ const getItems = async (z, bundle) => {
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
     dataset.id = dataset.id || dataset._id;
 
-    const items = await getDatasetItems(z, dataset.id, { limit, offset }, dataset.actId);
-    const cleanParamName = dataset.actId === LEGACY_PHANTOM_JS_CRAWLER_ID ? 'simplified' : 'clean';
-
-    const createDatasetUrl = (format) => {
-        return `${APIFY_API_ENDPOINTS.datasets}/${dataset.id}/items?${cleanParamName}=true&attachment=true&format=${format}`;
-    };
+    const datasetItems = await getDatasetItems(z, dataset.id, { limit, offset }, dataset.actId);
 
     // Pick some fields to Zapier UI, other fields are useless for Zapier users.
     const cleanDataset = _.pick(dataset, DATASET_PUBLISH_FIELDS);
 
     return [{
         ...cleanDataset,
-        items,
-        itemsFileUrls: {
-            xml: createDatasetUrl('xml'),
-            csv: createDatasetUrl('csv'),
-            json: createDatasetUrl('json'),
-            xlsx: createDatasetUrl('xlsx'),
-        },
+        ...datasetItems,
     }];
 };
 

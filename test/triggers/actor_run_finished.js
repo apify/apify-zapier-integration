@@ -100,6 +100,7 @@ describe('actor run finished trigger', (suite) => {
         expect(results[0].id).to.be.eql(actorRun.id);
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
+        expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
     }).timeout(240000);
 
     after(async () => {

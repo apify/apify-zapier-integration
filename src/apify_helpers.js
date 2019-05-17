@@ -6,8 +6,20 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
+const createDatasetUrls = (datasetId, cleanParamName) => {
+    const createDatasetUrl = (format) => {
+        return `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items?${cleanParamName}=true&attachment=true&format=${format}`;
+    };
+    return {
+        xml: createDatasetUrl('xml'),
+        csv: createDatasetUrl('csv'),
+        json: createDatasetUrl('json'),
+        xlsx: createDatasetUrl('xlsx'),
+    };
+};
+
 /**
- * Get items from dataset. If there are more than limit items,
+ * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
 const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
@@ -15,11 +27,11 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
      * For backwards compatible with old phantomJs crawler we need to use
      * simplified dataset instead of clean.
      */
+    let cleanParamName = 'clean';
     if (actorId === LEGACY_PHANTOM_JS_CRAWLER_ID) {
-        params.simplified = true;
-    } else {
-        params.clean = true;
+        cleanParamName = 'simplified';
     }
+    params[cleanParamName] = true;
 
     const itemsResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
@@ -35,7 +47,10 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
         });
     }
 
-    return items;
+    return {
+        items,
+        itemsFileUrls: createDatasetUrls(datasetId, cleanParamName),
+    };
 };
 
 /**
@@ -81,7 +96,11 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
         run = Object.assign({}, run, keyValueStoreValues);
     }
 
-    if (defaultDatasetId) run.datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId);
+    if (defaultDatasetId) {
+        const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId);
+        run.datasetItems = datasetItems.items;
+        run.datasetItemsFileUrls = datasetItems.itemsFileUrls;
+    }
 
     // Attach Apify app URL to detail of run
     run.detailsPageUrl = run.actorTaskId
