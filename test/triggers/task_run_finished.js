@@ -44,6 +44,10 @@ describe('task run finished trigger', () => {
 
         expect(taskWebhooks.items.length).to.be.eql(1);
         expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
+        expect(taskWebhooks.items[0].eventTypes)
+            .to.include.members(['ACTOR.RUN.SUCCEEDED', 'ACTOR.RUN.FAILED','ACTOR.RUN.TIMED_OUT', 'ACTOR.RUN.ABORTED'])
+            .but.not.include.members(['ACTOR.RUN.CREATED']);
+
     });
 
     it('unsubscribe webhook work', async () => {
