@@ -1,3 +1,7 @@
+## 2.1.4 / 2019-05-23
+
+* Fixed bug in the Task Run trigger. This bug caused that hook can be called twice for one run.
+
 ## 2.1.3 / 2019-05-17
 
 * Bug fixes
