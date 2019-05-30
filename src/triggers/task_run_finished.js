@@ -11,17 +11,18 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
         },
     });
 
+    // NOTE: We need to get actId, because simple run object from list doesn't have it.
     const taskDetailResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}`,
     });
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => {
-        // NOTE: We need to attach actId and actorTaskId, because simple run object from list doesn't have it.
-        run.actId = taskDetailResponse.json.actId;
-        run.actorTaskId = bundle.inputData.taskId;
-        return enrichActorRun(z, run);
+    return Promise.map(items, async ({ id }) => {
+        const runResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.json.actId}/runs/${id}`,
+        });
+        return enrichActorRun(z, runResponse.json);
     });
 };
 
@@ -29,9 +30,10 @@ module.exports = {
     key: 'taskRunFinished',
     noun: 'Task run',
     display: {
-        label: 'Task Finished',
+        label: 'Task Run',
         description: 'Triggers whenever a selected task is run and finished.',
     },
+    important: true,
     operation: {
         inputFields: [
             {
