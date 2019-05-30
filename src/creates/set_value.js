@@ -31,8 +31,9 @@ module.exports = {
     noun: 'Key-Value Store Value',
     display: {
         label: 'Set Key-Value Store Record',
-        description: 'Save a record to a key-value store.',
+        description: 'Saves a record to a key-value store.',
     },
+    important: true,
 
     operation: {
         inputFields: [

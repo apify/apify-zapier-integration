@@ -21,7 +21,16 @@ const runActor = async (z, bundle) => {
             'Content-Type': inputContentType,
         };
     }
-    if (inputBody) requestOpts.body = inputBody;
+    if (inputBody) {
+        if (inputContentType.includes('application/json')) {
+            try {
+                JSON.parse(inputBody);
+            } catch (err) {
+                throw new Error('Please check that your input body is valid JSON.');
+            }
+        }
+        requestOpts.body = inputBody;
+    }
 
     const runResponse = await wrapRequestWithRetries(z.request, requestOpts);
 
@@ -38,8 +47,9 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Run a selected actor.',
+        description: 'Runs a selected actor.',
     },
+    important: true,
 
     operation: {
         inputFields: [
