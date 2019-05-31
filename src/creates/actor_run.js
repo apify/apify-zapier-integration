@@ -48,8 +48,8 @@ module.exports = {
     display: {
         label: 'Run Actor',
         description: 'Run a selected actor.',
+        important: true,
     },
-    important: true,
 
     operation: {
         inputFields: [

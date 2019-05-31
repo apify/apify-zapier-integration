@@ -63,8 +63,8 @@ module.exports = {
     display: {
         label: 'Run Task',
         description: 'Run a selected actor task.',
+        important: true,
     },
-    important: true,
 
     operation: {
         inputFields: [

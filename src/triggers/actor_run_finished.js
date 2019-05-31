@@ -27,8 +27,8 @@ module.exports = {
     display: {
         label: 'Actor Run',
         description: 'Triggers whenever a selected actor is run and finished.',
+        important: true,
     },
-    important: true,
     operation: {
         inputFields: [
             {

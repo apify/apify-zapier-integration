@@ -26,8 +26,8 @@ module.exports = {
     display: {
         label: 'Get Key-Value Store Record',
         description: 'Get a record from a key-value store.',
+        important: true,
     },
-    important: true,
 
     operation: {
         inputFields: [

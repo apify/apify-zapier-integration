@@ -32,8 +32,8 @@ module.exports = {
     display: {
         label: 'Set Key-Value Store Record',
         description: 'Save a record to a key-value store.',
+        important: true,
     },
-    important: true,
 
     operation: {
         inputFields: [
