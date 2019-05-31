@@ -28,8 +28,9 @@ module.exports = {
     noun: 'Last actor run',
     display: {
         label: 'Find Last Actor Run',
-        description: 'Get the most recent actor run with a specific status.',
+        description: 'Find the most recent actor run with a specific status.',
     },
+    important: true,
 
     operation: {
         inputFields: [

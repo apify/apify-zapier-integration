@@ -246,10 +246,16 @@ const getActorAdditionalFields = async (z, bundle) => {
         }
     }
 
+    let inputBodyHelpText = 'Input configuration for the actor.';
+    if (actor.isPublic) {
+        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+            + 'for detailed fields description.';
+    }
+
     return [
         {
             label: 'Input body',
-            helpText: 'Input configuration for the actor.',
+            helpText: inputBodyHelpText,
             key: 'inputBody',
             required: false,
             default: inputBody || '',

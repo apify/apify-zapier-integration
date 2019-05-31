@@ -62,7 +62,7 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Runs a selected actor task.',
+        description: 'Run a selected actor task.',
     },
     important: true,
 

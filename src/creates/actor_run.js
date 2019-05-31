@@ -47,7 +47,7 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs a selected actor.',
+        description: 'Run a selected actor.',
     },
     important: true,
 

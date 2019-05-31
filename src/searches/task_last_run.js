@@ -30,8 +30,9 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Get the most recent task run with a specific status.',
+        description: 'Find the most recent task run with a specific status.',
     },
+    important: true,
 
     operation: {
         inputFields: [

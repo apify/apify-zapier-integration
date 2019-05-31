@@ -11,7 +11,7 @@ const setValue = async (z, bundle) => {
     try {
         valueObject = JSON.parse(value);
     } catch (err) {
-        throw new Error(`Cannot parse the value as JSON: ${err.message}`);
+        throw new Error('Please check that your record value is valid JSON.');
     }
 
     await wrapRequestWithRetries(z.request, {
@@ -31,7 +31,7 @@ module.exports = {
     noun: 'Key-Value Store Value',
     display: {
         label: 'Set Key-Value Store Record',
-        description: 'Saves a record to a key-value store.',
+        description: 'Save a record to a key-value store.',
     },
     important: true,
 

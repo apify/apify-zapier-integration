@@ -12,7 +12,7 @@ const getValue = async (z, bundle) => {
     });
 
     if (recordResponse.status === 404) {
-        throw new Error('Nothing could be found for the key.');
+        return [];
     }
 
     if (!recordResponse.json) throw new Error('The value is not JSON object.');
@@ -27,6 +27,7 @@ module.exports = {
         label: 'Get Key-Value Store Record',
         description: 'Get a record from a key-value store.',
     },
+    important: true,
 
     operation: {
         inputFields: [
