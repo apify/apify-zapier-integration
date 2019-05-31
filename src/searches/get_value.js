@@ -25,7 +25,7 @@ module.exports = {
     noun: 'Key-value Store Value',
     display: {
         label: 'Get Key-Value Store Record',
-        description: 'Get a record from a key-value store.',
+        description: 'Gets a record from a key-value store.',
         important: true,
     },
 
