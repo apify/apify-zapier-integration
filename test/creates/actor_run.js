@@ -91,11 +91,12 @@ describe('create actor run', () => {
         };
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+        const actorRun = await apifyClient.acts.getRun({ actId: testActorId, runId: testResult.id });
 
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);
         Object.keys(runOptions).forEach((key) => {
-            expect(testResult.options[key]).to.be.eql(runOptions[key]);
+            expect(actorRun.options[key]).to.be.eql(runOptions[key]);
         });
     }).timeout(120000);
 

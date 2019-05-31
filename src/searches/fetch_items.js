@@ -1,5 +1,6 @@
 const _ = require('underscore');
-const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
+    DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 
@@ -76,34 +77,7 @@ module.exports = {
         ],
 
         perform: getItems,
-        sample: {
-            id: 'fYYRaBM5FSoCZ2Tf9',
-            name: 'dataset-sample',
-            createdAt: '2019-05-23T14:00:09.234Z',
-            modifiedAt: '2019-05-23T14:21:37.312Z',
-            itemCount: 1,
-            cleanItemCount: 1,
-            actId: 'moJRLRc85AitArpUL',
-            actRunId: '8yOSRtmH3iSnPcG3b',
-            datasetItems: [],
-            datasetItemsFileUrls: {
-                xml: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=xml&clean=true&attachment=true',
-                csv: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=csv&clean=true&attachment=true',
-                json: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=json&clean=true&attachment=true',
-                xlsx: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=xlsx&clean=true&attachment=true',
-            },
-        },
-        outputFields: [
-            { key: 'id', label: 'ID', type: 'string' },
-            { key: 'name', label: 'Name', type: 'string' },
-            { key: 'createdAt', label: 'Created at' },
-            { key: 'modifiedAt', label: 'Modified at' },
-            { key: 'itemCount', label: 'Item count', type: 'integer' },
-            { key: 'cleanItemCount', label: 'Clean item count', type: 'integer' },
-            { key: 'actId', label: 'Actor ID', type: 'string' },
-            { key: 'actRunId', label: 'Actor run ID', type: 'string' },
-            { key: 'datasetItems', label: 'Dataset items' },
-            { key: 'datasetItemsFileUrls', label: 'Dataset items file URLs', type: 'string' },
-        ],
+        sample: DATASET_SAMPLE,
+        outputFields: DATASET_OUTPUT_FIELDS,
     },
 };

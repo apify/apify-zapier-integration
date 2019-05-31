@@ -162,6 +162,6 @@ describe('tasks hidden trigger', () => {
         const taskList = await appTester(App.triggers.tasks.operation.perform, bundle);
 
         expect(taskList.length).to.be.at.least(1);
-        taskList.forEach((task) => expect(task).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE)));
+        taskList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });

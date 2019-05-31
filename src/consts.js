@@ -77,6 +77,37 @@ const TASK_RUN_SAMPLE = Object.assign({
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
+const DATASET_SAMPLE = {
+    id: 'fYYRaBM5FSoCZ2Tf9',
+    name: 'dataset-sample',
+    createdAt: '2019-05-23T14:00:09.234Z',
+    modifiedAt: '2019-05-23T14:21:37.312Z',
+    itemCount: 1,
+    cleanItemCount: 1,
+    actId: 'moJRLRc85AitArpUL',
+    actRunId: '8yOSRtmH3iSnPcG3b',
+    items: [],
+    itemsFileUrls: {
+        xml: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=xml&clean=true&attachment=true',
+        csv: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=csv&clean=true&attachment=true',
+        json: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=json&clean=true&attachment=true',
+        xlsx: 'https://api.apify.com/v2/datasets/fYYRaBM5FSoCZ2Tf9/items?format=xlsx&clean=true&attachment=true',
+    },
+};
+
+const DATASET_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'createdAt', label: 'Created at' },
+    { key: 'modifiedAt', label: 'Modified at' },
+    { key: 'itemCount', label: 'Item count', type: 'integer' },
+    { key: 'cleanItemCount', label: 'Clean item count', type: 'integer' },
+    { key: 'actId', label: 'Actor ID', type: 'string' },
+    { key: 'actRunId', label: 'Actor run ID', type: 'string' },
+    { key: 'items', label: 'Items' },
+    { key: 'itemsFileUrls', label: 'Items file URLs', type: 'string' },
+];
+
 const DEFAULT_KEY_VALUE_STORE_KEYS = [KEY_VALUE_STORE_KEYS.OUTPUT];
 
 const DEFAULT_PAGINATION_LIMIT = 100;
@@ -113,4 +144,6 @@ module.exports = {
     FETCH_DATASET_ITEMS_ITEMS_LIMIT,
     ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_ACTOR_MEMORY_MBYTES,
+    DATASET_SAMPLE,
+    DATASET_OUTPUT_FIELDS,
 };

@@ -71,6 +71,22 @@ describe('get key-value store value', () => {
         await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle)).to.be.rejectedWith(/is not JSON object/);
     }).timeout(10000);
 
+    it('work for empty value', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                storeIdOrName: testStoreId,
+                key: 'does-not-exist',
+            },
+        };
+
+        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
+
+        expect(testResult).to.be.eql([]);
+    }).timeout(10000);
+
     after(async () => {
         await apifyClient.keyValueStores.deleteStore({ storeId: testStoreId });
     });

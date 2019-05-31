@@ -126,6 +126,6 @@ describe('actors hidden trigger', () => {
         const actorList = await appTester(App.triggers.tasks.operation.perform, bundle);
 
         expect(actorList.length).to.be.at.least(1);
-        actorList.forEach((task) => expect(task).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE)));
+        actorList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });
