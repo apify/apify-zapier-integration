@@ -32,14 +32,9 @@ const runActor = async (z, bundle) => {
         requestOpts.body = inputBody;
     }
 
-    const runResponse = await wrapRequestWithRetries(z.request, requestOpts);
+    const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
-    let run = runResponse.json;
-    if (runSync) {
-        run = await enrichActorRun(z, run);
-    }
-
-    return run;
+    return enrichActorRun(z, run);
 };
 
 module.exports = {

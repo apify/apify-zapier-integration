@@ -2,6 +2,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('underscore');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient } = require('../helpers');
+const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -93,6 +94,7 @@ describe('create actor run', () => {
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
         const actorRun = await apifyClient.acts.getRun({ actId: testActorId, runId: testResult.id });
 
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);
         Object.keys(runOptions).forEach((key) => {
@@ -115,8 +117,9 @@ describe('create actor run', () => {
         };
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+        expect(testResult).to.have.all.keys(_.without(Object.keys(ACTOR_RUN_SAMPLE), 'exitCode'));
         expect(testResult.finishedAt).to.be.eql(null);
-    });
+    }).timeout(50000);
 
     after(async () => {
         await apifyClient.acts.deleteAct({ actId: testActorId });
