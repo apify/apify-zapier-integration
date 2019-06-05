@@ -17,7 +17,7 @@ const runTask = async (z, bundle) => {
             const parseInput = JSON.parse(rawInput);
             requestOpts.body = parseInput;
         } catch (err) {
-            throw new Error(`Please check that your ${RAW_INPUT_LABEL} is valid JSON.`);
+            throw new Error(`Please check that your ${RAW_INPUT_LABEL} is a valid JSON.`);
         }
     }
     const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);

@@ -26,7 +26,7 @@ const runActor = async (z, bundle) => {
             try {
                 JSON.parse(inputBody);
             } catch (err) {
-                throw new Error('Please check that your input body is valid JSON.');
+                throw new Error('Please check that your input body is a valid JSON.');
             }
         }
         requestOpts.body = inputBody;
