@@ -21,16 +21,20 @@ const runActor = async (z, bundle) => {
             'Content-Type': inputContentType,
         };
     }
-    if (inputBody) requestOpts.body = inputBody;
-
-    const runResponse = await wrapRequestWithRetries(z.request, requestOpts);
-
-    let run = runResponse.json;
-    if (runSync) {
-        run = await enrichActorRun(z, run);
+    if (inputBody) {
+        if (inputContentType.includes('application/json')) {
+            try {
+                JSON.parse(inputBody);
+            } catch (err) {
+                throw new Error('Please check that your input body is a valid JSON.');
+            }
+        }
+        requestOpts.body = inputBody;
     }
 
-    return run;
+    const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    return enrichActorRun(z, run);
 };
 
 module.exports = {
@@ -38,7 +42,8 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Run a selected actor.',
+        description: 'Runs a selected actor.',
+        important: true,
     },
 
     operation: {

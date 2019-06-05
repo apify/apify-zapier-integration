@@ -1,11 +1,12 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
+const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
 
-describe('actor run finished trigger', (suite) => {
+describe('actor run finished trigger', () => {
     let testActorId;
     let subscribeData;
 
@@ -60,7 +61,7 @@ describe('actor run finished trigger', (suite) => {
         expect(taskWebhooks.items.length).to.be.eql(0);
     });
 
-    it('perform should return task run detail', async () => {
+    it('perform should return actor run detail', async () => {
         const runId = randomString();
         const bundle = {
             authData: {
@@ -101,6 +102,7 @@ describe('actor run finished trigger', (suite) => {
 
         expect(results.length).to.be.eql(1);
         expect(results[0].id).to.be.eql(actorRun.id);
+        expect(results[0]).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
@@ -124,6 +126,6 @@ describe('actors hidden trigger', () => {
         const actorList = await appTester(App.triggers.tasks.operation.perform, bundle);
 
         expect(actorList.length).to.be.at.least(1);
-        actorList.forEach((task) => expect(task).to.have.all.keys(['id', 'name']));
+        actorList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });

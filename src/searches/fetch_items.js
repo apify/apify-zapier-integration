@@ -1,5 +1,6 @@
 const _ = require('underscore');
-const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
+    DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 
@@ -48,7 +49,7 @@ module.exports = {
     noun: 'Dataset Items',
     display: {
         label: 'Fetch Dataset Items',
-        description: 'Download items from a dataset.',
+        description: 'Downloads items from a dataset.',
     },
 
     operation: {
@@ -76,5 +77,7 @@ module.exports = {
         ],
 
         perform: getItems,
+        sample: DATASET_SAMPLE,
+        outputFields: DATASET_OUTPUT_FIELDS,
     },
 };

@@ -13,10 +13,11 @@ const getFallbackActorRuns = async (z, bundle) => {
 
     const { items } = response.json;
 
-    return Promise.map(items, (run) => {
-        // NOTE: We need to attach actId, because simple run object from list doesn't have it.
-        run.actId = bundle.inputData.actorId;
-        return enrichActorRun(z, run);
+    return Promise.map(items, async ({ id }) => {
+        const runResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
+        });
+        return enrichActorRun(z, runResponse.json);
     });
 };
 
@@ -24,8 +25,9 @@ module.exports = {
     key: 'actorRunFinished',
     noun: 'Actor run',
     display: {
-        label: 'Actor Finished',
+        label: 'Actor Run',
         description: 'Triggers whenever a selected actor is run and finished.',
+        important: true,
     },
     operation: {
         inputFields: [

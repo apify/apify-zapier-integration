@@ -17,17 +17,12 @@ const runTask = async (z, bundle) => {
             const parseInput = JSON.parse(rawInput);
             requestOpts.body = parseInput;
         } catch (err) {
-            throw new Error(`Cannot parse JSON value from ${RAW_INPUT_LABEL} field: ${err.message}`);
+            throw new Error(`Please check that your ${RAW_INPUT_LABEL} is a valid JSON.`);
         }
     }
-    const runResponse = await wrapRequestWithRetries(z.request, requestOpts);
+    const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
-    let run = runResponse.json;
-    if (runSync) {
-        run = await enrichActorRun(z, run);
-    }
-
-    return run;
+    return enrichActorRun(z, run);
 };
 
 const getRawInputField = async (z, bundle) => {
@@ -62,7 +57,8 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Run a selected actor task.',
+        description: 'Runs a selected actor task.',
+        important: true,
     },
 
     operation: {

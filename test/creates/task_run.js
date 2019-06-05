@@ -1,6 +1,8 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
+const _ = require('underscore');
 const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask } = require('../helpers');
+const { TASK_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -42,6 +44,7 @@ describe('create task run', () => {
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
 
+        expect(testResult).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
         expect(testResult.datasetItems.length).to.be.at.least(1);
@@ -80,8 +83,9 @@ describe('create task run', () => {
         };
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        expect(testResult).to.have.all.keys(_.without(Object.keys(TASK_RUN_SAMPLE), 'exitCode'));
         expect(testResult.finishedAt).to.be.eql(null);
-    });
+    }).timeout(50000);
 
     it('run legacy crawler and return simplified items work', async () => {
         const bundle = {

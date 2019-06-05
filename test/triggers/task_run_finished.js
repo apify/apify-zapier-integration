@@ -2,6 +2,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
+const { TASK_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -110,6 +111,7 @@ describe('task run finished trigger', () => {
 
         expect(results.length).to.be.eql(1);
         expect(results[0].id).to.be.eql(taskRun.id);
+        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
@@ -135,6 +137,7 @@ describe('task run finished trigger', () => {
 
         expect(results.length).to.be.eql(1);
         expect(results[0].id).to.be.eql(taskRun.id);
+        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItems[0]).to.be.eql(testedResult);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
@@ -159,6 +162,6 @@ describe('tasks hidden trigger', () => {
         const taskList = await appTester(App.triggers.tasks.operation.perform, bundle);
 
         expect(taskList.length).to.be.at.least(1);
-        taskList.forEach((task) => expect(task).to.have.all.keys(['id', 'name']));
+        taskList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });
