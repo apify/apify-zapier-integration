@@ -1,6 +1,7 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
+const { KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
@@ -31,6 +32,7 @@ describe('set key-value store value', () => {
         });
 
         expect(expectedValue).to.be.eql(record.body);
+        expect(testResult).to.include.all.keys(Object.keys(KEY_VALUE_STORE_SAMPLE));
     }).timeout(10000);
 
     it('work for storeId', async () => {

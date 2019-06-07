@@ -17,7 +17,7 @@ describe('search actor last run', () => {
         testActorId = actor.id;
     });
 
-    it('work for task without run', async () => {
+    it('work for actor without run', async () => {
         const bundle = {
             authData: {
                 token: TEST_USER_TOKEN,

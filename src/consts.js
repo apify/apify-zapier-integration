@@ -70,10 +70,10 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'containerUrl', label: 'Container URL', type: 'string' },
 ];
 
-const TASK_RUN_SAMPLE = Object.assign({
+const TASK_RUN_SAMPLE = Object.assign({}, ACTOR_RUN_SAMPLE, {
     actorTaskId: 'UJNG9zau8PEB7U',
     detailsPageUrl: 'https://my.apify.com/tasks/UJNG9zau8PEB7U#/runs/HG7ML7M8z78YcAPEB',
-}, ACTOR_RUN_SAMPLE);
+});
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
@@ -107,6 +107,21 @@ const DATASET_OUTPUT_FIELDS = [
     { key: 'items', label: 'Items' },
     { key: 'itemsFileUrls', label: 'Items file URLs', type: 'string' },
 ];
+
+/**
+ * Example output fields for set key-value store action.
+ */
+const KEY_VALUE_STORE_SAMPLE = {
+    keyValueStore: {
+        id: '98e7lEimuGBDvFfcM',
+        name: 'my-store',
+        userId: 'GWnltczwPrB3uTMal',
+        createdAt: '2019-04-24T09:50:49.930Z',
+        modifiedAt: '2019-05-31T11:56:34.472Z',
+        accessedAt: '2019-05-31T11:56:33.300Z',
+    },
+    keyValueStoreRecordUrl: 'https://api.apify.com/v2/key-value-stores/56e7hEimwGKOvFfcM/records/my-record',
+};
 
 const DEFAULT_KEY_VALUE_STORE_KEYS = [KEY_VALUE_STORE_KEYS.OUTPUT];
 
@@ -146,4 +161,5 @@ module.exports = {
     DEFAULT_ACTOR_MEMORY_MBYTES,
     DATASET_SAMPLE,
     DATASET_OUTPUT_FIELDS,
+    KEY_VALUE_STORE_SAMPLE,
 };

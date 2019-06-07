@@ -43,7 +43,7 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
             },
         },
     });
-    console.log(`Testing task web-scrape with id ${task.id} created`);
+    console.log(`Testing task web-scraper with id ${task.id} created`);
     return task;
 };
 
