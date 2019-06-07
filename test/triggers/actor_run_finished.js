@@ -118,10 +118,10 @@ describe('actor run finished trigger', () => {
                 meta: {},
             };
 
-            const actorList = await appTester(App.triggers.tasks.operation.perform, bundle);
+            const actorList = await appTester(App.triggers.actors.operation.perform, bundle);
 
             expect(actorList.length).to.be.at.least(1);
-            actorList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
+            actorList.forEach((actor) => expect(actor).to.have.all.keys('id', 'name'));
         });
     });
 
