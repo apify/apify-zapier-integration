@@ -32,13 +32,13 @@ describe('actor run finished trigger', () => {
         subscribeData = await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
 
         // Check if webhook is set
-        const taskWebhooks = await apifyClient.acts.listWebhooks({
+        const actorWebhooks = await apifyClient.acts.listWebhooks({
             actId: testActorId,
         });
 
-        expect(taskWebhooks.items.length).to.be.eql(1);
-        expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
-        expect(taskWebhooks.items[0].eventTypes)
+        expect(actorWebhooks.items.length).to.be.eql(1);
+        expect(actorWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
+        expect(actorWebhooks.items[0].eventTypes)
             .to.include.members(['ACTOR.RUN.SUCCEEDED', 'ACTOR.RUN.FAILED', 'ACTOR.RUN.TIMED_OUT', 'ACTOR.RUN.ABORTED'])
             .but.not.include.members(['ACTOR.RUN.CREATED']);
     });
@@ -54,11 +54,11 @@ describe('actor run finished trigger', () => {
         await appTester(App.triggers.actorRunFinished.operation.performUnsubscribe, bundle);
 
         // Check if webhook is not set
-        const taskWebhooks = await apifyClient.acts.listWebhooks({
+        const actorWebhooks = await apifyClient.acts.listWebhooks({
             actId: testActorId,
         });
 
-        expect(taskWebhooks.items.length).to.be.eql(0);
+        expect(actorWebhooks.items.length).to.be.eql(0);
     });
 
     it('perform should return actor run detail', async () => {
