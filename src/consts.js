@@ -108,6 +108,9 @@ const DATASET_OUTPUT_FIELDS = [
     { key: 'itemsFileUrls', label: 'Items file URLs', type: 'string' },
 ];
 
+/**
+ * Example output fields for set key-value store action.
+ */
 const KEY_VALUE_STORE_SAMPLE = {
     keyValueStore: {
         id: '98e7lEimuGBDvFfcM',
