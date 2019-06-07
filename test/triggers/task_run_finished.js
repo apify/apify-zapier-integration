@@ -143,25 +143,25 @@ describe('task run finished trigger', () => {
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
     }).timeout(120000);
 
+    describe('tasks hidden trigger', () => {
+        it('work', async () => {
+            const bundle = {
+                authData: {
+                    token: TEST_USER_TOKEN,
+                },
+                inputData: {},
+                meta: {},
+            };
+
+            const taskList = await appTester(App.triggers.tasks.operation.perform, bundle);
+
+            expect(taskList.length).to.be.at.least(1);
+            taskList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
+        });
+    });
+
     after(async () => {
         await apifyClient.tasks.deleteTask({ taskId: testTaskId });
         await apifyClient.tasks.deleteTask({ taskId: legacyCrawlerTaskId });
-    });
-});
-
-describe('tasks hidden trigger', () => {
-    it('work', async () => {
-        const bundle = {
-            authData: {
-                token: TEST_USER_TOKEN,
-            },
-            inputData: {},
-            meta: {},
-        };
-
-        const taskList = await appTester(App.triggers.tasks.operation.perform, bundle);
-
-        expect(taskList.length).to.be.at.least(1);
-        taskList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });

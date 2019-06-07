@@ -1,3 +1,7 @@
+## 2.1.6 / 2019-06-07
+
+* Thanks Zapier team for a following app review! We fixed all remaining issues in this release.
+
 ## 2.1.5 / 2019-05-31
 
 * Thanks Zapier team for app review! We fixed all comments in this release.

@@ -108,24 +108,24 @@ describe('actor run finished trigger', () => {
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
     }).timeout(240000);
 
+    describe('actors hidden trigger', () => {
+        it('work', async () => {
+            const bundle = {
+                authData: {
+                    token: TEST_USER_TOKEN,
+                },
+                inputData: {},
+                meta: {},
+            };
+
+            const actorList = await appTester(App.triggers.tasks.operation.perform, bundle);
+
+            expect(actorList.length).to.be.at.least(1);
+            actorList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
+        });
+    });
+
     after(async () => {
         await apifyClient.acts.deleteAct({ actId: testActorId });
-    });
-});
-
-describe('actors hidden trigger', () => {
-    it('work', async () => {
-        const bundle = {
-            authData: {
-                token: TEST_USER_TOKEN,
-            },
-            inputData: {},
-            meta: {},
-        };
-
-        const actorList = await appTester(App.triggers.tasks.operation.perform, bundle);
-
-        expect(actorList.length).to.be.at.least(1);
-        actorList.forEach((task) => expect(task).to.have.all.keys('id', 'name'));
     });
 });
