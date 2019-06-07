@@ -30,7 +30,7 @@ module.exports = {
     key: 'taskRunFinished',
     noun: 'Task run',
     display: {
-        label: 'Task Run',
+        label: 'Finished Task Run',
         description: 'Triggers whenever a selected task is run and finished.',
         important: true,
     },

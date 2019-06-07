@@ -1,11 +1,11 @@
-const { APIFY_API_ENDPOINTS } = require('../consts');
+const { APIFY_API_ENDPOINTS, KEY_VALUE_STORE_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getOrCreateKeyValueStore } = require('../apify_helpers');
 
 const setValue = async (z, bundle) => {
     const { storeIdOrName, key, value } = bundle.inputData;
     const store = await getOrCreateKeyValueStore(z, storeIdOrName);
-    const keyValueStoreValueUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`;
+    const keyValueStoreRecordUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`;
 
     let valueObject;
     try {
@@ -15,14 +15,14 @@ const setValue = async (z, bundle) => {
     }
 
     await wrapRequestWithRetries(z.request, {
-        url: keyValueStoreValueUrl,
+        url: keyValueStoreRecordUrl,
         method: 'PUT',
         json: valueObject,
     });
 
     return {
         keyValueStore: store,
-        keyValueStoreValueUrl,
+        keyValueStoreRecordUrl,
     };
 };
 
@@ -31,7 +31,7 @@ module.exports = {
     noun: 'Key-Value Store Value',
     display: {
         label: 'Set Key-Value Store Record',
-        description: 'Saves a record to a key-value store.',
+        description: 'Sets a new or updates an existing record to a key-value store.',
         important: true,
     },
 
@@ -62,5 +62,6 @@ module.exports = {
         ],
 
         perform: setValue,
+        sample: KEY_VALUE_STORE_SAMPLE,
     },
 };

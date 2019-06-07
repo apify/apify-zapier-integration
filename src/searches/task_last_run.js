@@ -48,7 +48,7 @@ module.exports = {
                 key: 'status',
                 required: false,
                 default: ACT_JOB_STATUSES.SUCCEEDED,
-                choices: Object.values(ACT_JOB_STATUSES),
+                choices: ACT_JOB_STATUSES,
             },
         ],
 

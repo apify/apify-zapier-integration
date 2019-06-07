@@ -25,7 +25,7 @@ module.exports = {
     key: 'actorRunFinished',
     noun: 'Actor run',
     display: {
-        label: 'Actor Run',
+        label: 'Finished Actor Run',
         description: 'Triggers whenever a selected actor is run and finished.',
         important: true,
     },

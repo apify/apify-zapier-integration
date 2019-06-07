@@ -49,7 +49,7 @@ module.exports = {
     noun: 'Dataset Items',
     display: {
         label: 'Fetch Dataset Items',
-        description: 'Downloads items from a dataset.',
+        description: 'Fetches items from a dataset.',
     },
 
     operation: {

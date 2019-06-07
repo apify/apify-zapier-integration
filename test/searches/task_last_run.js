@@ -54,6 +54,23 @@ describe('search task last run', () => {
         expect(testResult[0].id).to.be.eql(taskRun.id);
     }).timeout(240000);
 
+
+    it('return empty array if there is no run with status', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                taskId: testTaskId,
+                status: 'TIMING_OUT',
+            },
+        };
+
+        const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
+
+        expect(testResult.length).to.be.eql(0);
+    });
+
     after(async () => {
         await apifyClient.tasks.deleteTask({ taskId: testTaskId });
     });
