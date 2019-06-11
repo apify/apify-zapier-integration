@@ -26,8 +26,9 @@ Login account which has access to Apify app using `zapier login`.
 
 1. Update version of app in package.json.
 2. Deploy new version to zapier using `zapier push`.
-3. Set the version as production using `zapier promote 1.0.0`.
+3. Set the version as production using `zapier promote 1.0.1`.
 4. Migrate users to new version using `zapier migrate 1.0.0 1.0.1 100%`.
 or 
 4. Deprecate old version using `zapier deprecate 1.0.0 2019-05-29`.
 
+You can read more about flow into [Zapier CLI doc](https://github.com/zapier/zapier-platform-cli#promoting-an-app-version).
