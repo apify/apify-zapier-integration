@@ -15,6 +15,8 @@ const createDatasetUrls = (datasetId, cleanParamName) => {
         csv: createDatasetUrl('csv'),
         json: createDatasetUrl('json'),
         xlsx: createDatasetUrl('xlsx'),
+        html: createDatasetUrl('html'),
+        rss: createDatasetUrl('rss'),
     };
 };
 
