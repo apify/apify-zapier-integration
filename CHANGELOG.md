@@ -1,3 +1,9 @@
+## 2.1.7 / 2019-12-19
+
+* Added links to RSS and HTML files to the output of dataset items action
+* Updated integration to run nodejs v10
+* Updated packages (included zapier-platform-core 9.0.0)
+
 ## 2.1.6 / 2019-06-07
 
 * Thanks Zapier team for a following app review! We fixed all remaining issues in this release.

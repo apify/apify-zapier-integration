@@ -1,10 +1,10 @@
 language: node_js
 node_js:
-    - 8.10.0
+    - 10
 before_script:
     - npm install -g zapier-platform-cli
     - npm install
 script:
-    - zapier validate
+    - zapier validate --without-style
     - npm run lint
     - npm run test

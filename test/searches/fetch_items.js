@@ -43,7 +43,7 @@ describe('fetch dataset items', () => {
 
         expect(testResult[0].items.length).to.be.eql(randomItems.length);
         expect(testResult[0]).to.include.all.keys(Object.keys(DATASET_SAMPLE));
-        expect(testResult[0].itemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
+        expect(testResult[0].itemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx', 'html', 'rss');
     }).timeout(120000);
 
     after(async () => {

@@ -46,5 +46,8 @@ module.exports = {
         ],
 
         perform: getValue,
+        sample: {
+            key: 'This is the sample value from key-value store.',
+        },
     },
 };
