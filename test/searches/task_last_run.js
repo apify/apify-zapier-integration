@@ -62,7 +62,7 @@ describe('search task last run', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                status: 'TIMING_OUT',
+                status: 'TIMING-OUT',
             },
         };
 
