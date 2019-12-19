@@ -93,7 +93,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
     if (defaultKeyValueStoreId) {
         const keys = storeKeysToInclude.concat(DEFAULT_KEY_VALUE_STORE_KEYS);
         const keyValueStoreValues = await getValuesFromKeyValueStore(z, defaultKeyValueStoreId, keys);
-        run = Object.assign({}, run, keyValueStoreValues);
+        run = { ...run, ...keyValueStoreValues };
     }
 
     if (defaultDatasetId) {

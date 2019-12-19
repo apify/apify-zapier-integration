@@ -70,10 +70,11 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'containerUrl', label: 'Container URL', type: 'string' },
 ];
 
-const TASK_RUN_SAMPLE = Object.assign({}, ACTOR_RUN_SAMPLE, {
+const TASK_RUN_SAMPLE = {
+    ...ACTOR_RUN_SAMPLE,
     actorTaskId: 'UJNG9zau8PEB7U',
     detailsPageUrl: 'https://my.apify.com/tasks/UJNG9zau8PEB7U#/runs/HG7ML7M8z78YcAPEB',
-});
+};
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
