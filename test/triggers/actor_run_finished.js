@@ -1,4 +1,5 @@
 const zapier = require('zapier-platform-core');
+const Promise = require('bluebird');
 const { expect } = require('chai');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
@@ -84,9 +85,11 @@ describe('actor run finished trigger', () => {
     });
 
     it('performList should return actor runs', async () => {
-        const actorRun = await apifyClient.acts.runAct({
-            actId: testActorId,
-            waitForFinish: 120,
+        const runs = await Promise.mapSeries(new Array(4), () => {
+            return apifyClient.acts.runAct({
+                actId: testActorId,
+                waitForFinish: 120,
+            });
         });
 
         const bundle = {
@@ -100,8 +103,8 @@ describe('actor run finished trigger', () => {
 
         const results = await appTester(App.triggers.actorRunFinished.operation.performList, bundle);
 
-        expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(actorRun.id);
+        expect(results.length).to.be.eql(3);
+        expect(results[0].id).to.be.eql(runs.pop().id);
         expect(results[0]).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);

@@ -1,4 +1,5 @@
 const zapier = require('zapier-platform-core');
+const Promise = require('bluebird');
 const { expect } = require('chai');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
@@ -49,7 +50,7 @@ describe('task run finished trigger', () => {
             .to.include.members(['ACTOR.RUN.SUCCEEDED', 'ACTOR.RUN.FAILED','ACTOR.RUN.TIMED_OUT', 'ACTOR.RUN.ABORTED'])
             .but.not.include.members(['ACTOR.RUN.CREATED']);
 
-    });
+    }).timeout(120000);
 
     it('unsubscribe webhook work', async () => {
         const bundle = {
@@ -92,10 +93,11 @@ describe('task run finished trigger', () => {
     });
 
     it('performList should return task runs', async () => {
-        // Create on task run
-        const taskRun = await apifyClient.tasks.runTask({
-            taskId: testTaskId,
-            waitForFinish: 120,
+        const runs = await Promise.mapSeries(new Array(4), () => {
+            return apifyClient.tasks.runTask({
+                taskId: testTaskId,
+                waitForFinish: 120,
+            });
         });
 
         const bundle = {
@@ -109,8 +111,8 @@ describe('task run finished trigger', () => {
 
         const results = await appTester(App.triggers.taskRunFinished.operation.performList, bundle);
 
-        expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(taskRun.id);
+        expect(results.length).to.be.eql(3);
+        expect(results[0].id).to.be.eql(runs.pop().id);
         expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);

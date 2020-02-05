@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",

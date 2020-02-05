@@ -1,3 +1,4 @@
+const { ACT_JOB_STATUSES } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
@@ -6,7 +7,7 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
     const response = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
         params: {
-            limit: 2,
+            limit: 100,
             desc: true,
         },
     });
@@ -17,8 +18,9 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
     });
 
     const { items } = response.json;
+    const succeededRuns = items.filter((run) => (run.status === ACT_JOB_STATUSES.SUCCEEDED));
 
-    return Promise.map(items, async ({ id }) => {
+    return Promise.map(succeededRuns.slice(0, 3), async ({ id }) => {
         const runResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.json.actId}/runs/${id}`,
         });

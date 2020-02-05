@@ -1,3 +1,7 @@
+## 2.1.8 / 2020-02-05
+
+* Fixed trigger actor/task run, it returns just succeeded runs for samples in setting the trigger.
+
 ## 2.1.7 / 2019-12-19
 
 * Added links to RSS and HTML files to the output of dataset items action
