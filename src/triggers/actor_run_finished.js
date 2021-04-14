@@ -12,14 +12,14 @@ const getFallbackActorRuns = async (z, bundle) => {
         },
     });
 
-    const { items } = response.json;
+    const { items } = response.data;
     const succeededRuns = items.filter((run) => (run.status === ACT_JOB_STATUSES.SUCCEEDED));
 
     return Promise.map(succeededRuns.slice(0, 3), async ({ id }) => {
         const runResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
         });
-        return enrichActorRun(z, runResponse.json);
+        return enrichActorRun(z, runResponse.data);
     });
 };
 

@@ -41,7 +41,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
     });
 
     const totalItemsCount = itemsResponse.getHeader('x-apify-pagination-total');
-    const items = JSON.parse(itemsResponse.content); // NOTE: It looks itemsResponse.json, can not work with json array.
+    const items = JSON.parse(itemsResponse.content);
 
     if (params.limit && totalItemsCount > params.limit) {
         items.push({
@@ -126,7 +126,7 @@ const subscribeWebkook = async (z, bundle, condition) => {
         json: webhookOpts,
     });
 
-    return response.json;
+    return response.data;
 };
 
 // Process to unsubscribe to Apify webhook
@@ -162,7 +162,7 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
             url: `${APIFY_API_ENDPOINTS.keyValueStores}/${storeIdOrName}`,
             method: 'GET',
         });
-        store = storeResponse.json;
+        store = storeResponse.data;
     } catch (err) {
         if (!err.message.includes('not found')) throw err;
     }
@@ -176,7 +176,7 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
                 name: storeIdOrName,
             },
         });
-        store = storeResponse.json;
+        store = storeResponse.data;
     }
     return store;
 };
@@ -211,7 +211,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
     });
 
-    const actor = actorResponse.json;
+    const actor = actorResponse.data;
     const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
     const defaultActorBuildTag = build || BUILD_TAG_LATEST;
 
@@ -224,7 +224,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         const buildResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/builds/${defaultBuild.buildId}`,
         });
-        inputSchema = buildResponse.json && buildResponse.json.inputSchema;
+        inputSchema = buildResponse.data && buildResponse.data.inputSchema;
         if (inputSchema) {
             inputContentType = 'application/json; charset=utf-8';
             inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);

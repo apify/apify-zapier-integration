@@ -20,7 +20,7 @@ const runTask = async (z, bundle) => {
             throw new Error(`Please check that your ${RAW_INPUT_LABEL} is a valid JSON.`);
         }
     }
-    const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
     return enrichActorRun(z, run);
 };
@@ -30,10 +30,10 @@ const getRawInputField = async (z, bundle) => {
     let helpText = 'Here you can enter a JSON object to override the task input configuration. '
     + 'Only the provided fields will be overridden, the rest will be left unchanged.';
 
-    const { json: task } = await wrapRequestWithRetries(z.request, {
+    const { data: task } = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
     });
-    const { json: actor } = await wrapRequestWithRetries(z.request, {
+    const { data: actor } = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
     });
 

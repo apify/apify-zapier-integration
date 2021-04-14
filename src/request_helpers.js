@@ -15,12 +15,14 @@ const includeApiToken = (request, z, bundle) => {
 };
 
 /**
- * Middleware Parses nested data object into response.json
+ * Middleware Parses nested data object into response.data
  */
 const parseDataApiObject = (response) => {
-    response.json = response.json && response.json.data
-        ? response.json.data
-        : response.json;
+    const { data: responseData } = response;
+    if (!responseData) return response;
+    response.data = responseData.data
+        ? responseData.data
+        : responseData;
     return response;
 };
 
@@ -33,6 +35,7 @@ const validateApiResponse = (response) => {
      * NOTE: In case key-value store records request we can skip 404 error
      */
     if (response.request.method === 'GET' && response.request.url.match(/\/records\//) && response.status === 404) {
+        response.skipThrowForStatus = true;
         return response;
     }
 

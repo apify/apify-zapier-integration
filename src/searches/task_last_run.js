@@ -19,9 +19,9 @@ const getLastTaskRun = async (z, bundle) => {
         throw err;
     }
 
-    if (!lastTaskRunResponse.json) return [];
+    if (!lastTaskRunResponse.data) return [];
 
-    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.json);
+    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.data);
     return [enrichRun];
 };
 

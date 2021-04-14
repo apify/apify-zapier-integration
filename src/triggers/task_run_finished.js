@@ -17,14 +17,14 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}`,
     });
 
-    const { items } = response.json;
+    const { items } = response.data;
     const succeededRuns = items.filter((run) => (run.status === ACT_JOB_STATUSES.SUCCEEDED));
 
     return Promise.map(succeededRuns.slice(0, 3), async ({ id }) => {
         const runResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.json.actId}/runs/${id}`,
+            url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.data.actId}/runs/${id}`,
         });
-        return enrichActorRun(z, runResponse.json);
+        return enrichActorRun(z, runResponse.data);
     });
 };
 

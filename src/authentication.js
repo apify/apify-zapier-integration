@@ -12,7 +12,7 @@ const testAuth = async (z) => {
         throw new Error('The API token is not valid.');
     }
 
-    return response.json;
+    return response.data;
 };
 
 module.exports = {

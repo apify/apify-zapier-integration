@@ -13,7 +13,7 @@ const getItems = async (z, bundle) => {
             url: `${APIFY_API_ENDPOINTS.datasets}/${datasetIdOrName}`,
             method: 'GET',
         });
-        dataset = datasetResponse.json;
+        dataset = datasetResponse.data;
     } catch (err) {
         if (!err.message.includes('not found')) throw err;
     }
@@ -27,7 +27,7 @@ const getItems = async (z, bundle) => {
                 name: datasetIdOrName,
             },
         });
-        dataset = storeResponse.json;
+        dataset = storeResponse.data;
     }
 
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
