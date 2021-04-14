@@ -24,7 +24,7 @@ const createDatasetUrls = (datasetId, cleanParamName) => {
  * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
-const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
+const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigger = false) => {
     /**
      * For backwards compatible with old phantomJs crawler we need to use
      * simplified dataset instead of clean.
@@ -43,9 +43,11 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId) => {
     const totalItemsCount = itemsResponse.getHeader('x-apify-pagination-total');
     const items = JSON.parse(itemsResponse.content);
 
-    if (params.limit && totalItemsCount > params.limit) {
+    // TODO: Add limit and skip options into triggers input and remove this warning.
+    if (runFromTrigger && params.limit && totalItemsCount > params.limit) {
         items.push({
-            warning: `Some items were omitted! The maximum number of items you can get is ${params.limit}`,
+            warning: `Some items were omitted! The maximum number of items you can get is ${params.limit}. `
+                + 'If you want to get more items you need to add action "Fetch Dataset Items" with run.defaultDatasetId with dataset ID set.',
         });
     }
 
@@ -99,7 +101,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
     }
 
     if (defaultDatasetId) {
-        const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId);
+        const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId, true);
         run.datasetItems = datasetItems.items;
         run.datasetItemsFileUrls = datasetItems.itemsFileUrls;
     }
