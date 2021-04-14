@@ -46,7 +46,6 @@ const validateApiResponse = (response) => {
     if (response.status >= 500) throw new RetryableError(GENERIC_UNHANDLED_ERROR_MESSAGE);
     if (response.status === 429) throw new RetryableError('Exceeded rate limit for Apify API. Please try again later.');
 
-
     if (response.status >= 300) {
         let errorInfo;
         try {

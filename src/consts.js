@@ -139,7 +139,6 @@ const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId'];
 // Field to pick from dataset detail
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
 
-
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
 
 // List of allowed memory for actor run 128, 256, 512 ..

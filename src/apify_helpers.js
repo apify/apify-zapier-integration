@@ -231,7 +231,6 @@ const getActorAdditionalFields = async (z, bundle) => {
         }
     }
 
-
     // Parse and stringify json input body if there is
     if (actor.exampleRunInput && !inputSchema) {
         const { body, contentType } = actor.exampleRunInput;

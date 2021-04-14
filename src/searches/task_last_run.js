@@ -3,7 +3,6 @@ const { TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-
 const getLastTaskRun = async (z, bundle) => {
     const { taskId, status } = bundle.inputData;
     let lastTaskRunResponse;

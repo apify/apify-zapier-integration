@@ -3,7 +3,6 @@ const { ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = requi
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-
 const getLastActorRun = async (z, bundle) => {
     const { actorId, status } = bundle.inputData;
     let lastActorRunResponse;
