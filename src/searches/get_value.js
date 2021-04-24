@@ -15,9 +15,9 @@ const getValue = async (z, bundle) => {
         return [];
     }
 
-    if (!recordResponse.json) throw new Error('The value is not JSON object.');
+    if (!recordResponse.data) throw new Error('The value is not JSON object.');
 
-    return [recordResponse.json];
+    return [recordResponse.data];
 };
 
 module.exports = {

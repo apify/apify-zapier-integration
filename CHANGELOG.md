@@ -1,3 +1,11 @@
+## 2.1.9 / 2021-04-14
+
+* Updated packages dependencies
+* Updated node to v12
+* Fixes regarding migration zapier-platform-core from v9 to v10, see [changelog](https://github.com/zapier/zapier-platform/blob/master/CHANGELOG.md#1000).
+* Migrated from travis into github actions
+* Fixed warning regarding omitted items from dataset
+
 ## 2.1.8 / 2020-02-05
 
 * Fixed trigger actor/task run, it returns just succeeded runs for samples in setting the trigger.

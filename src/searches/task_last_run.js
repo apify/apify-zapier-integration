@@ -3,7 +3,6 @@ const { TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-
 const getLastTaskRun = async (z, bundle) => {
     const { taskId, status } = bundle.inputData;
     let lastTaskRunResponse;
@@ -19,9 +18,9 @@ const getLastTaskRun = async (z, bundle) => {
         throw err;
     }
 
-    if (!lastTaskRunResponse.json) return [];
+    if (!lastTaskRunResponse.data) return [];
 
-    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.json);
+    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.data);
     return [enrichRun];
 };
 

@@ -10,7 +10,7 @@ const getTaskList = async (z, bundle) => {
             offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
         },
     });
-    return taskListResponse.json.items.map((task) => ({
+    return taskListResponse.data.items.map((task) => ({
         id: task.id,
         name: task.actUsername ? `${task.name} (${task.actUsername}/${task.actName})` : `${task.name} (${task.actName})`,
     }));

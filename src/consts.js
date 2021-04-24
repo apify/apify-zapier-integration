@@ -49,6 +49,8 @@ const ACTOR_RUN_SAMPLE = {
     },
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
     detailsPageUrl: 'https://my.apify.com/actors/$actId#/runs/HG7ML7M8z78YcAPEB',
+    // NOTE: This object should not be there, removed once it is fixed in Apify API.
+    runtime: {},
 };
 
 const ACTOR_RUN_OUTPUT_FIELDS = [
@@ -136,7 +138,6 @@ const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId'];
 
 // Field to pick from dataset detail
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
-
 
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
 

@@ -11,7 +11,7 @@ const getActorList = async (z, bundle) => {
             offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
         },
     });
-    return actorListResponse.json.items.map((actor) => ({
+    return actorListResponse.data.items.map((actor) => ({
         id: actor.id,
         name: actor.username ? `${actor.username}/${actor.name}` : actor.name,
     }));

@@ -32,7 +32,7 @@ const runActor = async (z, bundle) => {
         requestOpts.body = inputBody;
     }
 
-    const { json: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
     return enrichActorRun(z, run);
 };
