@@ -1,3 +1,7 @@
+## 2.1.10 / 2021-04-26
+
+* Updated apify-client package to 0.6.0
+
 ## 2.1.9 / 2021-04-14
 
 * Updated packages dependencies

@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
@@ -16,7 +16,7 @@
     "npm": ">=5.6.0"
   },
   "dependencies": {
-    "apify-client": "^0.5.26",
+    "apify-client": "^0.6.0",
     "apify-shared": "^0.7.5",
     "bluebird": "^3.7.2",
     "underscore": "^1.13.0",
