@@ -1,3 +1,7 @@
+## 2.1.13 / 2021-04-27
+
+* Fixed authentication errors
+
 ## 2.1.12 / 2021-04-27
 
 * Added underscore package back to package.json to avoid using v0.13.1, which cause issue with importing package on Zapier platform.
