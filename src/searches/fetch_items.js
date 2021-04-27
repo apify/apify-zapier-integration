@@ -1,4 +1,4 @@
-const _ = require('underscore');
+const _ = require('lodash');
 const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');

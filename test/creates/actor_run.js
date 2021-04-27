@@ -1,6 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
-const _ = require('underscore');
+const _ = require('lodash');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
@@ -45,7 +45,7 @@ describe('create actor run', () => {
         };
 
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
-        const fieldsByKey = _.indexBy(fields, 'key');
+        const fieldsByKey = _.keyBy(fields, 'key');
 
         expect(actorFields.defaultRunOptions.build).to.be.eql(fieldsByKey.build.default);
         expect(actorFields.defaultRunOptions.timeoutSecs).to.be.eql(fieldsByKey.timeoutSecs.default);

@@ -1,5 +1,5 @@
 const Promise = require('bluebird');
-const _ = require('underscore');
+const _ = require('lodash');
 const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('apify-shared/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
