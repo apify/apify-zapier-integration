@@ -1,3 +1,15 @@
+## 2.1.13 / 2021-04-27
+
+* Fixed authentication errors
+
+## 2.1.12 / 2021-04-27
+
+* Added underscore package back to package.json to avoid using v0.13.1, which cause issue with importing package on Zapier platform.
+
+## 2.1.11 / 2021-04-26
+
+* Migrate from underscore into lodash package
+
 ## 2.1.10 / 2021-04-26
 
 * Updated apify-client package to 0.6.0

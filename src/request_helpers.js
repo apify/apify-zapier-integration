@@ -30,7 +30,7 @@ const parseDataApiObject = (response) => {
  * This middleware log each bad response from Apify API.
  * It uses RetryableError to retry bad responses from Apify API.
  */
-const validateApiResponse = (response) => {
+const validateApiResponse = (response, z) => {
     /**
      * NOTE: In case key-value store records request we can skip 404 error
      */
@@ -54,6 +54,20 @@ const validateApiResponse = (response) => {
             // This can be ignored
         }
         const errorMessage = errorInfo && errorInfo.error ? errorInfo.error.message : GENERIC_UNHANDLED_ERROR_MESSAGE;
+
+        // Handle invalid token errors
+        if (errorInfo
+            && errorInfo.error
+            && errorInfo.error.type
+            && (errorInfo.error.type === 'token-not-found' || errorInfo.error.type === 'user-or-token-not-found')) {
+            throw new z.errors.Error(
+                // This message is surfaced to the user
+                errorMessage,
+                'AuthenticationError',
+                response.status,
+            );
+        }
+
         throw new Error(errorMessage);
     }
 

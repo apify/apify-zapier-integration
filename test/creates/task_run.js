@@ -1,6 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
-const _ = require('underscore');
+const _ = require('lodash');
 const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask } = require('../helpers');
 const { TASK_RUN_SAMPLE } = require('../../src/consts');
 
