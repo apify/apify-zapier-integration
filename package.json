@@ -12,7 +12,7 @@
     "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
-    "node": "12.21.0",
+    "node": "14",
     "npm": ">=5.6.0"
   },
   "dependencies": {
