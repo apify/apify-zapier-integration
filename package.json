@@ -21,7 +21,7 @@
     "bluebird": "^3.7.2",
     "lodash": "^4.17.21",
     "underscore": "^1.13.1",
-    "zapier-platform-core": "^11.0.1"
+    "zapier-platform-core": "11.0.1"
   },
   "devDependencies": {
     "chai": "^4.3.4",
