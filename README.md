@@ -1,5 +1,4 @@
 # Zapier Apify Integration
-<a href="https://travis-ci.com/apifytech/apify-zapier-integration?branch=master"><img src="https://travis-ci.com/apifytech/apify-zapier-integration.svg?branch=master" alt="Build Status" style="display:inherit;"></a>
 
 The Apify integration to Zapier allows you to connect Apify platform with 600+ app.
 
