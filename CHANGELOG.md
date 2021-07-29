@@ -1,3 +1,8 @@
+## 2.1.14 / 2021-07-29
+
+* Updated dependencies
+* Updated into node v14
+
 ## 2.1.13 / 2021-04-27
 
 * Fixed authentication errors
