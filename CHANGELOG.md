@@ -1,4 +1,4 @@
-## 2.1.14 / 2021-07-29
+## 2.1.15 / 2021-08-11
 
 * Updated dependencies
 * Updated into node v14
