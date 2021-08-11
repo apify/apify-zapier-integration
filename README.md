@@ -2,35 +2,27 @@
 
 The Apify integration to Zapier allows you to connect Apify platform with 600+ app.
 
-## How it works
+## Resources
 
-You can follow [Apify integration](https://zapier.com/apps/Apify/integrations) page on Zapier platform.
+* [Apify documentation](https://docs.apify.com/tutorials/integrations#get-started)
+* [Getting started tutorial](https://help.apify.com/en/articles/3034235-getting-started-with-apify-integration-for-zapier)
+* [Apify integration](https://zapier.com/apps/Apify/integrations) page on Zapier platform
 
 
 ## Development
 
+If you are interested in adding a new feature or fixing a bug in the integration, feel free to open a pull request.
+
 ### Tests
 
-You need to specify your Apify API token before you run tests.
-You can do in root dir using file `.env`.
+You will need your Apify API token before you run tests.
+You can find the token [on the Integrations page of your Apify account](https://my.apify.com/account#/integrations).
+Run this command to test the app:
 ```text
-TEST_USER_TOKEN=your_api_token
+TEST_USER_TOKEN=your_token npm run test TEST_USER_TOKEN=your_api_token
 ```
-You can set up an environment variable `TEST_USER_TOKEN=your_token npm run test`.
-Then you can run tests using command `npm run test`.
 
-### Deploy
+### Release
 
-Login account which has access to Apify app using `zapier login`.
-
-1. Update version of app in package.json.
-2. Deploy new version to zapier using `zapier push`.
-   -> Pushes zapier app with version from package.json into zapier platform
-3. Set the version as production using `zapier promote 1.0.1`.
-   -> Makes the app version default on Zapier platform
-4. Migrate users to new version using `zapier migrate 1.0.0 1.0.1 100%`.
-    -> Migrates users from the version into new version.
-or
-4. Deprecate old version using `zapier deprecate 1.0.0 2019-05-29`.
-
-You can read more about flow into [Zapier CLI doc](https://github.com/zapier/zapier-platform-cli#promoting-an-app-version).
+New versions should be released using the [Zapier CLI](https://github.com/zapier/zapier-platform-cli#promoting-an-app-version).
+Only Apify team members can deploy new versions, and there is a [document in Notion on how to do it](https://www.notion.so/apify/Zapier-integration-f6f60d2a830b4bd79ffd2212d0c1566b).
