@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "2.1.13",
+  "version": "2.1.14",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
@@ -12,7 +12,7 @@
     "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
-    "node": "12.21.0",
+    "node": "14",
     "npm": ">=5.6.0"
   },
   "dependencies": {
@@ -20,16 +20,16 @@
     "apify-shared": "^0.7.5",
     "bluebird": "^3.7.2",
     "lodash": "^4.17.21",
-    "underscore": "^1.12.0",
-    "zapier-platform-core": "10.2.0"
+    "underscore": "^1.13.1",
+    "zapier-platform-core": "11.0.1"
   },
   "devDependencies": {
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.24.0",
+    "eslint": "^7.31.0",
     "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-promise": "^5.1.0",
-    "mocha": "^5.2.0"
+    "mocha": "^9.0.3"
   }
 }
