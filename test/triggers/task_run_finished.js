@@ -117,7 +117,7 @@ describe('task run finished trigger', () => {
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
-    }).timeout(120000);
+    }).timeout(180000);
 
     it('performList should return task runs (legacy crawler)', async () => {
         // Create on task run
