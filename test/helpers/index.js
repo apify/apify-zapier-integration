@@ -32,13 +32,12 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
                             url: 'https://apify.com',
                         },
                     ],
-                    useRequestQueue: true,
-                    linkSelector: 'a',
+                    useRequestQueue: false,
                     pageFunction,
                     proxyConfiguration: {
                         useApifyProxy: false,
                     },
-                    maxPagesPerCrawl: 2,
+                    maxPagesPerCrawl: 1,
                 }),
             },
         },
@@ -94,9 +93,64 @@ const createAndBuildActor = async () => {
                 {
                     versionNumber: '0.0',
                     envVars: [],
-                    sourceType: 'SOURCE_CODE',
-                    baseDockerImage: 'apify/actor-node-basic',
-                    sourceCode,
+                    sourceType: 'SOURCE_FILES',
+                    sourceFiles: [
+                        {
+                            name: 'main.js',
+                            format: 'TEXT',
+                            content: sourceCode,
+                        },
+                        {
+                            name: 'package.json',
+                            format: 'TEXT',
+                            content: `{
+                            "name": "apify-project",
+                            "version": "0.0.1",
+                            "description": "",
+                            "author": "It's not you it's me",
+                            "license": "ISC",
+                            "dependencies": {
+                                "apify": "0.22.4"
+                            },
+                            "scripts": {
+                                "start": "node main.js"
+                            }
+                        }`,
+                        },
+                        {
+                            name: 'Dockerfile',
+                            format: 'TEXT',
+                            content: `# This is a template for a Dockerfile used to run acts in Actor system.
+                        # The base image name below is set during the act build, based on user settings.
+                        # IMPORTANT: The base image must set a correct working directory, such as /usr/src/app or /home/user
+                        FROM apify/actor-node-basic
+
+                        # Second, copy just package.json and package-lock.json since it should be
+                        # the only file that affects "npm install" in the next step, to speed up the build
+                        COPY package*.json ./
+
+                        # Install NPM packages, skip optional and development dependencies to
+                        # keep the image small. Avoid logging too much and print the dependency
+                        # tree for debugging
+                        RUN npm --quiet set progress=false \
+                         && npm install --only=prod --no-optional \
+                         && echo "Installed NPM packages:" \
+                         && (npm list --all || true) \
+                         && echo "Node.js version:" \
+                         && node --version \
+                         && echo "NPM version:" \
+                         && npm --version
+
+                        # Copy source code to container
+                        # Do this in the last step, to have fast build if only the source code changed
+                        COPY  . ./
+
+                        # NOTE: The CMD is already defined by the base image.
+                        # Uncomment this for local node inspector debugging:
+                        # CMD [ "node", "--inspect=0.0.0.0:9229", "main.js" ]
+                        `,
+                        },
+                    ],
                     buildTag: 'latest',
                 },
             ],
