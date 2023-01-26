@@ -5,3 +5,5 @@ node_modules
 .environment
 .env
 .idea
+.vscode
+.DS_Store
