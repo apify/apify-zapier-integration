@@ -34,9 +34,6 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
                     ],
                     useRequestQueue: false,
                     pageFunction,
-                    proxyConfiguration: {
-                        useApifyProxy: false,
-                    },
                     maxPagesPerCrawl: 1,
                 }),
             },
