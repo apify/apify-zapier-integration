@@ -1,4 +1,4 @@
-## 2.1.17 / 2023-05-23
+## 2.1.18 / 2023-05-23
 
 * Update node to v16
 * Update packages
