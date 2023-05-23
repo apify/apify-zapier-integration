@@ -1,3 +1,8 @@
+## 2.1.16 / 2023-05-15
+
+* Fix tests
+* Updated sample run object to reflect Apify API changes
+
 ## 2.1.15 / 2021-08-11
 
 * Updated dependencies

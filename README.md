@@ -19,7 +19,7 @@ You will need your Apify API token before you run tests.
 You can find the token [on the Integrations page of your Apify account](https://my.apify.com/account#/integrations).
 Run this command to test the app:
 ```text
-TEST_USER_TOKEN=your_token npm run test TEST_USER_TOKEN=your_api_token
+TEST_USER_TOKEN=apify_api_token npm run test
 ```
 
 ### Release
