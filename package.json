@@ -12,7 +12,7 @@
     "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
-    "node": "14",
+    "node": "16",
     "npm": ">=5.6.0"
   },
   "dependencies": {
@@ -20,7 +20,6 @@
     "apify-shared": "^0.7.5",
     "bluebird": "^3.7.2",
     "lodash": "^4.17.21",
-    "underscore": "^1.12.0",
     "zapier-platform-core": "11.0.1"
   },
   "devDependencies": {
