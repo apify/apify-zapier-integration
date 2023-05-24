@@ -1,3 +1,8 @@
+## 2.1.18 / 2023-05-23
+
+* Update node to v16
+* Update packages
+
 ## 2.1.16 / 2023-05-15
 
 * Fix tests
