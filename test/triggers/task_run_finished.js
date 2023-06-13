@@ -108,7 +108,7 @@ describe('task run finished trigger', () => {
 
         expect(results.length).to.be.eql(3);
         expect(results[0].id).to.be.eql(runs.pop().id);
-        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
+        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
