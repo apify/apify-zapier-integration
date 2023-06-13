@@ -1,4 +1,7 @@
-const { KEY_VALUE_STORE_KEYS, ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES } } = require('apify-shared/consts');
+const {
+    KEY_VALUE_STORE_KEYS,
+    ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES },
+} = require('@apify/consts');
 
 /**
  * Get paths of Apify API from apify-client

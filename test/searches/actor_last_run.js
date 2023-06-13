@@ -1,5 +1,5 @@
 const zapier = require('zapier-platform-core');
-const { ACT_JOB_STATUSES } = require('apify-shared/consts');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
 const { apifyClient,  TEST_USER_TOKEN, createAndBuildActor } = require('../helpers');
 
@@ -24,7 +24,7 @@ describe('search actor last run', () => {
             },
             inputData: {
                 actorId: testActorId,
-                status: ACT_JOB_STATUSES.SUCCEEDED,
+                status: ACTOR_JOB_STATUSES.SUCCEEDED,
             },
         };
 
@@ -40,7 +40,7 @@ describe('search actor last run', () => {
             },
             inputData: {
                 actorId: testActorId,
-                status: ACT_JOB_STATUSES.SUCCEEDED,
+                status: ACTOR_JOB_STATUSES.SUCCEEDED,
             },
         };
 
@@ -51,7 +51,7 @@ describe('search actor last run', () => {
 
         const testResult = await appTester(App.searches.searchActorRun.operation.perform, bundle);
 
-        expect(testResult[0].status).to.be.eql(ACT_JOB_STATUSES.SUCCEEDED);
+        expect(testResult[0].status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
         expect(testResult[0].id).to.be.eql(actorRun.id);
     }).timeout(240000);
 

@@ -1,4 +1,4 @@
-const { ACT_JOB_STATUSES } = require('apify-shared/consts');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
@@ -18,7 +18,7 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
     });
 
     const { items } = response.data;
-    const succeededRuns = items.filter((run) => (run.status === ACT_JOB_STATUSES.SUCCEEDED));
+    const succeededRuns = items.filter((run) => (run.status === ACTOR_JOB_STATUSES.SUCCEEDED));
 
     return Promise.map(succeededRuns.slice(0, 3), async ({ id }) => {
         const runResponse = await wrapRequestWithRetries(z.request, {

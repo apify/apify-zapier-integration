@@ -1,4 +1,4 @@
-const { ME_USER_NAME_PLACEHOLDER } = require('apify-shared/consts');
+const { ME_USER_NAME_PLACEHOLDER } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 

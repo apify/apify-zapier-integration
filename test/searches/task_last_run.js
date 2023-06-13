@@ -1,5 +1,5 @@
 const zapier = require('zapier-platform-core');
-const { ACT_JOB_STATUSES } = require('apify-shared/consts');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
 const { apifyClient, createWebScraperTask, TEST_USER_TOKEN } = require('../helpers');
 
@@ -23,7 +23,7 @@ describe('search task last run', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                status: ACT_JOB_STATUSES.SUCCEEDED,
+                status: ACTOR_JOB_STATUSES.SUCCEEDED,
             },
         };
 
@@ -39,7 +39,7 @@ describe('search task last run', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                status: ACT_JOB_STATUSES.SUCCEEDED,
+                status: ACTOR_JOB_STATUSES.SUCCEEDED,
             },
         };
 
@@ -50,7 +50,7 @@ describe('search task last run', () => {
 
         const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
 
-        expect(testResult[0].status).to.be.eql(ACT_JOB_STATUSES.SUCCEEDED);
+        expect(testResult[0].status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
         expect(testResult[0].id).to.be.eql(taskRun.id);
     }).timeout(240000);
 

@@ -16,8 +16,9 @@
     "npm": ">=5.6.0"
   },
   "dependencies": {
-    "apify-client": "^0.6.0",
-    "apify-shared": "^0.7.5",
+    "@apify/consts": "^2.15.0",
+    "@apify/utilities": "^2.7.4",
+    "apify-client": "^2.7.1",
     "bluebird": "^3.7.2",
     "lodash": "^4.17.21",
     "underscore": "^1.12.0",
