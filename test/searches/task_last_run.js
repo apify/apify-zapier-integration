@@ -43,9 +43,8 @@ describe('search task last run', () => {
             },
         };
 
-        const taskRun = await apifyClient.tasks.runTask({
-            taskId: testTaskId,
-            waitForFinish: 120,
+        const taskRun = await apifyClient.task(testTaskId).call({
+            waitSecs: 120,
         });
 
         const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
@@ -72,6 +71,6 @@ describe('search task last run', () => {
     });
 
     after(async () => {
-        await apifyClient.tasks.deleteTask({ taskId: testTaskId });
+        await apifyClient.task(testTaskId).delete();
     });
 });

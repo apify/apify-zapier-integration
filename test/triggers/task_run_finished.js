@@ -40,9 +40,7 @@ describe('task run finished trigger', () => {
         subscribeData = await appTester(App.triggers.taskRunFinished.operation.performSubscribe, bundle);
 
         // Check if webhook is set
-        const taskWebhooks = await apifyClient.tasks.listWebhooks({
-            taskId: testTaskId,
-        });
+        const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
 
         expect(taskWebhooks.items.length).to.be.eql(1);
         expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -63,9 +61,7 @@ describe('task run finished trigger', () => {
         await appTester(App.triggers.taskRunFinished.operation.performUnsubscribe, bundle);
 
         // Check if webhook is not set
-        const taskWebhooks = await apifyClient.tasks.listWebhooks({
-            taskId: testTaskId,
-        });
+        const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
 
         expect(taskWebhooks.items.length).to.be.eql(0);
     });
@@ -94,9 +90,8 @@ describe('task run finished trigger', () => {
 
     it('performList should return task runs', async () => {
         const runs = await Promise.mapSeries(new Array(4), () => {
-            return apifyClient.tasks.runTask({
-                taskId: testTaskId,
-                waitForFinish: 120,
+            return apifyClient.task(testTaskId).call({
+                waitSecs: 120,
             });
         });
 
@@ -121,9 +116,8 @@ describe('task run finished trigger', () => {
 
     it('performList should return task runs (legacy crawler)', async () => {
         // Create on task run
-        const taskRun = await apifyClient.tasks.runTask({
-            taskId: legacyCrawlerTaskId,
-            waitForFinish: 120,
+        const taskRun = await apifyClient.task(legacyCrawlerTaskId).call({
+            waitSecs: 120,
         });
 
         const bundle = {
@@ -163,7 +157,7 @@ describe('task run finished trigger', () => {
     });
 
     after(async () => {
-        await apifyClient.tasks.deleteTask({ taskId: testTaskId });
-        await apifyClient.tasks.deleteTask({ taskId: legacyCrawlerTaskId });
+        await apifyClient.task(testTaskId).delete();
+        await apifyClient.task(legacyCrawlerTaskId).delete();
     });
 });

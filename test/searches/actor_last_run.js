@@ -1,7 +1,7 @@
 const zapier = require('zapier-platform-core');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
-const { apifyClient,  TEST_USER_TOKEN, createAndBuildActor } = require('../helpers');
+const { apifyClient, TEST_USER_TOKEN, createAndBuildActor } = require('../helpers');
 
 const App = require('../../index');
 
@@ -10,7 +10,7 @@ const appTester = zapier.createAppTester(App);
 describe('search actor last run', () => {
     let testActorId;
 
-    before(async function() {
+    before(async function () {
         this.timeout(120000); // We need time to build actor
         // Create actor for testing
         const actor = await createAndBuildActor();
@@ -44,10 +44,7 @@ describe('search actor last run', () => {
             },
         };
 
-        const actorRun = await apifyClient.acts.runAct({
-            actId: testActorId,
-            waitForFinish: 120,
-        });
+        const actorRun = await apifyClient.actor(testActorId).call({ waitSecs: 120 });
 
         const testResult = await appTester(App.searches.searchActorRun.operation.perform, bundle);
 
@@ -56,6 +53,6 @@ describe('search actor last run', () => {
     }).timeout(240000);
 
     after(async () => {
-        await apifyClient.acts.deleteAct({ actId: testActorId });
+        await apifyClient.actor(testActorId).delete();
     });
 });

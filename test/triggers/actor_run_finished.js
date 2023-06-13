@@ -33,9 +33,7 @@ describe('actor run finished trigger', () => {
         subscribeData = await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
 
         // Check if webhook is set
-        const actorWebhooks = await apifyClient.acts.listWebhooks({
-            actId: testActorId,
-        });
+        const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
 
         expect(actorWebhooks.items.length).to.be.eql(1);
         expect(actorWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -55,9 +53,7 @@ describe('actor run finished trigger', () => {
         await appTester(App.triggers.actorRunFinished.operation.performUnsubscribe, bundle);
 
         // Check if webhook is not set
-        const actorWebhooks = await apifyClient.acts.listWebhooks({
-            actId: testActorId,
-        });
+        const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list()
 
         expect(actorWebhooks.items.length).to.be.eql(0);
     });
@@ -86,9 +82,8 @@ describe('actor run finished trigger', () => {
 
     it('performList should return actor runs', async () => {
         const runs = await Promise.mapSeries(new Array(4), () => {
-            return apifyClient.acts.runAct({
-                actId: testActorId,
-                waitForFinish: 120,
+            return apifyClient.actor(testActorId).call({
+                waitSecs: 120,
             });
         });
 
@@ -129,6 +124,6 @@ describe('actor run finished trigger', () => {
     });
 
     after(async () => {
-        await apifyClient.acts.deleteAct({ actId: testActorId });
+        await apifyClient.actor(testActorId).delete();
     });
 });

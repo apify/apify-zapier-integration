@@ -44,7 +44,7 @@ describe('create task run', () => {
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
 
-        expect(testResult).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
+        expect(testResult).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
         expect(testResult.datasetItems.length).to.be.at.least(1);
@@ -103,8 +103,8 @@ describe('create task run', () => {
     }).timeout(240000);
 
     after(async () => {
-        await apifyClient.tasks.deleteTask({ taskId: testTask1Id });
-        await apifyClient.tasks.deleteTask({ taskId: testTask2Id });
-        await apifyClient.tasks.deleteTask({ taskId: testTask3Id });
+        await Promise.all(
+            [testTask1Id, testTask2Id, testTask3Id].map((taskId) => apifyClient.task(taskId).delete()),
+        );
     });
 });

@@ -26,17 +26,14 @@ describe('set key-value store value', () => {
 
         const testResult = await appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle);
 
-        const record = await apifyClient.keyValueStores.getRecord({
-            storeId: testResult.keyValueStore.id,
-            key: expectedKey,
-        });
+        const record = await apifyClient.keyValueStore(testResult.keyValueStore.id).getRecord(expectedKey);
 
-        expect(expectedValue).to.be.eql(record.body);
+        expect(expectedValue).to.be.eql(record.value);
         expect(testResult).to.include.all.keys(Object.keys(KEY_VALUE_STORE_SAMPLE));
     }).timeout(10000);
 
     it('work for storeId', async () => {
-        const store = await apifyClient.keyValueStores.getOrCreateStore({ storeName: `test-zapier-${randomString()}` });
+        const store = await apifyClient.keyValueStores().getOrCreate(`test-zapier-${randomString()}`);
         const expectedKey = randomString();
         const expectedValue = {
             myKey: randomString(),
@@ -54,13 +51,10 @@ describe('set key-value store value', () => {
 
         await appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle);
 
-        const record = await apifyClient.keyValueStores.getRecord({
-            storeId: store.id,
-            key: expectedKey,
-        });
+        const record = await apifyClient.keyValueStore(store.id).getRecord(expectedKey);
 
-        expect(expectedValue).to.be.eql(record.body);
+        expect(expectedValue).to.be.eql(record.value);
 
-        await apifyClient.keyValueStores.deleteStore({ storeId: store.id });
+        await apifyClient.keyValueStore(store.id).delete();
     }).timeout(10000);
 });

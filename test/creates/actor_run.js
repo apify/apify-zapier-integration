@@ -30,10 +30,7 @@ describe('create actor run', () => {
                 body: JSON.stringify({ myField: 'myValue' }),
             },
         };
-        await apifyClient.acts.updateAct({
-            actId: testActorId,
-            act: actorFields,
-        });
+        await apifyClient.actor(testActorId).update(actorFields);
 
         const bundle = {
             authData: {
@@ -66,9 +63,9 @@ describe('create actor run', () => {
                 actorId,
             },
         };
-        const actor = await apifyClient.acts.getAct({ actId: actorId });
+        const actor = await apifyClient.actor(actorId).get();
         const { buildId } = actor.taggedBuilds[actor.defaultRunOptions.build];
-        const { inputSchema } = await apifyClient.acts.getBuild({ actId: actorId, buildId });
+        const { inputSchema } = await apifyClient.build(buildId).get();
 
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
 
@@ -92,7 +89,7 @@ describe('create actor run', () => {
         };
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
-        const actorRun = await apifyClient.acts.getRun({ actId: testActorId, runId: testResult.id });
+        const actorRun = await apifyClient.run(testResult.id).get();
 
         expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(testResult.status).to.be.eql('SUCCEEDED');
@@ -122,6 +119,6 @@ describe('create actor run', () => {
     }).timeout(50000);
 
     after(async () => {
-        await apifyClient.acts.deleteAct({ actId: testActorId });
+        await apifyClient.actor(testActorId).delete();
     });
 });
