@@ -24,6 +24,7 @@ const createDatasetUrls = (datasetId, cleanParamName) => {
  * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
+// eslint-disable-next-line default-param-last
 const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigger = false) => {
     /**
      * For backwards compatible with old phantomJs crawler we need to use

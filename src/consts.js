@@ -169,8 +169,10 @@ const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCo
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
 
 // List of allowed memory for actor run 128, 256, 512 ..
-const ALLOWED_MEMORY_MBYTES_LIST = Array.from(Array(Math.log2(MAX_RUN_MEMORY_MBYTES / MIN_RUN_MEMORY_MBYTES) + 1),
-    (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i));
+const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
+    Array(Math.log2(MAX_RUN_MEMORY_MBYTES / MIN_RUN_MEMORY_MBYTES) + 1),
+    (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i),
+);
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
