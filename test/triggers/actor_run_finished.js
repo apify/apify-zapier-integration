@@ -1,5 +1,4 @@
 const zapier = require('zapier-platform-core');
-const Promise = require('bluebird');
 const { expect } = require('chai');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
@@ -33,9 +32,7 @@ describe('actor run finished trigger', () => {
         subscribeData = await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
 
         // Check if webhook is set
-        const actorWebhooks = await apifyClient.acts.listWebhooks({
-            actId: testActorId,
-        });
+        const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
 
         expect(actorWebhooks.items.length).to.be.eql(1);
         expect(actorWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -55,9 +52,7 @@ describe('actor run finished trigger', () => {
         await appTester(App.triggers.actorRunFinished.operation.performUnsubscribe, bundle);
 
         // Check if webhook is not set
-        const actorWebhooks = await apifyClient.acts.listWebhooks({
-            actId: testActorId,
-        });
+        const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
 
         expect(actorWebhooks.items.length).to.be.eql(0);
     });
@@ -85,13 +80,13 @@ describe('actor run finished trigger', () => {
     });
 
     it('performList should return actor runs', async () => {
-        const runs = await Promise.mapSeries(new Array(4), () => {
-            return apifyClient.acts.runAct({
-                actId: testActorId,
-                waitForFinish: 120,
+        const runs = [];
+        for (let i = 0; i < 4; i++) {
+            const run = await apifyClient.actor(testActorId).call({
+                waitSecs: 120,
             });
-        });
-
+            runs.push(run);
+        }
         const bundle = {
             authData: {
                 token: TEST_USER_TOKEN,
@@ -129,6 +124,6 @@ describe('actor run finished trigger', () => {
     });
 
     after(async () => {
-        await apifyClient.acts.deleteAct({ actId: testActorId });
+        await apifyClient.actor(testActorId).delete();
     });
 });

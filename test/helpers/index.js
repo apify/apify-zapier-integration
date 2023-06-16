@@ -1,4 +1,4 @@
-const ApifyClient = require('apify-client');
+const { ApifyClient } = require('apify-client');
 const zapier = require('zapier-platform-core');
 
 const DEFAULT_PAGE_FUNCTION = `
@@ -17,26 +17,24 @@ const { TEST_USER_TOKEN } = process.env;
 const apifyClient = new ApifyClient({ token: TEST_USER_TOKEN });
 
 const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
-    const task = await apifyClient.tasks.createTask({
-        task: {
-            actId: 'apify/web-scraper',
-            name: `zapier-test-${randomString()}`,
-            options: {
-                memoryMbytes: 2048,
-            },
-            input: {
-                contentType: 'application/json; charset=utf-8',
-                body: JSON.stringify({
-                    startUrls: [
-                        {
-                            url: 'https://apify.com',
-                        },
-                    ],
-                    useRequestQueue: false,
-                    pageFunction,
-                    maxPagesPerCrawl: 1,
-                }),
-            },
+    const task = await apifyClient.tasks().create({
+        actId: 'apify/web-scraper',
+        name: `zapier-test-${randomString()}`,
+        options: {
+            memoryMbytes: 2048,
+        },
+        input: {
+            contentType: 'application/json; charset=utf-8',
+            body: JSON.stringify({
+                startUrls: [
+                    {
+                        url: 'https://apify.com',
+                    },
+                ],
+                useRequestQueue: false,
+                pageFunction,
+                maxPagesPerCrawl: 1,
+            }),
         },
     });
     console.log(`Testing task web-scraper with id ${task.id} created`);
@@ -44,25 +42,23 @@ const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
 };
 
 const createLegacyCrawlerTask = async (pageFunction) => {
-    const task = await apifyClient.tasks.createTask({
-        task: {
-            actId: 'apify/legacy-phantomjs-crawler',
-            name: `zapier-test-${randomString()}`,
-            options: {
-                memoryMbytes: 2048,
-            },
-            input: {
-                contentType: 'application/json; charset=utf-8',
-                body: JSON.stringify({
-                    startUrls: [
-                        {
-                            value: 'https://apify.com',
-                        },
-                    ],
-                    clickableElementsSelector: '',
-                    pageFunction,
-                }),
-            },
+    const task = await apifyClient.tasks().create({
+        actId: 'apify/legacy-phantomjs-crawler',
+        name: `zapier-test-${randomString()}`,
+        options: {
+            memoryMbytes: 2048,
+        },
+        input: {
+            contentType: 'application/json; charset=utf-8',
+            body: JSON.stringify({
+                startUrls: [
+                    {
+                        value: 'https://apify.com',
+                    },
+                ],
+                clickableElementsSelector: '',
+                pageFunction,
+            }),
         },
     });
     console.log(`Testing task legacy-phantomjs-crawler with id ${task.id} created`);
@@ -78,29 +74,28 @@ const createAndBuildActor = async () => {
         await Apify.setValue('OUTPUT', { foo: 'bar' });
     });
     `;
-    const actor = await apifyClient.acts.createAct({
-        act: {
-            name: `zapier-test-${randomString()}`,
-            defaultRunOptions: {
-                build: 'latest',
-                timeoutSecs: 300,
-                memoryMbytes: 512,
-            },
-            versions: [
-                {
-                    versionNumber: '0.0',
-                    envVars: [],
-                    sourceType: 'SOURCE_FILES',
-                    sourceFiles: [
-                        {
-                            name: 'main.js',
-                            format: 'TEXT',
-                            content: sourceCode,
-                        },
-                        {
-                            name: 'package.json',
-                            format: 'TEXT',
-                            content: `{
+    const actor = await apifyClient.actors().create({
+        name: `zapier-test-${randomString()}`,
+        defaultRunOptions: {
+            build: 'latest',
+            timeoutSecs: 300,
+            memoryMbytes: 512,
+        },
+        versions: [
+            {
+                versionNumber: '0.0',
+                envVars: [],
+                sourceType: 'SOURCE_FILES',
+                sourceFiles: [
+                    {
+                        name: 'main.js',
+                        format: 'TEXT',
+                        content: sourceCode,
+                    },
+                    {
+                        name: 'package.json',
+                        format: 'TEXT',
+                        content: `{
                             "name": "apify-project",
                             "version": "0.0.1",
                             "description": "",
@@ -113,11 +108,11 @@ const createAndBuildActor = async () => {
                                 "start": "node main.js"
                             }
                         }`,
-                        },
-                        {
-                            name: 'Dockerfile',
-                            format: 'TEXT',
-                            content: `# This is a template for a Dockerfile used to run acts in Actor system.
+                    },
+                    {
+                        name: 'Dockerfile',
+                        format: 'TEXT',
+                        content: `# This is a template for a Dockerfile used to run acts in Actor system.
                         # The base image name below is set during the act build, based on user settings.
                         # IMPORTANT: The base image must set a correct working directory, such as /usr/src/app or /home/user
                         FROM apify/actor-node-basic
@@ -146,14 +141,13 @@ const createAndBuildActor = async () => {
                         # Uncomment this for local node inspector debugging:
                         # CMD [ "node", "--inspect=0.0.0.0:9229", "main.js" ]
                         `,
-                        },
-                    ],
-                    buildTag: 'latest',
-                },
-            ],
-        },
+                    },
+                ],
+                buildTag: 'latest',
+            },
+        ],
     });
-    await apifyClient.acts.buildAct({ actId: actor.id, version: '0.0', waitForFinish: 120 });
+    await apifyClient.actor(actor.id).build('0.0', { waitForFinish: 120 });
     console.log(`Testing actor with id ${actor.id} was created and built.`);
     return actor;
 };

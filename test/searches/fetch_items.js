@@ -12,7 +12,7 @@ describe('fetch dataset items', () => {
     let testDatasetId;
 
     before(async () => {
-        const dataset = await apifyClient.datasets.getOrCreateDataset({ datasetName: `test-zapier-${randomString()}` });
+        const dataset = await apifyClient.datasets().getOrCreate(`test-zapier-${randomString()}`);
         testDatasetId = dataset.id;
     });
 
@@ -25,10 +25,7 @@ describe('fetch dataset items', () => {
             });
         }
         // Push data to dataset
-        await apifyClient.datasets.putItems({
-            datasetId: testDatasetId,
-            data: randomItems,
-        });
+        await apifyClient.dataset(testDatasetId).pushItems(randomItems);
 
         const bundle = {
             authData: {
@@ -47,6 +44,6 @@ describe('fetch dataset items', () => {
     }).timeout(120000);
 
     after(async () => {
-        await apifyClient.datasets.deleteDataset({ datasetId: testDatasetId });
+        await apifyClient.dataset(testDatasetId).delete();
     });
 });

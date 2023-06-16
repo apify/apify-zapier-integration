@@ -1,6 +1,5 @@
-const Promise = require('bluebird');
 const _ = require('lodash');
-const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('apify-shared/consts');
+const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
@@ -24,6 +23,7 @@ const createDatasetUrls = (datasetId, cleanParamName) => {
  * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
+// eslint-disable-next-line default-param-last
 const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigger = false) => {
     /**
      * For backwards compatible with old phantomJs crawler we need to use
@@ -63,7 +63,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigge
 const getValuesFromKeyValueStore = async (z, storeId, keys) => {
     const values = {};
 
-    await Promise.map(keys, (key) => {
+    await Promise.all(keys.map((key) => {
         return z
             .request(`${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`)
             .then((response) => {
@@ -82,7 +82,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                     };
                 }
             });
-    });
+    }));
 
     return values;
 };

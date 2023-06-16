@@ -1,5 +1,4 @@
 const zapier = require('zapier-platform-core');
-const Promise = require('bluebird');
 const { expect } = require('chai');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
@@ -40,9 +39,7 @@ describe('task run finished trigger', () => {
         subscribeData = await appTester(App.triggers.taskRunFinished.operation.performSubscribe, bundle);
 
         // Check if webhook is set
-        const taskWebhooks = await apifyClient.tasks.listWebhooks({
-            taskId: testTaskId,
-        });
+        const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
 
         expect(taskWebhooks.items.length).to.be.eql(1);
         expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -63,9 +60,7 @@ describe('task run finished trigger', () => {
         await appTester(App.triggers.taskRunFinished.operation.performUnsubscribe, bundle);
 
         // Check if webhook is not set
-        const taskWebhooks = await apifyClient.tasks.listWebhooks({
-            taskId: testTaskId,
-        });
+        const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
 
         expect(taskWebhooks.items.length).to.be.eql(0);
     });
@@ -93,12 +88,13 @@ describe('task run finished trigger', () => {
     });
 
     it('performList should return task runs', async () => {
-        const runs = await Promise.mapSeries(new Array(4), () => {
-            return apifyClient.tasks.runTask({
-                taskId: testTaskId,
-                waitForFinish: 120,
+        const runs = [];
+        for (let i = 0; i < 4; i++) {
+            const run = await apifyClient.task(testTaskId).call({
+                waitSecs: 120,
             });
-        });
+            runs.push(run);
+        }
 
         const bundle = {
             authData: {
@@ -113,7 +109,7 @@ describe('task run finished trigger', () => {
 
         expect(results.length).to.be.eql(3);
         expect(results[0].id).to.be.eql(runs.pop().id);
-        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
+        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
@@ -121,9 +117,8 @@ describe('task run finished trigger', () => {
 
     it('performList should return task runs (legacy crawler)', async () => {
         // Create on task run
-        const taskRun = await apifyClient.tasks.runTask({
-            taskId: legacyCrawlerTaskId,
-            waitForFinish: 120,
+        const taskRun = await apifyClient.task(legacyCrawlerTaskId).call({
+            waitSecs: 120,
         });
 
         const bundle = {
@@ -163,7 +158,7 @@ describe('task run finished trigger', () => {
     });
 
     after(async () => {
-        await apifyClient.tasks.deleteTask({ taskId: testTaskId });
-        await apifyClient.tasks.deleteTask({ taskId: legacyCrawlerTaskId });
+        await apifyClient.task(testTaskId).delete();
+        await apifyClient.task(legacyCrawlerTaskId).delete();
     });
 });

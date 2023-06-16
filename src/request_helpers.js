@@ -1,4 +1,4 @@
-const { RetryableError, retryWithExpBackoff } = require('apify-shared/exponential_backoff');
+const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 

@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES } } = require('apify-shared/consts');
+const { ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES } } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, ALLOWED_MEMORY_MBYTES_LIST } = require('../src/consts');
 
 describe('consts', () => {

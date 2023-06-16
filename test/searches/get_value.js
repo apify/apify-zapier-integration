@@ -3,20 +3,19 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
 
-const expect = chai.expect;
+const { expect } = chai;
 chai.use(chaiAsPromised);
 
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
 
-
 describe('get key-value store value', () => {
     let testStoreId;
 
     before(async () => {
         // Create key-value store for testing
-        const store = await apifyClient.keyValueStores.getOrCreateStore({ storeName: `test-zapier-${randomString()}` });
+        const store = await apifyClient.keyValueStores().getOrCreate(`test-zapier-${randomString()}`);
         testStoreId = store.id;
     });
 
@@ -26,11 +25,10 @@ describe('get key-value store value', () => {
             myKey: randomString(),
         };
         // Create record
-        await apifyClient.keyValueStores.putRecord({
-            storeId: testStoreId,
+        await apifyClient.keyValueStore(testStoreId).setRecord({
             key: storeKey,
             contentType: 'application/json',
-            body: JSON.stringify(storeValue),
+            value: JSON.stringify(storeValue),
         });
 
         const bundle = {
@@ -51,11 +49,10 @@ describe('get key-value store value', () => {
     it('throw error for non json value', async () => {
         const storeKey = randomString();
         // Create record
-        await apifyClient.keyValueStores.putRecord({
-            storeId: testStoreId,
+        await apifyClient.keyValueStore(testStoreId).setRecord({
             key: storeKey,
             contentType: 'plain/text',
-            body: 'just text',
+            value: 'just text',
         });
 
         const bundle = {
@@ -88,6 +85,6 @@ describe('get key-value store value', () => {
     }).timeout(10000);
 
     after(async () => {
-        await apifyClient.keyValueStores.deleteStore({ storeId: testStoreId });
+        await apifyClient.keyValueStore(testStoreId).delete();
     });
 });

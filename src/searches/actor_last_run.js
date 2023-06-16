@@ -1,4 +1,4 @@
-const { ACT_JOB_STATUSES } = require('apify-shared/consts');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
@@ -44,8 +44,8 @@ module.exports = {
                 label: 'Run status',
                 key: 'status',
                 required: false,
-                default: ACT_JOB_STATUSES.SUCCEEDED,
-                choices: ACT_JOB_STATUSES,
+                default: ACTOR_JOB_STATUSES.SUCCEEDED,
+                choices: ACTOR_JOB_STATUSES,
             },
         ],
 

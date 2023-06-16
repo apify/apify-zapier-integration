@@ -1,30 +1,25 @@
-const { KEY_VALUE_STORE_KEYS, ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES } } = require('apify-shared/consts');
+const {
+    KEY_VALUE_STORE_KEYS,
+    ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES },
+} = require('@apify/consts');
 
 /**
- * Get paths of Apify API from apify-client
- * NOTE: We don't use ApifyClient from apify-client-js package in integration. Because if we use it,
+ *  NOTE: We don't use ApifyClient from apify-client-js package in integration. Because if we use it,
  * we can not use z.request function and we lost logging and other function specific for
  * Zapier platform.
  */
-const { BASE_PATH: usersPath } = require('apify-client/build/users');
-const { BASE_PATH: webhooksPath } = require('apify-client/build/webhooks');
-const { BASE_PATH: tasksPath } = require('apify-client/build/tasks');
-const { BASE_PATH: actorsPath } = require('apify-client/build/acts');
-const { BASE_PATH: datasetsPath } = require('apify-client/build/datasets');
-const { BASE_PATH: keyValueStoresPath } = require('apify-client/build/key_value_stores');
-
 const APIFY_API_BASE_URL = 'https://api.apify.com';
 
 /**
  * Apify API URL endpoints, which we will use in integration.
  */
 const APIFY_API_ENDPOINTS = {
-    users: `${APIFY_API_BASE_URL}${usersPath}`,
-    webhooks: `${APIFY_API_BASE_URL}${webhooksPath}`,
-    tasks: `${APIFY_API_BASE_URL}${tasksPath}`,
-    datasets: `${APIFY_API_BASE_URL}${datasetsPath}`,
-    keyValueStores: `${APIFY_API_BASE_URL}${keyValueStoresPath}`,
-    actors: `${APIFY_API_BASE_URL}${actorsPath}`,
+    users: `${APIFY_API_BASE_URL}/v2/users`,
+    webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
+    tasks: `${APIFY_API_BASE_URL}/v2/actor-tasks`,
+    datasets: `${APIFY_API_BASE_URL}/v2/datasets`,
+    keyValueStores: `${APIFY_API_BASE_URL}/v2/key-value-stores`,
+    actors: `${APIFY_API_BASE_URL}/v2/acts`,
 };
 
 const ACTOR_RUN_SAMPLE = {
@@ -169,8 +164,10 @@ const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCo
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
 
 // List of allowed memory for actor run 128, 256, 512 ..
-const ALLOWED_MEMORY_MBYTES_LIST = Array.from(Array(Math.log2(MAX_RUN_MEMORY_MBYTES / MIN_RUN_MEMORY_MBYTES) + 1),
-    (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i));
+const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
+    Array(Math.log2(MAX_RUN_MEMORY_MBYTES / MIN_RUN_MEMORY_MBYTES) + 1),
+    (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i),
+);
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
