@@ -1,5 +1,4 @@
 const zapier = require('zapier-platform-core');
-const Promise = require('bluebird');
 const { expect } = require('chai');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
@@ -89,11 +88,13 @@ describe('task run finished trigger', () => {
     });
 
     it('performList should return task runs', async () => {
-        const runs = await Promise.mapSeries(new Array(4), () => {
-            return apifyClient.task(testTaskId).call({
+        const runs = [];
+        for (let i = 0; i < 4; i++) {
+            const run = await apifyClient.task(testTaskId).call({
                 waitSecs: 120,
             });
-        });
+            runs.push(run);
+        }
 
         const bundle = {
             authData: {

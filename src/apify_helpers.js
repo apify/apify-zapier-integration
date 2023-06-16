@@ -1,4 +1,3 @@
-const Promise = require('bluebird');
 const _ = require('lodash');
 const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
@@ -64,7 +63,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigge
 const getValuesFromKeyValueStore = async (z, storeId, keys) => {
     const values = {};
 
-    await Promise.map(keys, (key) => {
+    await Promise.all(keys.map((key) => {
         return z
             .request(`${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`)
             .then((response) => {
@@ -83,7 +82,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                     };
                 }
             });
-    });
+    }));
 
     return values;
 };
