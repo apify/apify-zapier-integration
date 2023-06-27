@@ -69,9 +69,14 @@ const createAndBuildActor = async () => {
     const sourceCode = `
     const Apify = require('apify');
     Apify.main(async (context) => {
+        const input = await Apify.getInput();
         console.log('It works.');
         await Apify.pushData({ foo: 'bar' });
-        await Apify.setValue('OUTPUT', { foo: 'bar' });
+        if (input && input.outputRandomFile) {
+            await Apify.setValue('OUTPUT', 'blabla', { contentType: 'text/plain' });
+        } else {
+            await Apify.setValue('OUTPUT', { foo: 'bar' });
+        }
     });
     `;
     const actor = await apifyClient.actors().create({
