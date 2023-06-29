@@ -64,8 +64,9 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
     const values = {};
 
     await Promise.all(keys.map((key) => {
+        const url = `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`;
         return z
-            .request(`${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`)
+            .request(url)
             .then((response) => {
                 if (response.status === 404) {
                     values[key] = {
@@ -73,12 +74,22 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                     };
                     return;
                 }
-                try {
-                    const maybeObject = JSON.parse(response.content);
-                    values[key] = maybeObject;
-                } catch (err) {
+                const contentType = response.getHeader('content-type');
+                if (contentType.includes('application/json')) {
+                    try {
+                        const maybeObject = JSON.parse(response.content);
+                        values[key] = maybeObject;
+                    } catch (err) {
+                        values[key] = {
+                            error: `Cannot parse the key-value store record: ${err.message}`,
+                        };
+                    }
+                } else {
+                    // Treat all other content types as files.
                     values[key] = {
-                        error: `Cannot parse the key-value store record: ${err.message}`,
+                        file: url,
+                        filename: key,
+                        contentType,
                     };
                 }
             });

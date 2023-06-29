@@ -82,10 +82,10 @@ describe('create actor run', () => {
             authData: {
                 token: TEST_USER_TOKEN,
             },
-            inputData: Object.assign({
-                actorId: testActorId,
+            inputData: { actorId: testActorId,
                 runSync: true,
-            }, runOptions),
+                ...runOptions,
+            },
         };
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
@@ -94,6 +94,43 @@ describe('create actor run', () => {
         expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);
+        expect(testResult.OUTPUT).to.be.eql({ foo: 'bar' });
+        Object.keys(runOptions).forEach((key) => {
+            expect(actorRun.options[key]).to.be.eql(runOptions[key]);
+        });
+    }).timeout(120000);
+
+    it('runSync handles output as file', async () => {
+        const runOptions = {
+            build: 'latest',
+            timeoutSecs: 120,
+            memoryMbytes: 1024,
+        };
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: { actorId: testActorId,
+                runSync: true,
+                inputBody: JSON.stringify({
+                    outputRandomFile: true,
+                }),
+                inputContentType: 'application/json; charset=utf-8',
+                ...runOptions,
+            },
+        };
+
+        const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+        const actorRun = await apifyClient.run(testResult.id).get();
+
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
+        expect(testResult.status).to.be.eql('SUCCEEDED');
+        expect(testResult.finishedAt).to.not.equal(null);
+        expect(testResult.OUTPUT).to.be.eql({
+            file: `https://api.apify.com/v2/key-value-stores/${testResult.defaultKeyValueStoreId}/records/OUTPUT`,
+            filename: 'OUTPUT',
+            contentType: 'text/plain; charset=utf-8',
+        });
         Object.keys(runOptions).forEach((key) => {
             expect(actorRun.options[key]).to.be.eql(runOptions[key]);
         });

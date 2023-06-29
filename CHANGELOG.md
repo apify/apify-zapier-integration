@@ -1,3 +1,6 @@
+## 2.1.19 / 2023-05-23
+* Handle other content types on output of actor run expect JSON as files.
+
 ## 2.1.18 / 2023-05-23
 
 * Update node to v16
