@@ -129,6 +129,7 @@ describe('create actor run', () => {
         expect(testResult.OUTPUT).to.be.eql({
             file: `https://api.apify.com/v2/key-value-stores/${testResult.defaultKeyValueStoreId}/records/OUTPUT`,
             filename: 'OUTPUT',
+            contentType: 'text/plain; charset=utf-8',
         });
         Object.keys(runOptions).forEach((key) => {
             expect(actorRun.options[key]).to.be.eql(runOptions[key]);

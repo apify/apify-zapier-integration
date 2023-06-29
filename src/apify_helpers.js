@@ -89,6 +89,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
                     values[key] = {
                         file: url,
                         filename: key,
+                        contentType,
                     };
                 }
             });
