@@ -1,3 +1,6 @@
+## NEXT
+* Removed unused underscore package
+
 ## 2.1.19 / 2023-06-30
 * Handle other content types on output of actor run expect JSON as files.
 * Update apify-client to v2
