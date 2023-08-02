@@ -251,10 +251,11 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
                 // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
                 // These options will not cover UI validation and we need to handle it in code.
                 field.type = 'string'; // editor = textfield, datepicker
-                if (['javascript', 'python', 'textarea'].includes(definition.editor)) {
+                if (['javascript', 'python'].includes(definition.editor)) {
+                    field.type = 'code';
+                } else if (definition.editor === 'textarea') {
                     field.type = 'text';
                 } else if (definition.editor === 'datepicker') {
-                    // TODO: Somehow convert date back to string, before run
                     field.type = 'datetime';
                 } else if (definition.editor === 'select') {
                     field.choices = {};
@@ -316,6 +317,22 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
     return fields;
 };
 
+const maybeGetInputSchemaFromActor = async (z, actor, buildTag) => {
+    const defaultBuild = actor.taggedBuilds && actor.taggedBuilds[buildTag];
+    if (defaultBuild) {
+        const buildResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${actor.id}/builds/${defaultBuild.buildId}`,
+        });
+        const inputSchemaJSON = buildResponse.data && buildResponse.data.inputSchema;
+        try {
+            return JSON.parse(inputSchemaJSON);
+        } catch (err) {
+            // This should never happen, but if it does, we will ignore it
+            // and continue without input schema.
+        }
+    }
+};
+
 /**
  * This method loads additional input fields regarding actor default values.
  */
@@ -333,28 +350,16 @@ const getActorAdditionalFields = async (z, bundle) => {
 
     let inputBody;
     let inputContentType;
-    let inputSchema;
     // Get input schema from build
-    const defaultBuild = actor.taggedBuilds && actor.taggedBuilds[defaultActorBuildTag];
-    if (defaultBuild) {
-        const buildResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/builds/${defaultBuild.buildId}`,
-        });
-        const inputSchemaJSON = buildResponse.data && buildResponse.data.inputSchema;
-        try {
-            inputSchema = JSON.parse(inputSchemaJSON);
-        } catch (err) {
-            // This should never happen, but if it does, we will ignore it
-            // and continue without input schema.
-        }
-        if (inputSchema) {
-            inputContentType = 'application/json; charset=utf-8';
-            inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);
-        }
+    const inputSchema = await maybeGetInputSchemaFromActor(z, actor, defaultActorBuildTag);
+    if (inputSchema) {
+        inputContentType = 'application/json; charset=utf-8';
+        inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);
     }
 
     const baseFields = [
         {
+            // TODO: Change build value should recompute the schema as it can be change because build changed.
             label: 'Build',
             helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
             key: 'build',
@@ -444,4 +449,5 @@ module.exports = {
     getActorAdditionalFields,
     getPrefilledValuesFromInputSchema,
     createFieldsFromInputSchemaV1,
+    maybeGetInputSchemaFromActor,
 };
