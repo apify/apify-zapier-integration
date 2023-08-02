@@ -222,7 +222,9 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
 const createFieldsFromInputSchemaV1 = (inputSchema) => {
     const { properties, required } = inputSchema;
     const fields = [];
+    // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
+        // eslint-disable-next-line no-continue
         if (definition.editor === 'hidden') continue;
         // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
         if (definition.sectionCaption && definition.sectionCaption.length) {
@@ -233,7 +235,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
                 label: definition.sectionCaption,
                 key: `sectionCaption-${propertyKey}`,
                 type: 'copy',
-                helpText: helpText,
+                helpText,
             });
         }
         const field = {
@@ -244,7 +246,6 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
             placeholder: definition.prefill,
             default: definition.default,
         };
-        let ignoreField = false;
         switch (definition.type) {
             case 'string':
                 // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
@@ -307,6 +308,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
             default:
                 // This should not happen.
                 console.log(`Unknown input schema type: ${definition.type}`, definition);
+                // eslint-disable-next-line no-continue
                 continue;
         }
         fields.push(field);
