@@ -195,13 +195,13 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
 };
 
 /**
- * It pickes from input schema prefill values.
+ * It picks from input schema prefill values.
  * NOTE: Input schema was validated on app, we don't have to check structure here.
  * @param inputSchemaStringJSON
  */
-const getPrefilledValuesFromInputSchema = (inputSchemaStringJSON) => {
+const getPrefilledValuesFromInputSchema = (inputSchema) => {
     const prefilledObject = {};
-    const { properties } = JSON.parse(inputSchemaStringJSON);
+    const { properties } = inputSchema;
 
     Object.keys(properties).forEach((propKey) => {
         if (properties[propKey].prefill) prefilledObject[propKey] = properties[propKey].prefill;
@@ -211,6 +211,107 @@ const getPrefilledValuesFromInputSchema = (inputSchemaStringJSON) => {
     });
 
     return prefilledObject;
+};
+
+/**
+ * Converts Apify input schema to Zapier input fields.
+ * Input schema spec. https://docs.apify.com/platform/actors/development/actor-definition/input-schema
+ * Fields schema spec. https://zapier.github.io/zapier-platform-schema/build/schema.html#fieldschema
+ * @param inputSchema
+ */
+const createFieldsFromInputSchemaV1 = (inputSchema) => {
+    const { properties, required } = inputSchema;
+    const fields = [];
+    for (const [propertyKey, definition] of Object.entries(properties)) {
+        if (definition.editor === 'hidden') continue;
+        // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
+        if (definition.sectionCaption && definition.sectionCaption.length) {
+            const helpText = definition.sectionDescription
+                ? `${definition.sectionCaption} - ${definition.sectionDescription}`
+                : definition.sectionCaption;
+            fields.push({
+                label: definition.sectionCaption,
+                key: `sectionCaption-${propertyKey}`,
+                type: 'copy',
+                helpText: helpText,
+            });
+        }
+        const field = {
+            label: definition.title,
+            helpText: definition.description,
+            key: propertyKey,
+            required: required.includes(propertyKey),
+            placeholder: definition.prefill,
+            default: definition.default,
+        };
+        let ignoreField = false;
+        switch (definition.type) {
+            case 'string':
+                // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
+                // These options will not cover UI validation and we need to handle it in code.
+                field.type = 'string'; // editor = textfield, datepicker
+                if (['javascript', 'python', 'textarea'].includes(definition.editor)) {
+                    field.type = 'text';
+                } else if (definition.editor === 'datepicker') {
+                    // TODO: Somehow convert date back to string, before run
+                    field.type = 'datetime';
+                } else if (definition.editor === 'select') {
+                    field.choices = {};
+                    definition.enum.forEach((key, i) => {
+                        field.choices[key] = definition.enumTitles[i] || key;
+                    });
+                }
+                if (definition.isSecret) {
+                    field.type = 'password';
+                }
+                break;
+            case 'integer':
+                // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
+                field.type = 'integer';
+                break;
+            case 'boolean':
+                // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
+                field.type = 'boolean';
+                break;
+            case 'array':
+                // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
+                // patternValue, maxItems, minItems, uniqueItems, nullable
+                if (definition.editor === 'json') {
+                    field.type = 'text';
+                } else if (['requestListSources', 'pseudoUrls', 'globs', 'stringList'].includes(definition.editor)) {
+                    // NOTE: These options are not supported in Zapier and Apify UI specific.
+                    // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
+                    field.type = 'string';
+                    field.list = true;
+                } else if (definition.editor === 'keyValue') {
+                    // NOTE: We will convert this into object into [{"key": "key val","value": "val val"}..] format before run.
+                    field.type = 'string';
+                    field.disc = true;
+                }
+                break;
+            case 'object':
+                if (definition.editor === 'json') {
+                    field.type = 'text';
+                } else if (definition.editor === 'proxy') {
+                    // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
+                    fields.push({
+                        label: 'Proxy',
+                        key: 'proxyWarning',
+                        type: 'copy',
+                        helpText: `${definition.title} is Apify specific, we do not support it in Zapier.`
+                            + 'We recommend preset this value in Apify console.',
+                    });
+                    field.type = 'text';
+                }
+                break;
+            default:
+                // This should not happen.
+                console.log(`Unknown input schema type: ${definition.type}`, definition);
+                continue;
+        }
+        fields.push(field);
+    }
+    return fields;
 };
 
 /**
@@ -237,52 +338,20 @@ const getActorAdditionalFields = async (z, bundle) => {
         const buildResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/builds/${defaultBuild.buildId}`,
         });
-        inputSchema = buildResponse.data && buildResponse.data.inputSchema;
+        const inputSchemaJSON = buildResponse.data && buildResponse.data.inputSchema;
+        try {
+            inputSchema = JSON.parse(inputSchemaJSON);
+        } catch (err) {
+            // This should never happen, but if it does, we will ignore it
+            // and continue without input schema.
+        }
         if (inputSchema) {
             inputContentType = 'application/json; charset=utf-8';
             inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);
         }
     }
 
-    // Parse and stringify json input body if there is
-    if (actor.exampleRunInput && !inputSchema) {
-        const { body, contentType } = actor.exampleRunInput;
-        inputContentType = contentType;
-        // Try to parse JSON body
-        if (contentType.includes('application/json')) {
-            try {
-                const parsedBody = JSON.parse(body);
-                inputBody = JSON.stringify(parsedBody, null, 2);
-            } catch (err) {
-                // There can be invalid JSON, but show must go on.
-                inputBody = body;
-            }
-        }
-    }
-
-    let inputBodyHelpText = 'Input configuration for the actor.';
-    if (actor.isPublic) {
-        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
-            + 'for detailed fields description.';
-    }
-
-    return [
-        {
-            label: 'Input body',
-            helpText: inputBodyHelpText,
-            key: 'inputBody',
-            required: false,
-            default: inputBody || '',
-            type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
-        },
-        {
-            label: 'Input content type',
-            helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
-            key: 'inputContentType',
-            required: false,
-            default: inputContentType || '',
-            type: 'string',
-        },
+    const baseFields = [
         {
             label: 'Build',
             helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
@@ -311,6 +380,56 @@ const getActorAdditionalFields = async (z, bundle) => {
             type: 'string',
         },
     ];
+
+    if (inputSchema && (inputSchema.schemaVersion === 1 || !inputSchema.schemaVersion)) {
+        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(inputSchema);
+        return [
+            ...fieldsFromInputSchema,
+            ...baseFields,
+        ];
+    }
+
+    // Parse and stringify json input body if there is
+    if (actor.exampleRunInput) {
+        const { body, contentType } = actor.exampleRunInput;
+        inputContentType = contentType;
+        // Try to parse JSON body
+        if (contentType.includes('application/json')) {
+            try {
+                const parsedBody = JSON.parse(body);
+                inputBody = JSON.stringify(parsedBody, null, 2);
+            } catch (err) {
+                // There can be invalid JSON, but show must go on.
+                inputBody = body;
+            }
+        } else {
+            inputBody = body;
+        }
+    }
+    let inputBodyHelpText = 'Input configuration for the actor.';
+    if (actor.isPublic) {
+        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+                + 'for detailed fields description.';
+    }
+    return [
+        {
+            label: 'Input body',
+            helpText: inputBodyHelpText,
+            key: 'inputBody',
+            required: false,
+            default: inputBody || '',
+            type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
+        },
+        {
+            label: 'Input content type',
+            helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
+            key: 'inputContentType',
+            required: false,
+            default: inputContentType || '',
+            type: 'string',
+        },
+        ...baseFields,
+    ];
 };
 
 module.exports = {
@@ -322,4 +441,5 @@ module.exports = {
     getDatasetItems,
     getActorAdditionalFields,
     getPrefilledValuesFromInputSchema,
+    createFieldsFromInputSchemaV1,
 };

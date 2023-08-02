@@ -1,6 +1,10 @@
 const { expect } = require('chai');
-const { getPrefilledValuesFromInputSchema } = require('../src/apify_helpers');
+const FieldSchema = require('zapier-platform-schema/lib/schemas/FieldSchema');
+const makeValidator = require('zapier-platform-schema/lib/utils/makeValidator');
+const { getPrefilledValuesFromInputSchema, createFieldsFromInputSchemaV1 } = require('../src/apify_helpers');
 const webScraperInputSchemaJson = require('./helpers/webScraperInputSchema.json');
+const websiteContentCrawlerInputSchema = require('./helpers/websiteContentCrawlerInputSchema.json');
+const generatedInputSchema = require('./helpers/generatedInputSchema.json');
 
 describe('apify utils', () => {
     it('getPrefilledValuesFromInputSchema work', () => {
@@ -26,5 +30,33 @@ describe('apify utils', () => {
             browserLog: false,
         };
         expect(prefillValues).to.be.eql(expected);
+    });
+
+    describe('createFieldsFromInputSchemaV1() works', () => {
+        const validator = makeValidator(FieldSchema);
+
+        it('for Web Scraper', () => {
+            const fields = createFieldsFromInputSchemaV1(webScraperInputSchemaJson);
+            fields.forEach((field) => {
+                const test = validator.validate(field);
+                expect(test.errors.length).to.be.eql(0);
+            });
+        });
+
+        it('for Website Content Scraper', () => {
+            const fields = createFieldsFromInputSchemaV1(websiteContentCrawlerInputSchema);
+            fields.forEach((field) => {
+                const test = validator.validate(field);
+                expect(test.errors.length).to.be.eql(0);
+            });
+        });
+
+        it('for Input Schema generated using GPT', () => {
+            const fields = createFieldsFromInputSchemaV1(generatedInputSchema);
+            fields.forEach((field) => {
+                const test = validator.validate(field);
+                expect(test.errors.length).to.be.eql(0);
+            });
+        });
     });
 });
