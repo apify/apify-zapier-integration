@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "2.1.19",
+  "version": "2.1.20",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
@@ -20,7 +20,6 @@
     "@apify/utilities": "^2.7.4",
     "apify-client": "^2.7.1",
     "lodash": "^4.17.21",
-    "underscore": "^1.12.0",
     "zapier-platform-core": "14.1.1"
   },
   "devDependencies": {
