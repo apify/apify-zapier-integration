@@ -197,7 +197,7 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
 /**
  * It picks from input schema prefill values.
  * NOTE: Input schema was validated on app, we don't have to check structure here.
- * @param inputSchemaStringJSON
+ * @param inputSchema
  */
 const getPrefilledValuesFromInputSchema = (inputSchema) => {
     const prefilledObject = {};
@@ -260,7 +260,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
                 } else if (definition.editor === 'select') {
                     field.choices = {};
                     definition.enum.forEach((key, i) => {
-                        field.choices[key] = definition.enumTitles[i] || key;
+                        field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
                     });
                 }
                 if (definition.isSecret) {
@@ -359,12 +359,13 @@ const getActorAdditionalFields = async (z, bundle) => {
 
     const baseFields = [
         {
-            // TODO: Change build value should recompute the schema as it can be change because build changed.
             label: 'Build',
             helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
             key: 'build',
             required: false,
             default: defaultActorBuildTag,
+            // NOTE: Change build value recomputes fields as input schema can change.
+            altersDynamicFields: true,
             type: 'string',
         },
         {

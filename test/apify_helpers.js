@@ -8,7 +8,7 @@ const generatedInputSchema = require('./helpers/generatedInputSchema.json');
 
 describe('apify utils', () => {
     it('getPrefilledValuesFromInputSchema work', () => {
-        const prefillValues = getPrefilledValuesFromInputSchema(JSON.stringify(webScraperInputSchemaJson));
+        const prefillValues = getPrefilledValuesFromInputSchema(webScraperInputSchemaJson);
         const expected = {
             startUrls: [{ url: 'https://apify.com' }],
             pseudoUrls: [{ purl: 'https://apify.com[(/[\\w-]+)?]' }],

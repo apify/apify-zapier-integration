@@ -68,8 +68,10 @@ describe('create actor run', () => {
         const { inputSchema } = await apifyClient.build(buildId).get();
 
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
-
-        expect(Object.keys(JSON.parse(inputSchema).properties)).to.include.all.keys(Object.keys(fields));
+        const fieldKeys = fields.map(({ key }) => key);
+        Object.keys(JSON.parse(inputSchema).properties).forEach((keyToFind) => {
+            expect(fieldKeys.includes(keyToFind)).to.be.equal(true);
+        });
     }).timeout(120000);
 
     it('runSync work', async () => {
@@ -82,7 +84,9 @@ describe('create actor run', () => {
             authData: {
                 token: TEST_USER_TOKEN,
             },
-            inputData: { actorId: testActorId,
+            inputData: {
+                actorId: testActorId,
+                inputBody: '',
                 runSync: true,
                 ...runOptions,
             },
@@ -110,7 +114,8 @@ describe('create actor run', () => {
             authData: {
                 token: TEST_USER_TOKEN,
             },
-            inputData: { actorId: testActorId,
+            inputData: {
+                actorId: testActorId,
                 runSync: true,
                 inputBody: JSON.stringify({
                     outputRandomFile: true,
@@ -145,6 +150,7 @@ describe('create actor run', () => {
                 actorId: testActorId,
                 runSync: false,
                 build: 'latest',
+                inputBody: '',
                 timeoutSecs: 120,
                 memoryMbytes: 1024,
             },

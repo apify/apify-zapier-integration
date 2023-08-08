@@ -22,8 +22,8 @@ const runActor = async (z, bundle) => {
             'Content-Type': inputContentType,
         };
     }
-    if (inputBody) {
-        if (inputContentType.includes('application/json')) {
+    if (inputBody !== undefined) {
+        if (inputContentType && inputContentType.includes('application/json')) {
             try {
                 JSON.parse(inputBody);
             } catch (err) {
@@ -42,7 +42,7 @@ const runActor = async (z, bundle) => {
             inputSchemaKeys.forEach((key) => {
                 const value = bundle.inputData[key];
                 if (value) {
-                    const { editor } = value;
+                    const { editor, title } = inputSchema.properties[key];
                     if (editor === 'datepicker') {
                         const date = dayjs(value);
                         input[key] = date.format('YYYY-MM-DD');
@@ -62,6 +62,12 @@ const runActor = async (z, bundle) => {
                         input[key] = Object.keys(value).map((k) => {
                             return { key: k, value: value[k] };
                         });
+                    } else if (editor === 'proxy' || editor === 'json') {
+                        try {
+                            input[key] = JSON.parse(value);
+                        } catch (err) {
+                            throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
+                        }
                     } else {
                         input[key] = value;
                     }
