@@ -26,7 +26,6 @@ module.exports = {
     display: {
         label: 'Get Key-Value Store Record',
         description: 'Gets a record from a key-value store.',
-        important: true,
     },
 
     operation: {

@@ -32,7 +32,6 @@ module.exports = {
     display: {
         label: 'Set Key-Value Store Record',
         description: 'Creates a new or updates an existing record in a key-value store.',
-        important: true,
     },
 
     operation: {

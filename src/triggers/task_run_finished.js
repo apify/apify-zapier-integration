@@ -34,7 +34,6 @@ module.exports = {
     display: {
         label: 'Finished Task Run',
         description: 'Triggers whenever a selected task is run and finished.',
-        important: true,
     },
     operation: {
         inputFields: [

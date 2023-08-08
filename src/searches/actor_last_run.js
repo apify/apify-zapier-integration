@@ -28,7 +28,6 @@ module.exports = {
     display: {
         label: 'Find Last Actor Run',
         description: 'Finds the most recent actor run with a specific status.',
-        important: true,
     },
 
     operation: {

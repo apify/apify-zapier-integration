@@ -94,7 +94,6 @@ module.exports = {
     display: {
         label: 'Run Actor',
         description: 'Runs a selected actor.',
-        important: true,
     },
 
     operation: {
