@@ -491,7 +491,9 @@ const getActorAdditionalFields = async (z, bundle) => {
 
 const printPrettyActorOrTaskName = (actorOrTask) => {
     const idLikeName = actorOrTask.username ? `${actorOrTask.username}/${actorOrTask.name}` : actorOrTask.name;
-    return `${actorOrTask.title} (${idLikeName})`;
+    return actorOrTask.title
+        ? `${actorOrTask.title} (${idLikeName})`
+        : idLikeName;
 };
 
 module.exports = {
