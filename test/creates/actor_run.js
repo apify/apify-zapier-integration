@@ -78,7 +78,7 @@ describe('create actor run', () => {
         const startUrlsFieldSchema = properties.startUrls;
         expect(startUrlsField.label).to.be.equal(startUrlsFieldSchema.title);
         expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
-        expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url));
+        expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
 
         const waitUntilField = fields.find(({ key }) => key === 'waitUntil');
         const waitUntilFieldSchema = properties.waitUntil;

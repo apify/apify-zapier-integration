@@ -297,7 +297,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                 const parsedDefaultValue = definition.default;
                 // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
                 // patternValue, maxItems, minItems, uniqueItems, nullable
-                if (definition.editor === 'json') {
+                if (definition.editor === 'json' || definition.editor === 'keyValue') {
                     field.type = 'text';
                     if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
                     else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
@@ -306,36 +306,18 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
                     field.type = 'string';
                     field.list = true;
-                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue)) {
-                        field.default = parsedPrefillValue.map((item) => {
-                            if (typeof item === 'string') return item;
-                            if (typeof item === 'object') return item.url || item.purl || item.glob;
-                            return item; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
-                        });
+                    // NOTE: List can have just one default value, so pick just first one.
+                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue) && parsedPrefillValue[0]) {
+                        const firstItem = parsedPrefillValue[0];
+                        if (typeof firstItem === 'string') field.default = firstItem;
+                        else if (typeof firstItem === 'object') field.default = firstItem.url || firstItem.purl || firstItem.glob;
+                        else field.default = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
                         field.placeholder = undefined;
-                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue)) {
-                        field.placeholder = parsedDefaultValue.map((item) => {
-                            if (typeof item === 'string') return item;
-                            if (typeof item === 'object') return item.url || item.purl || item.glob;
-                            return item; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
-                        });
-                        field.default = undefined;
-                    }
-                } else if (definition.editor === 'keyValue') {
-                    // NOTE: We will convert this into object into [{"key": "key val","value": "val val"}..] format before run.
-                    field.type = 'string';
-                    field.disc = true;
-                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue)) {
-                        const defaultValues = {};
-                        parsedPrefillValue.forEach((key, value) => {
-                            if (key) defaultValues[key] = value;
-                        });
-                        field.placeholder = undefined;
-                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue)) {
-                        const placeholderValues = {};
-                        parsedDefaultValue.forEach((key, value) => {
-                            if (key) placeholderValues[key] = value;
-                        });
+                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue) && parsedDefaultValue[0]) {
+                        const firstItem = parsedDefaultValue[0];
+                        if (typeof firstItem === 'string') field.placeholder = firstItem;
+                        else if (typeof firstItem === 'object') field.placeholder = firstItem.url || firstItem.purl || firstItem.glob;
+                        else field.placeholder = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
                         field.default = undefined;
                     }
                 }

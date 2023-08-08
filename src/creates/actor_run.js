@@ -58,11 +58,7 @@ const runActor = async (z, bundle) => {
                         input[key] = value.map((glob) => {
                             return { glob: glob.trim() };
                         });
-                    } else if (editor === 'keyValue') {
-                        input[key] = Object.keys(value).map((k) => {
-                            return { key: k, value: value[k] };
-                        });
-                    } else if (editor === 'proxy' || editor === 'json') {
+                    } else if (editor === 'proxy' || editor === 'json' || editor === 'keyValue') {
                         try {
                             input[key] = JSON.parse(value);
                         } catch (err) {
