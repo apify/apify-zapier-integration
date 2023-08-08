@@ -1,12 +1,14 @@
-## 2.2.5 / 2023-08-08
+## 2.2.6 / 2023-08-08
 
 ❗ Action Run Actor generates UI based on Input Schema if Actor has one.
 It breaks backward compatibility. If you set up the Actor run(with Input Schema) in old version, you need to set up it again using Zap UI.
 * Update node js version to v18
+* Improve dropdown for list of tasks and actors
+* Fix actor name into Actor
 
 ## 2.1.19 / 2023-06-30
 
-* Handle other content types on output of actor run expect JSON as files.
+* Handle other content types on output of Actor run expect JSON as files.
 * Update apify-client to v2
 
 ## 2.1.18 / 2023-05-23
@@ -50,7 +52,7 @@ It breaks backward compatibility. If you set up the Actor run(with Input Schema)
 
 ## 2.1.8 / 2020-02-05
 
-* Fixed trigger actor/task run, it returns just succeeded runs for samples in setting the trigger.
+* Fixed trigger Actor/task run, it returns just succeeded runs for samples in setting the trigger.
 
 ## 2.1.7 / 2019-12-19
 

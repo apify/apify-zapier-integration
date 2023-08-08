@@ -119,8 +119,8 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
 
     // Attach Apify app URL to detail of run
     run.detailsPageUrl = run.actorTaskId
-        ? `https://my.apify.com/tasks/${run.actorTaskId}#/runs/${run.id}`
-        : `https://my.apify.com/actors/${run.actId}#/runs/${run.id}`;
+        ? `https://console.apify.com/tasks/${run.actorTaskId}#/runs/${run.id}`
+        : `https://console.apify.com/actors/${run.actId}#/runs/${run.id}`;
 
     // Omit fields, which are useless for Zapier users.
     return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
@@ -489,6 +489,11 @@ const getActorAdditionalFields = async (z, bundle) => {
     ];
 };
 
+const printPrettyActorOrTaskName = (actorOrTask) => {
+    const idLikeName = actorOrTask.username ? `${actorOrTask.username}/${actorOrTask.name}` : actorOrTask.name;
+    return `${actorOrTask.title} (${idLikeName})`;
+};
+
 module.exports = {
     enrichActorRun,
     subscribeWebkook,
@@ -500,4 +505,5 @@ module.exports = {
     getPrefilledValuesFromInputSchema,
     createFieldsFromInputSchemaV1,
     maybeGetInputSchemaFromActor,
+    printPrettyActorOrTaskName,
 };

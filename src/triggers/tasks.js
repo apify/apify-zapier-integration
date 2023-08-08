@@ -1,5 +1,6 @@
 const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
+const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
 // Fetches a list of tasks
 const getTaskList = async (z, bundle) => {
@@ -12,7 +13,7 @@ const getTaskList = async (z, bundle) => {
     });
     return taskListResponse.data.items.map((task) => ({
         id: task.id,
-        name: task.actUsername ? `${task.name} (${task.actUsername}/${task.actName})` : `${task.name} (${task.actName})`,
+        name: printPrettyActorOrTaskName(task),
     }));
 };
 
