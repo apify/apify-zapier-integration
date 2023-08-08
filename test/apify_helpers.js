@@ -36,7 +36,7 @@ describe('apify utils', () => {
         const validator = makeValidator(FieldSchema);
 
         it('for Web Scraper', () => {
-            const fields = createFieldsFromInputSchemaV1(webScraperInputSchemaJson);
+            const fields = createFieldsFromInputSchemaV1(webScraperInputSchemaJson, { title: 'Web Scraper' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
@@ -44,7 +44,7 @@ describe('apify utils', () => {
         });
 
         it('for Website Content Scraper', () => {
-            const fields = createFieldsFromInputSchemaV1(websiteContentCrawlerInputSchema);
+            const fields = createFieldsFromInputSchemaV1(websiteContentCrawlerInputSchema, { title: 'Website Content Scraper' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
@@ -52,7 +52,7 @@ describe('apify utils', () => {
         });
 
         it('for Input Schema generated using GPT', () => {
-            const fields = createFieldsFromInputSchemaV1(generatedInputSchema);
+            const fields = createFieldsFromInputSchemaV1(generatedInputSchema, { title: 'Generated Input Schema' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);

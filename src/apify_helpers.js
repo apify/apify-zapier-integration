@@ -215,13 +215,24 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
 
 /**
  * Converts Apify input schema to Zapier input fields.
- * Input schema spec. https://docs.apify.com/platform/actors/development/actor-definition/input-schema
- * Fields schema spec. https://zapier.github.io/zapier-platform-schema/build/schema.html#fieldschema
+ * Input schema spec.
+ * https://docs.apify.com/platform/actors/development/actor-definition/input-schema Fields schema
+ * spec. https://zapier.github.io/zapier-platform-schema/build/schema.html#fieldschema
  * @param inputSchema
+ * @param actor
  */
-const createFieldsFromInputSchemaV1 = (inputSchema) => {
-    const { properties, required } = inputSchema;
-    const fields = [];
+const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
+    const { properties, required, description } = inputSchema;
+    const fields = [
+        // The first fies is info box with input schema description or actor title, same as on Apify platform.
+        {
+            label: actor.title,
+            key: `actor-${actor.id}-info`,
+            type: 'copy',
+            helpText: description || `${actor.title} Input, see [documentation](https://apify.com/${actor.username}/${actor.name}) `
+                + 'for detailed fields description.',
+        },
+    ];
     // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
         // eslint-disable-next-line no-continue
@@ -243,11 +254,15 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
             helpText: definition.description,
             key: propertyKey,
             required: required.includes(propertyKey),
-            placeholder: definition.prefill,
-            default: definition.default,
+            // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
+            // It is what what prefill is in Apify input schema.
+            default: definition.prefill,
+            // NOTE: From Zapier docs: An example value that is not saved.
+            // It is what what default is in Apify input schema.
+            placeholder: definition.default,
         };
         switch (definition.type) {
-            case 'string':
+            case 'string': {
                 // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
                 // These options will not cover UI validation and we need to handle it in code.
                 field.type = 'string'; // editor = textfield, datepicker
@@ -267,31 +282,72 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
                     field.type = 'password';
                 }
                 break;
-            case 'integer':
+            }
+            case 'integer': {
                 // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
                 field.type = 'integer';
                 break;
+            }
             case 'boolean':
                 // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
                 field.type = 'boolean';
                 break;
-            case 'array':
+            case 'array': {
+                let parsedPrefillValue;
+                let parsedDefaultValue;
+                try {
+                    parsedPrefillValue = definition.prefill && JSON.parse(definition.prefill);
+                    parsedDefaultValue = definition.default && JSON.parse(definition.default);
+                } catch (err) {
+                    // NOTE: We can ignore this error.
+                }
                 // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
                 // patternValue, maxItems, minItems, uniqueItems, nullable
                 if (definition.editor === 'json') {
                     field.type = 'text';
+                    if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
+                    else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
                 } else if (['requestListSources', 'pseudoUrls', 'globs', 'stringList'].includes(definition.editor)) {
                     // NOTE: These options are not supported in Zapier and Apify UI specific.
                     // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
                     field.type = 'string';
                     field.list = true;
+                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue)) {
+                        field.default = parsedPrefillValue.map((item) => {
+                            if (typeof item === 'string') return item;
+                            if (typeof item === 'object') return item.url || item.purl || item.glob;
+                            return item; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
+                        });
+                        field.placeholder = undefined;
+                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue)) {
+                        field.placeholder = parsedDefaultValue.map((item) => {
+                            if (typeof item === 'string') return item;
+                            if (typeof item === 'object') return item.url || item.purl || item.glob;
+                            return item; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
+                        });
+                        field.default = undefined;
+                    }
                 } else if (definition.editor === 'keyValue') {
                     // NOTE: We will convert this into object into [{"key": "key val","value": "val val"}..] format before run.
                     field.type = 'string';
                     field.disc = true;
+                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue)) {
+                        const defaultValues = {};
+                        parsedPrefillValue.forEach((key, value) => {
+                            if (key) defaultValues[key] = value;
+                        });
+                        field.placeholder = undefined;
+                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue)) {
+                        const placeholderValues = {};
+                        parsedDefaultValue.forEach((key, value) => {
+                            if (key) placeholderValues[key] = value;
+                        });
+                        field.default = undefined;
+                    }
                 }
                 break;
-            case 'object':
+            }
+            case 'object': {
                 if (definition.editor === 'json') {
                     field.type = 'text';
                 } else if (definition.editor === 'proxy') {
@@ -300,17 +356,19 @@ const createFieldsFromInputSchemaV1 = (inputSchema) => {
                         label: 'Proxy',
                         key: 'proxyWarning',
                         type: 'copy',
-                        helpText: `${definition.title} is Apify specific, we do not support it in Zapier.`
-                            + 'We recommend preset this value in Apify console.',
+                        helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
+                            + 'We suggest setting this value in the Apify console',
                     });
                     field.type = 'text';
                 }
                 break;
-            default:
+            }
+            default: {
                 // This should not happen.
                 console.log(`Unknown input schema type: ${definition.type}`, definition);
                 // eslint-disable-next-line no-continue
                 continue;
+            }
         }
         fields.push(field);
     }
@@ -390,9 +448,16 @@ const getActorAdditionalFields = async (z, bundle) => {
     ];
 
     if (inputSchema && (inputSchema.schemaVersion === 1 || !inputSchema.schemaVersion)) {
-        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(inputSchema);
+        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(inputSchema, actor);
         return [
             ...fieldsFromInputSchema,
+            {
+                label: 'Options',
+                key: `actor-${actor.id}-options`,
+                type: 'copy',
+                helpText: 'Actor options, see [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
+                    + ' for detailed description.',
+            },
             ...baseFields,
         ];
     }
@@ -416,7 +481,7 @@ const getActorAdditionalFields = async (z, bundle) => {
     }
     let inputBodyHelpText = 'Input configuration for the actor.';
     if (actor.isPublic) {
-        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}/input-schema) `
                 + 'for detailed fields description.';
     }
     return [
