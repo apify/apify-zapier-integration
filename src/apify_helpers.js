@@ -340,10 +340,10 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     });
                     field.type = 'text';
                 }
-                if (field.prefill) {
-                    field.default = JSON.stringify(field.prefill, null, 2);
+                if (definition.prefill) {
+                    field.default = JSON.stringify(definition.prefill, null, 2);
                 } else if (field.default) {
-                    field.placeholder = JSON.stringify(field.default, null, 2);
+                    field.placeholder = JSON.stringify(definition.default, null, 2);
                 }
                 break;
             }

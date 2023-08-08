@@ -86,6 +86,12 @@ describe('create actor run', () => {
         expect(pseudoUrlsField.helpText).to.be.equal(pseudoUrlsFieldSchema.description);
         expect(pseudoUrlsField.default).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
 
+        const proxyConfigurationField = fields.find(({ key }) => key === 'proxyConfiguration');
+        const proxyConfigurationFieldSchema = properties.proxyConfiguration;
+        expect(proxyConfigurationField.label).to.be.equal(proxyConfigurationFieldSchema.title);
+        expect(proxyConfigurationField.helpText).to.be.equal(proxyConfigurationFieldSchema.description);
+        expect(proxyConfigurationField.default).to.be.equal(JSON.stringify(proxyConfigurationFieldSchema.prefill, null, 2));
+
         const waitUntilField = fields.find(({ key }) => key === 'waitUntil');
         const waitUntilFieldSchema = properties.waitUntil;
         expect(waitUntilField.label).to.be.equal(waitUntilFieldSchema.title);
