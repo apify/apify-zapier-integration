@@ -80,6 +80,12 @@ describe('create actor run', () => {
         expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
         expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
 
+        const pseudoUrlsField = fields.find(({ key }) => key === 'pseudoUrls');
+        const pseudoUrlsFieldSchema = properties.pseudoUrls;
+        expect(pseudoUrlsField.label).to.be.equal(pseudoUrlsFieldSchema.title);
+        expect(pseudoUrlsField.helpText).to.be.equal(pseudoUrlsFieldSchema.description);
+        expect(pseudoUrlsField.default).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
+
         const waitUntilField = fields.find(({ key }) => key === 'waitUntil');
         const waitUntilFieldSchema = properties.waitUntil;
         expect(waitUntilField.label).to.be.equal(waitUntilFieldSchema.title);

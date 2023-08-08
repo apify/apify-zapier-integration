@@ -319,6 +319,9 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                         else if (typeof firstItem === 'object') field.placeholder = firstItem.url || firstItem.purl || firstItem.glob;
                         else field.placeholder = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
                         field.default = undefined;
+                    } else {
+                        field.default = undefined;
+                        field.placeholder = undefined;
                     }
                 }
                 break;
@@ -336,6 +339,11 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                             + 'We suggest setting this value in the Apify console',
                     });
                     field.type = 'text';
+                }
+                if (field.prefill) {
+                    field.default = JSON.stringify(field.prefill, null, 2);
+                } else if (field.default) {
+                    field.placeholder = JSON.stringify(field.default, null, 2);
                 }
                 break;
             }
