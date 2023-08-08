@@ -66,12 +66,26 @@ describe('create actor run', () => {
         const actor = await apifyClient.actor(actorId).get();
         const { buildId } = actor.taggedBuilds[actor.defaultRunOptions.build];
         const { inputSchema } = await apifyClient.build(buildId).get();
+        const { properties } = JSON.parse(inputSchema);
 
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
         const fieldKeys = fields.map(({ key }) => key);
-        Object.keys(JSON.parse(inputSchema).properties).forEach((keyToFind) => {
+        Object.keys(properties).forEach((keyToFind) => {
             expect(fieldKeys.includes(keyToFind)).to.be.equal(true);
         });
+        // Test fields edge cases
+        const startUrlsField = fields.find(({ key }) => key === 'startUrls');
+        const startUrlsFieldSchema = properties.startUrls;
+        expect(startUrlsField.label).to.be.equal(startUrlsFieldSchema.title);
+        expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
+        expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url));
+
+        const waitUntilField = fields.find(({ key }) => key === 'waitUntil');
+        const waitUntilFieldSchema = properties.waitUntil;
+        expect(waitUntilField.label).to.be.equal(waitUntilFieldSchema.title);
+        expect(waitUntilField.helpText).to.be.equal(waitUntilFieldSchema.description);
+        expect(waitUntilField.type).to.be.equal('text');
+        expect(waitUntilField.default).to.be.equal(JSON.stringify(waitUntilFieldSchema.prefill, null, 2));
     }).timeout(120000);
 
     it('runSync work', async () => {

@@ -293,14 +293,8 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                 field.type = 'boolean';
                 break;
             case 'array': {
-                let parsedPrefillValue;
-                let parsedDefaultValue;
-                try {
-                    parsedPrefillValue = definition.prefill && JSON.parse(definition.prefill);
-                    parsedDefaultValue = definition.default && JSON.parse(definition.default);
-                } catch (err) {
-                    // NOTE: We can ignore this error.
-                }
+                const parsedPrefillValue = definition.prefill;
+                const parsedDefaultValue = definition.default;
                 // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
                 // patternValue, maxItems, minItems, uniqueItems, nullable
                 if (definition.editor === 'json') {
