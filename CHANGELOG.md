@@ -1,3 +1,9 @@
+## 2.2.0 / 2023-06-30
+
+❗ Action Run Actor generates UI based on Input Schema if Actor has one.
+It breaks backward compatibility. If you set up the Actor run(with Input Schema) in old version, you need to set up it again using Zap UI.
+* Update node js version to v18
+
 ## 2.1.19 / 2023-06-30
 
 * Handle other content types on output of actor run expect JSON as files.
