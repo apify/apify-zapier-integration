@@ -5,6 +5,7 @@ It breaks backward compatibility. If you set up the Actor run(with Input Schema)
 * Update node js version to v18
 * Improve dropdown for list of tasks and actors
 * Fix actor name into Actor
+* Removed unused underscore package
 
 ## 2.1.19 / 2023-06-30
 
