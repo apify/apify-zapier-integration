@@ -253,7 +253,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
             label: definition.title,
             helpText: definition.description,
             key: propertyKey,
-            required: required.includes(propertyKey),
+            required: required && required.includes(propertyKey),
             // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
             // It is what what prefill is in Apify input schema.
             default: definition.prefill,
