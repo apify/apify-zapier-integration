@@ -5,6 +5,9 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
+// Key of field to use internally to compute changes in fields.
+const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
+
 const createDatasetUrls = (datasetId, cleanParamName) => {
     const createDatasetUrl = (format) => {
         return `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items?${cleanParamName}=true&attachment=true&format=${format}`;
@@ -119,8 +122,8 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
 
     // Attach Apify app URL to detail of run
     run.detailsPageUrl = run.actorTaskId
-        ? `https://console.apify.com/tasks/${run.actorTaskId}#/runs/${run.id}`
-        : `https://console.apify.com/actors/${run.actId}#/runs/${run.id}`;
+        ? `https://console.apify.com/actors/tasks/${run.actorTaskId}/runs/${run.id}`
+        : `https://console.apify.com/actors/${run.actId}/runs/${run.id}`;
 
     // Omit fields, which are useless for Zapier users.
     return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
@@ -214,6 +217,24 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
 };
 
 /**
+ * Creates key generator for input fields.
+ * @param actorId
+ * @returns {function(string): string}
+ */
+const createInputFieldKeyEncoder = (actorId) => {
+    return (fieldKey) => `${actorId}-${fieldKey}`;
+};
+
+/**
+ * Creates key decoder for input fields.
+ * @param actorId
+ * @returns {function(string): string}
+ */
+const createInputFieldKeyDecoder = (actorId) => {
+    return (fieldKey) => fieldKey.replace(`${actorId}-`, '');
+};
+
+/**
  * Converts Apify input schema to Zapier input fields.
  * Input schema spec.
  * https://docs.apify.com/platform/actors/development/actor-definition/input-schema Fields schema
@@ -223,11 +244,12 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
  */
 const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
     const { properties, required, description } = inputSchema;
+    const generateInputFieldKey = createInputFieldKeyEncoder(actor.id);
     const fields = [
         // The first fies is info box with input schema description or actor title, same as on Apify platform.
         {
             label: actor.title,
-            key: `actor-${actor.id}-info`,
+            key: generateInputFieldKey('actor-info'),
             type: 'copy',
             helpText: description || `${actor.title} Input, see [documentation](https://apify.com/${actor.username}/${actor.name}) `
                 + 'for detailed fields description.',
@@ -244,7 +266,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                 : definition.sectionCaption;
             fields.push({
                 label: definition.sectionCaption,
-                key: `sectionCaption-${propertyKey}`,
+                key: generateInputFieldKey(`sectionCaption-${propertyKey}`),
                 type: 'copy',
                 helpText,
             });
@@ -252,7 +274,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
         const field = {
             label: definition.title,
             helpText: definition.description,
-            key: propertyKey,
+            key: generateInputFieldKey(propertyKey),
             required: required && required.includes(propertyKey),
             // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
             // It is what what prefill is in Apify input schema.
@@ -333,7 +355,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
                     fields.push({
                         label: 'Proxy',
-                        key: 'proxyWarning',
+                        key: generateInputFieldKey('proxyWarning'),
                         type: 'copy',
                         helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
                             + 'We suggest setting this value in the Apify console',
@@ -380,20 +402,26 @@ const maybeGetInputSchemaFromActor = async (z, actor, buildTag) => {
  */
 const getActorAdditionalFields = async (z, bundle) => {
     const { actorId } = bundle.inputData;
-    if (!actorId) return [];
+    if (!actorId) return []; // Actor not selected yet, no additional fields to load.
+
+    const previousActorId = bundle.inputData[ACTOR_ID_REFERENCE_FIELD_KEY];
+    const wasActorChanged = actorId !== previousActorId; // If Actor ID changed from the last input field generation.
 
     const actorResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
     });
 
     const actor = actorResponse.data;
-    const { build, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
-    const defaultActorBuildTag = build || BUILD_TAG_LATEST;
+    const generateInputFieldKey = createInputFieldKeyEncoder(actor.id);
+    const { build: defaultBuild, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
+    const actorBuildTag = wasActorChanged
+        ? defaultBuild || BUILD_TAG_LATEST
+        : bundle.inputData.build || defaultBuild || BUILD_TAG_LATEST;
 
     let inputBody;
     let inputContentType;
     // Get input schema from build
-    const inputSchema = await maybeGetInputSchemaFromActor(z, actor, defaultActorBuildTag);
+    const inputSchema = await maybeGetInputSchemaFromActor(z, actor, actorBuildTag);
     if (inputSchema) {
         inputContentType = 'application/json; charset=utf-8';
         inputBody = JSON.stringify(getPrefilledValuesFromInputSchema(inputSchema), null, 2);
@@ -401,11 +429,19 @@ const getActorAdditionalFields = async (z, bundle) => {
 
     const baseFields = [
         {
+            label: 'Reference Actor ID',
+            key: ACTOR_ID_REFERENCE_FIELD_KEY,
+            helpText: 'ID of Actor the UI was generated for.',
+            type: 'string',
+            default: actorId,
+            computed: true, // This field is hidden in UI, used for checking if actorId change between input fields generation.
+        },
+        {
             label: 'Build',
             helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
-            key: 'build',
+            key: generateInputFieldKey('build'),
             required: false,
-            default: defaultActorBuildTag,
+            default: actorBuildTag,
             // NOTE: Change build value recomputes fields as input schema can change.
             altersDynamicFields: true,
             type: 'string',
@@ -414,7 +450,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             label: 'Timeout',
             helpText: 'Timeout for the actor run in seconds. If `0` '
                 + 'there will be no timeout and the actor will run until completion, perhaps forever.',
-            key: 'timeoutSecs',
+            key: generateInputFieldKey('timeoutSecs'),
             required: false,
             default: timeoutSecs || 0,
             type: 'integer',
@@ -422,7 +458,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Memory',
             helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster your actor will run.',
-            key: 'memoryMbytes',
+            key: generateInputFieldKey('memoryMbytes'),
             required: false,
             // NOTE: Zapier UI allows only choices with strings
             default: (memoryMbytes || DEFAULT_ACTOR_MEMORY_MBYTES).toString(),
@@ -437,7 +473,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             ...fieldsFromInputSchema,
             {
                 label: 'Options',
-                key: `actor-${actor.id}-options`,
+                key: generateInputFieldKey('actor-options'),
                 type: 'copy',
                 helpText: 'Actor options, see [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
                     + ' for detailed description.',
@@ -472,7 +508,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Input body',
             helpText: inputBodyHelpText,
-            key: 'inputBody',
+            key: generateInputFieldKey('inputBody'),
             required: false,
             default: inputBody || '',
             type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
@@ -480,7 +516,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Input content type',
             helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
-            key: 'inputContentType',
+            key: generateInputFieldKey('inputContentType'),
             required: false,
             default: inputContentType || '',
             type: 'string',
@@ -508,4 +544,6 @@ module.exports = {
     createFieldsFromInputSchemaV1,
     maybeGetInputSchemaFromActor,
     printPrettyActorOrTaskName,
+    createInputFieldKeyDecoder,
+    createInputFieldKeyEncoder,
 };

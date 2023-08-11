@@ -44,11 +44,11 @@ describe('create actor run', () => {
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
         const fieldsByKey = _.keyBy(fields, 'key');
 
-        expect(actorFields.defaultRunOptions.build).to.be.eql(fieldsByKey.build.default);
-        expect(actorFields.defaultRunOptions.timeoutSecs).to.be.eql(fieldsByKey.timeoutSecs.default);
-        expect(actorFields.defaultRunOptions.memoryMbytes).to.be.eql(parseInt(fieldsByKey.memoryMbytes.default));
-        expect(actorFields.exampleRunInput.contentType).to.be.eql(fieldsByKey.inputContentType.default);
-        expect(JSON.parse(actorFields.exampleRunInput.body)).to.be.eql(JSON.parse(fieldsByKey.inputBody.default));
+        expect(actorFields.defaultRunOptions.build).to.be.eql(fieldsByKey[`${testActorId}-build`].default);
+        expect(actorFields.defaultRunOptions.timeoutSecs).to.be.eql(fieldsByKey[`${testActorId}-timeoutSecs`].default);
+        expect(actorFields.defaultRunOptions.memoryMbytes).to.be.eql(parseInt(fieldsByKey[`${testActorId}-memoryMbytes`].default));
+        expect(actorFields.exampleRunInput.contentType).to.be.eql(fieldsByKey[`${testActorId}-inputContentType`].default);
+        expect(JSON.parse(actorFields.exampleRunInput.body)).to.be.eql(JSON.parse(fieldsByKey[`${testActorId}-inputBody`].default));
     });
 
     it('loading of dynamic fields from inputSchema work', async () => {
@@ -71,28 +71,28 @@ describe('create actor run', () => {
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
         const fieldKeys = fields.map(({ key }) => key);
         Object.keys(properties).forEach((keyToFind) => {
-            expect(fieldKeys.includes(keyToFind)).to.be.equal(true);
+            expect(fieldKeys.includes(`${actor.id}-${keyToFind}`)).to.be.equal(true);
         });
         // Test fields edge cases
-        const startUrlsField = fields.find(({ key }) => key === 'startUrls');
+        const startUrlsField = fields.find(({ key }) => key === `${actor.id}-startUrls`);
         const startUrlsFieldSchema = properties.startUrls;
         expect(startUrlsField.label).to.be.equal(startUrlsFieldSchema.title);
         expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
         expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
 
-        const pseudoUrlsField = fields.find(({ key }) => key === 'pseudoUrls');
+        const pseudoUrlsField = fields.find(({ key }) => key === `${actor.id}-pseudoUrls`);
         const pseudoUrlsFieldSchema = properties.pseudoUrls;
         expect(pseudoUrlsField.label).to.be.equal(pseudoUrlsFieldSchema.title);
         expect(pseudoUrlsField.helpText).to.be.equal(pseudoUrlsFieldSchema.description);
         expect(pseudoUrlsField.default).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
 
-        const proxyConfigurationField = fields.find(({ key }) => key === 'proxyConfiguration');
+        const proxyConfigurationField = fields.find(({ key }) => key === `${actor.id}-proxyConfiguration`);
         const proxyConfigurationFieldSchema = properties.proxyConfiguration;
         expect(proxyConfigurationField.label).to.be.equal(proxyConfigurationFieldSchema.title);
         expect(proxyConfigurationField.helpText).to.be.equal(proxyConfigurationFieldSchema.description);
         expect(proxyConfigurationField.default).to.be.equal(JSON.stringify(proxyConfigurationFieldSchema.prefill, null, 2));
 
-        const waitUntilField = fields.find(({ key }) => key === 'waitUntil');
+        const waitUntilField = fields.find(({ key }) => key === `${actor.id}-waitUntil`);
         const waitUntilFieldSchema = properties.waitUntil;
         expect(waitUntilField.label).to.be.equal(waitUntilFieldSchema.title);
         expect(waitUntilField.helpText).to.be.equal(waitUntilFieldSchema.description);
@@ -101,6 +101,36 @@ describe('create actor run', () => {
     }).timeout(120000);
 
     it('runSync work', async () => {
+        const runOptions = {
+            [`${testActorId}-build`]: 'latest',
+            [`${testActorId}-timeoutSecs`]: 120,
+            [`${testActorId}-memoryMbytes`]: 1024,
+        };
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: true,
+                [`${testActorId}-inputBody`]: '',
+                ...runOptions,
+            },
+        };
+
+        const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+        const actorRun = await apifyClient.run(testResult.id).get();
+
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
+        expect(testResult.status).to.be.eql('SUCCEEDED');
+        expect(testResult.finishedAt).to.not.equal(null);
+        expect(testResult.OUTPUT).to.be.eql({ foo: 'bar' });
+        Object.keys(runOptions).forEach((key) => {
+            expect(actorRun.options[key.replace(`${testActorId}-`, '')]).to.be.eql(runOptions[key]);
+        });
+    }).timeout(120000);
+
+    it('runSync work for [LEGACY] zaps version <3.0.0', async () => {
         const runOptions = {
             build: 'latest',
             timeoutSecs: 120,

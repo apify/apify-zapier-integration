@@ -1,10 +1,29 @@
 const dayjs = require('dayjs');
 const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
-const { enrichActorRun, getActorAdditionalFields, maybeGetInputSchemaFromActor } = require('../apify_helpers');
+const {
+    enrichActorRun,
+    getActorAdditionalFields,
+    maybeGetInputSchemaFromActor,
+    createInputFieldKeyDecoder,
+    createInputFieldKeyEncoder,
+} = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const runActor = async (z, bundle) => {
-    const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
+    const { actorId, runSync } = bundle.inputData;
+
+    const encodeInputFieldKey = createInputFieldKeyEncoder(actorId);
+    const decodeInputFieldKey = createInputFieldKeyDecoder(actorId);
+
+    // NOTE: Keep backward compatibility with old input fields (<v3.0.0) bundle.inputData.xxx without actorId prefix.
+    if (bundle.inputData.inputData !== undefined) {
+        console.log('WARNING: User is using deprecated bundle.inputData.xxx fields.');
+    }
+    const inputBody = bundle.inputData[encodeInputFieldKey('inputBody')] ?? bundle.inputData.inputBody;
+    const inputContentType = bundle.inputData[encodeInputFieldKey('inputContentType')] ?? bundle.inputData.inputContentType;
+    const build = bundle.inputData[encodeInputFieldKey('build')] ?? bundle.inputData.build;
+    const timeoutSecs = bundle.inputData[encodeInputFieldKey('timeoutSecs')] ?? bundle.inputData.timeoutSecs;
+    const memoryMbytes = bundle.inputData[encodeInputFieldKey('memoryMbytes')] ?? bundle.inputData.memoryMbytes;
 
     const requestOpts = {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs`,
@@ -39,8 +58,9 @@ const runActor = async (z, bundle) => {
         if (inputSchema) {
             const input = {};
             const inputSchemaKeys = Object.keys(inputSchema.properties);
-            inputSchemaKeys.forEach((key) => {
-                const value = bundle.inputData[key];
+            inputSchemaKeys.forEach((fieldKey) => {
+                const key = decodeInputFieldKey(fieldKey);
+                const value = bundle.inputData[fieldKey];
                 if (value) {
                     const { editor, title } = inputSchema.properties[key];
                     if (editor === 'datepicker') {

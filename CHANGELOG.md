@@ -1,9 +1,9 @@
-## 2.2.8 / 2023-08-08
+## 3.0.0 / 2023-08-08
 
 ❗ Action Run Actor generates UI based on Input Schema if Actor has one.
 It breaks backward compatibility. If you set up the Actor run(with Input Schema) in old version, you need to set up it again using Zap UI.
 * Update node js version to v18
-* Improve dropdown for list of tasks and actors
+* Improve dropdown for list of tasks and Actors
 * Fix actor name into Actor
 * Removed unused underscore package
 
