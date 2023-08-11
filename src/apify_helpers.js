@@ -217,24 +217,6 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
 };
 
 /**
- * Creates key generator for input fields.
- * @param actorId
- * @returns {function(string): string}
- */
-const createInputFieldKeyEncoder = (actorId) => {
-    return (fieldKey) => `${actorId}-${fieldKey}`;
-};
-
-/**
- * Creates key decoder for input fields.
- * @param actorId
- * @returns {function(string): string}
- */
-const createInputFieldKeyDecoder = (actorId) => {
-    return (fieldKey) => fieldKey.replace(`${actorId}-`, '');
-};
-
-/**
  * Converts Apify input schema to Zapier input fields.
  * Input schema spec.
  * https://docs.apify.com/platform/actors/development/actor-definition/input-schema Fields schema
@@ -244,12 +226,11 @@ const createInputFieldKeyDecoder = (actorId) => {
  */
 const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
     const { properties, required, description } = inputSchema;
-    const generateInputFieldKey = createInputFieldKeyEncoder(actor.id);
     const fields = [
         // The first fies is info box with input schema description or actor title, same as on Apify platform.
         {
             label: actor.title,
-            key: generateInputFieldKey('actor-info'),
+            key: `actor-${actor.id}-info`,
             type: 'copy',
             helpText: description || `${actor.title} Input, see [documentation](https://apify.com/${actor.username}/${actor.name}) `
                 + 'for detailed fields description.',
@@ -266,7 +247,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                 : definition.sectionCaption;
             fields.push({
                 label: definition.sectionCaption,
-                key: generateInputFieldKey(`sectionCaption-${propertyKey}`),
+                key: `sectionCaption-${propertyKey}`,
                 type: 'copy',
                 helpText,
             });
@@ -274,7 +255,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
         const field = {
             label: definition.title,
             helpText: definition.description,
-            key: generateInputFieldKey(propertyKey),
+            key: propertyKey,
             required: required && required.includes(propertyKey),
             // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
             // It is what what prefill is in Apify input schema.
@@ -355,7 +336,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
                     fields.push({
                         label: 'Proxy',
-                        key: generateInputFieldKey('proxyWarning'),
+                        key: 'proxyWarning',
                         type: 'copy',
                         helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
                             + 'We suggest setting this value in the Apify console',
@@ -412,7 +393,6 @@ const getActorAdditionalFields = async (z, bundle) => {
     });
 
     const actor = actorResponse.data;
-    const generateInputFieldKey = createInputFieldKeyEncoder(actor.id);
     const { build: defaultBuild, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
     const actorBuildTag = wasActorChanged
         ? defaultBuild || BUILD_TAG_LATEST
@@ -439,7 +419,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Build',
             helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
-            key: generateInputFieldKey('build'),
+            key: 'build',
             required: false,
             default: actorBuildTag,
             // NOTE: Change build value recomputes fields as input schema can change.
@@ -450,7 +430,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             label: 'Timeout',
             helpText: 'Timeout for the actor run in seconds. If `0` '
                 + 'there will be no timeout and the actor will run until completion, perhaps forever.',
-            key: generateInputFieldKey('timeoutSecs'),
+            key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
             type: 'integer',
@@ -458,7 +438,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Memory',
             helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster your actor will run.',
-            key: generateInputFieldKey('memoryMbytes'),
+            key: 'memoryMbytes',
             required: false,
             // NOTE: Zapier UI allows only choices with strings
             default: (memoryMbytes || DEFAULT_ACTOR_MEMORY_MBYTES).toString(),
@@ -473,7 +453,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             ...fieldsFromInputSchema,
             {
                 label: 'Options',
-                key: generateInputFieldKey('actor-options'),
+                key: `actor-${actor.id}-options`,
                 type: 'copy',
                 helpText: 'Actor options, see [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
                     + ' for detailed description.',
@@ -508,7 +488,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Input body',
             helpText: inputBodyHelpText,
-            key: generateInputFieldKey('inputBody'),
+            key: 'inputBody',
             required: false,
             default: inputBody || '',
             type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
@@ -516,7 +496,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Input content type',
             helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
-            key: generateInputFieldKey('inputContentType'),
+            key: 'inputContentType',
             required: false,
             default: inputContentType || '',
             type: 'string',
@@ -544,6 +524,4 @@ module.exports = {
     createFieldsFromInputSchemaV1,
     maybeGetInputSchemaFromActor,
     printPrettyActorOrTaskName,
-    createInputFieldKeyDecoder,
-    createInputFieldKeyEncoder,
 };
