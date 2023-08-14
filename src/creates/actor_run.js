@@ -4,7 +4,7 @@ const {
     enrichActorRun,
     getActorAdditionalFields,
     maybeGetInputSchemaFromActor,
-    parseInputFieldKey,
+    prefixInputFieldKey,
 } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
@@ -44,8 +44,8 @@ const runActor = async (z, bundle) => {
         if (inputSchema) {
             const input = {};
             const inputSchemaKeys = Object.keys(inputSchema.properties);
-            inputSchemaKeys.forEach((fieldKey) => {
-                const key = parseInputFieldKey(fieldKey);
+            inputSchemaKeys.forEach((key) => {
+                const fieldKey = prefixInputFieldKey(key);
                 const value = bundle.inputData[fieldKey];
                 if (value) {
                     const { editor, title } = inputSchema.properties[key];
