@@ -217,6 +217,24 @@ const getPrefilledValuesFromInputSchema = (inputSchema) => {
 };
 
 /**
+ * Prefix input field key with input string.
+ * @param fieldKey
+ * @returns string
+ */
+const prefixInputFieldKey = (fieldKey) => {
+    return `input-${fieldKey}`;
+};
+
+/**
+ * Parse input field key to get original key.
+ * @param fieldKey
+ * @returns string
+ */
+const parseInputFieldKey = (fieldKey) => {
+    return fieldKey.replace('input-', '');
+};
+
+/**
  * Converts Apify input schema to Zapier input fields.
  * Input schema spec.
  * https://docs.apify.com/platform/actors/development/actor-definition/input-schema Fields schema
@@ -230,7 +248,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
         // The first fies is info box with input schema description or actor title, same as on Apify platform.
         {
             label: actor.title,
-            key: `actor-${actor.id}-info`,
+            key: prefixInputFieldKey(`actor-${actor.id}-info`),
             type: 'copy',
             helpText: description || `${actor.title} Input, see [documentation](https://apify.com/${actor.username}/${actor.name}) `
                 + 'for detailed fields description.',
@@ -247,7 +265,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                 : definition.sectionCaption;
             fields.push({
                 label: definition.sectionCaption,
-                key: `sectionCaption-${propertyKey}`,
+                key: prefixInputFieldKey(`sectionCaption-${propertyKey}`),
                 type: 'copy',
                 helpText,
             });
@@ -255,7 +273,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
         const field = {
             label: definition.title,
             helpText: definition.description,
-            key: propertyKey,
+            key: prefixInputFieldKey(propertyKey),
             required: required && required.includes(propertyKey),
             // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
             // It is what what prefill is in Apify input schema.
@@ -336,7 +354,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
                     fields.push({
                         label: 'Proxy',
-                        key: 'proxyWarning',
+                        key: prefixInputFieldKey('proxyWarning'),
                         type: 'copy',
                         helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
                             + 'We suggest setting this value in the Apify console',
@@ -524,4 +542,6 @@ module.exports = {
     createFieldsFromInputSchemaV1,
     maybeGetInputSchemaFromActor,
     printPrettyActorOrTaskName,
+    parseInputFieldKey,
+    prefixInputFieldKey,
 };
