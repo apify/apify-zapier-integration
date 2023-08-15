@@ -1,4 +1,4 @@
-## 3.0.3 / 2023-08-08
+## 3.0.4 / 2023-08-15
 
 ❗ Action Run Actor generates UI based on Input Schema if Actor has one.
 It breaks backward compatibility. If you set up the Actor run(with Input Schema) in old version, you need to set up it again using Zap UI.
