@@ -16,7 +16,7 @@ If you are interested in adding a new feature or fixing a bug in the integration
 ### Tests
 
 You will need your Apify API token before you run tests.
-You can find the token [on the Integrations page of your Apify account](https://my.apify.com/account#/integrations).
+You can find the token [on the Integrations page of your Apify account](https://console.apify.com/account/integrations).
 Run this command to test the app:
 ```text
 TEST_USER_TOKEN=apify_api_token npm run test

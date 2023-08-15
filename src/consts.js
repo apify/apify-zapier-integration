@@ -43,7 +43,7 @@ const ACTOR_RUN_SAMPLE = {
         xlsx: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=xlsx&clean=true&attachment=true',
     },
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
-    detailsPageUrl: 'https://my.apify.com/actors/$actId#/runs/HG7ML7M8z78YcAPEB',
+    detailsPageUrl: 'https://console.apify.com/actors/$actId/runs/HG7ML7M8z78YcAPEB',
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
         DATASET_READS: 0,
@@ -97,7 +97,7 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
 const TASK_RUN_SAMPLE = {
     ...ACTOR_RUN_SAMPLE,
     actorTaskId: 'UJNG9zau8PEB7U',
-    detailsPageUrl: 'https://my.apify.com/tasks/UJNG9zau8PEB7U#/runs/HG7ML7M8z78YcAPEB',
+    detailsPageUrl: 'https://console.apify.com/actors/tasks/UJNG9zau8PEB7U/runs/HG7ML7M8z78YcAPEB',
 };
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);

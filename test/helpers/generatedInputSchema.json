@@ -1,0 +1,90 @@
+{
+  "title": "Real-world Example JSON Data",
+  "schemaVersion": 1,
+  "description": "This is a comprehensive test JSON with all possible property variants.",
+  "type": "object",
+  "properties": {
+    "stringProperty": {
+      "type": "string",
+      "title": "String Property",
+      "description": "This is a regular string property.",
+      "editor": "textfield",
+      "default": "Default Value",
+      "nullable": true,
+      "pattern": "^[a-zA-Z0-9]*$",
+      "minLength": 5,
+      "maxLength": 20,
+      "sectionCaption": "String Property Section",
+      "sectionDescription": "This section contains string properties."
+    },
+    "enumProperty": {
+      "type": "string",
+      "title": "Enum Property",
+      "description": "This is an enum property.",
+      "editor": "select",
+      "enum": ["Option 1", "Option 2", "Option 3"],
+      "enumTitles": ["First Option", "Second Option", "Third Option"],
+      "default": "Option 1",
+      "nullable": false,
+      "sectionCaption": "Enum Property Section",
+      "sectionDescription": "This section contains enum properties."
+    },
+    "arrayProperty": {
+      "type": "array",
+      "title": "Array Property",
+      "description": "This is an array property.",
+      "editor": "json",
+      "default": ["Item 1", "Item 2"],
+      "prefill": ["Item 3"],
+      "nullable": true,
+      "minItems": 1,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "sectionCaption": "Array Property Section",
+      "sectionDescription": "This section contains array properties."
+    },
+    "objectProperty": {
+      "type": "object",
+      "title": "Object Property",
+      "description": "This is an object property.",
+      "editor": "json",
+      "default": {"key1": "value1", "key2": "value2"},
+      "prefill": {"key3": "value3"},
+      "nullable": true,
+      "minProperties": 1,
+      "maxProperties": 5,
+      "patternKey": "^[a-zA-Z0-9]*$",
+      "patternValue": "^\\d*$",
+      "sectionCaption": "Object Property Section",
+      "sectionDescription": "This section contains object properties."
+    },
+    "integerProperty": {
+      "type": "integer",
+      "title": "Integer Property",
+      "description": "This is an integer property.",
+      "editor": "number",
+      "default": 10,
+      "prefill": 5,
+      "nullable": true,
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "seconds",
+      "sectionCaption": "Integer Property Section",
+      "sectionDescription": "This section contains integer properties."
+    },
+    "booleanProperty": {
+      "type": "boolean",
+      "title": "Boolean Property",
+      "description": "This is a boolean property.",
+      "editor": "checkbox",
+      "default": true,
+      "example": false,
+      "nullable": false,
+      "groupCaption": "Boolean Group",
+      "groupDescription": "This group contains boolean properties.",
+      "sectionCaption": "Boolean Property Section",
+      "sectionDescription": "This section contains boolean properties."
+    }
+  },
+  "required": ["stringProperty", "enumProperty", "arrayProperty", "objectProperty", "integerProperty", "booleanProperty"]
+}

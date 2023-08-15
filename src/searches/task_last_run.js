@@ -30,7 +30,6 @@ module.exports = {
     display: {
         label: 'Find Last Task Run',
         description: 'Finds the most recent task run with a specific status.',
-        important: true,
     },
 
     operation: {

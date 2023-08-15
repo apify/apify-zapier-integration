@@ -1,5 +1,6 @@
 const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
+const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
 // Fetches a list of actors
 // TODO: Adds logic to load featured actors.
@@ -13,7 +14,7 @@ const getActorList = async (z, bundle) => {
     });
     return actorListResponse.data.items.map((actor) => ({
         id: actor.id,
-        name: actor.username ? `${actor.username}/${actor.name}` : actor.name,
+        name: printPrettyActorOrTaskName(actor),
     }));
 };
 

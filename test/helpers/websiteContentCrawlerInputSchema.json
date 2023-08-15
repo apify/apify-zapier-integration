@@ -1,0 +1,202 @@
+{
+  "title": "Input schema for Website Content Crawler",
+  "description": "Enter start URL of a website(s) to crawl, configure other optional settings, and run the Actor to crawl the pages and extract their text content.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "startUrls": {
+      "title": "Start URLs",
+      "type": "array",
+      "description": "One or more URLs of pages where the crawler will start. Note that the Actor will additionally only crawl sub-pages of these URLs. For example, for start URL `https://example.com/blog`, it will crawl pages like `https://example.com/blog/post`, but will skip `https://example.com/docs`.",
+      "editor": "requestListSources",
+      "prefill": [
+        {
+          "url": "https://docs.apify.com/academy/web-scraping-for-beginners"
+        }
+      ]
+    },
+    "crawlerType": {
+      "sectionCaption": "Crawler settings",
+      "title": "Crawler type",
+      "type": "string",
+      "enum": [
+        "playwright:chrome",
+        "playwright:firefox",
+        "cheerio",
+        "jsdom"
+      ],
+      "enumTitles": [
+        "Headless web browser (Chrome+Playwright)",
+        "Stealthy web browser (Firefox+Playwright)",
+        "Raw HTTP client (Cheerio)",
+        "Raw HTTP client with JavaScript execution (JSDOM) [experimental]"
+      ],
+      "description": "Select the crawling engine:\n- **Headless web browser** - Useful for modern websites with anti-scraping protections and JavaScript rendering. It recognizes common blocking patterns like CAPTCHAs and automatically retries blocked requests through new sessions. However, running web browsers is more expensive as it requires more computing resources and is slower. It is recommended to use at least 8 GB of RAM.\n- **Stealthy web browser** (default) - Another headless web browser with anti-blocking measures enabled. Try this if you encounter bot protection while scraping. For best performance, use with Apify Proxy residential IPs. \n- **Raw HTTP client** - High-performance crawling mode that uses raw HTTP requests to fetch the pages. It is faster and cheaper, but it might not work on all websites.",
+      "default": "playwright:firefox"
+    },
+    "excludeUrlGlobs": {
+      "title": "Exclude URLs (globs)",
+      "type": "array",
+      "description": "Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not **Start URLs**, which are always crawled.\n\nFor example `https://{store,docs}.example.com/**` excludes all URLs starting with `https://store.example.com/` or `https://docs.example.com/`, and `https://example.com/**/*\\?*foo=*` excludes all URLs that contain `foo` query parameter with any value.\n\nLearn more about globs and test them [here](https://www.digitalocean.com/community/tools/glob?comments=true&glob=https%3A%2F%2Fexample.com%2Fdont_scrape_this%2F%2A%2A&matches=false&tests=https%3A%2F%2Fexample.com%2Ftools%2F&tests=https%3A%2F%2Fexample.com%2Fdont_scrape_this%2F&tests=https%3A%2F%2Fexample.com%2Fdont_scrape_this%2F123%3Ftest%3Dabc&tests=https%3A%2F%2Fexample.com%2Fscrape_this).",
+      "editor": "globs",
+      "prefill": [],
+      "default": []
+    },
+    "maxCrawlDepth": {
+      "title": "Max crawling depth",
+      "type": "integer",
+      "description": "The maximum number of links starting from the start URL that the crawler will recursively follow. The start URLs have depth `0`, the pages linked directly from the start URLs have depth `1`, and so on.\n\nThis setting is useful to prevent accidental crawler runaway. By setting it to `0`, the Actor will only crawl the Start URLs.",
+      "minimum": 0,
+      "default": 20
+    },
+    "maxCrawlPages": {
+      "title": "Max pages",
+      "type": "integer",
+      "description": "The maximum number pages to crawl. It includes the start URLs, pagination pages, pages with no content, etc. The crawler will automatically finish after reaching this number. This setting is useful to prevent accidental crawler runaway.",
+      "minimum": 0,
+      "default": 9999999
+    },
+    "initialConcurrency": {
+      "title": "Initial concurrency",
+      "type": "integer",
+      "description": "The initial number of web browsers or HTTP clients running in parallel. The system scales the concurrency up and down based on the current CPU and memory load. If the value is set to 0 (default), the Actor uses the default setting for the specific crawler type.\n\nNote that if you set this value too high, the Actor will run out of memory and crash. If too low, it will be slow at start before it scales the concurrency up.",
+      "minimum": 0,
+      "maximum": 999,
+      "default": 0
+    },
+    "maxConcurrency": {
+      "title": "Max concurrency",
+      "type": "integer",
+      "description": "The maximum number of web browsers or HTTP clients running in parallel. This setting is useful to avoid overloading the target websites and to avoid getting blocked.",
+      "minimum": 1,
+      "maximum": 999,
+      "default": 200
+    },
+    "initialCookies": {
+      "title": "Initial cookies",
+      "type": "array",
+      "description": "Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. Example: `[{\"name\": \"cookieName\", \"value\": \"cookieValue\"}]`.\n\nYou can use the [EditThisCookie](https://chrome.google.com/webstore/detail/editthiscookie/fngmhnnpilhplaeedifhccceomclgfbg) browser extension to copy browser cookies in this format, and paste it here.",
+      "default": [],
+      "prefill": [],
+      "editor": "json"
+    },
+    "proxyConfiguration": {
+      "title": "Proxy configuration",
+      "type": "object",
+      "description": "Enables loading the websites from IP addresses in specific geographies and to circumvent blocking.",
+      "prefill": {
+        "useApifyProxy": true
+      },
+      "editor": "proxy"
+    },
+    "dynamicContentWaitSecs": {
+      "sectionCaption": "HTML processing",
+      "title": "Wait for dynamic content (seconds)",
+      "type": "integer",
+      "description": "The maximum time to wait for dynamic page content to load. By default, it is 10 seconds. The crawler will continue either if this time elapses, or if it detects the network became idle as there are no more requests for additional resources.\n\nNote that this setting is ignored for the raw HTTP client, because it doesn't execute JavaScript or loads any dynamic resources.",
+      "default": 10
+    },
+    "maxScrollHeightPixels": {
+      "title": "Maximum scroll height (pixels)",
+      "type": "integer",
+      "minimum": 0,
+      "description": "The crawler will scroll down the page until all content is loaded (and network becomes idle), or until this maximum scrolling height is reached. Setting this value to `0` disables scrolling altogether.\n\nNote that this setting is ignored for the raw HTTP client, because it doesn't execute JavaScript or loads any dynamic resources.",
+      "default": 5000
+    },
+    "removeElementsCssSelector": {
+      "title": "Remove HTML elements (CSS selector)",
+      "type": "string",
+      "description": "A CSS selector matching HTML elements that will be removed from the DOM, before converting it to text, Markdown, or saving as HTML. This is useful to skip irrelevant page content. \n\nBy default, the Actor removes common navigation elements, headers, footers, modals, scripts, and inline image. You can disable the removal by setting this value to some non-existent CSS selector like `dummy_keep_everything`.",
+      "editor": "textarea",
+      "default": "nav, footer, script, style, noscript, svg,\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]",
+      "prefill": "nav, footer, script, style, noscript, svg,\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]"
+    },
+    "removeCookieWarnings": {
+      "title": "Remove cookie warnings",
+      "type": "boolean",
+      "description": "If enabled, the Actor will try to remove cookies consent dialogs or modals, using the [I don't care about cookies](https://addons.mozilla.org/en-US/firefox/addon/i-dont-care-about-cookies/) browser extension, to improve the accuracy of the extracted text. Note that there is a small performance penalty if this feature is enabled.\n\nThis setting is ignored when using the raw HTTP crawler type.",
+      "default": true
+    },
+    "clickElementsCssSelector": {
+      "title": "Expand clickable elements",
+      "type": "string",
+      "editor": "textfield",
+      "description": "A CSS selector matching DOM elements that will be clicked. This is useful for expanding collapsed sections, in order to capture their text content.",
+      "default": "[aria-expanded=\"false\"]",
+      "prefill": "[aria-expanded=\"false\"]"
+    },
+    "htmlTransformer": {
+      "title": "HTML transformer",
+      "type": "string",
+      "enum": [
+        "readableText",
+        "extractus",
+        "none"
+      ],
+      "enumTitles": [
+        "Readable text",
+        "Extractus",
+        "None"
+      ],
+      "description": "Specify how to transform the HTML to extract meaningful content without any extra fluff, like navigation or modals. The HTML transformation happens after removing and clicking the DOM elements.\n\n- **Readable text** (default) - Extracts the main contents of the webpage, without navigation and other fluff.\n- **Extractus** - Uses Extractus library.\n- **None** - Only removes the HTML elements specified via 'Remove HTML elements' option.\n\nYou can examine output of all transformers by enabling the debug mode.\n",
+      "default": "readableText"
+    },
+    "readableTextCharThreshold": {
+      "title": "Readable text extractor character threshold",
+      "type": "integer",
+      "description": "A configuration options for the \"Readable text\" HTML transformer. It contains the minimum number of characters an article must have in order to be considered relevant.",
+      "default": 100
+    },
+    "aggressivePrune": {
+      "title": "Remove duplicate text lines",
+      "type": "boolean",
+      "description": "This is an **experimental feature**. If enabled, the crawler will prune content lines that are very similar to the ones already crawled on other pages, using the Count-Min Sketch algorithm. This is useful to strip repeating content in the scraped data like menus, headers, footers, etc. In some (not very likely) cases, it might remove relevant content from some pages.",
+      "default": false
+    },
+    "debugMode": {
+      "title": "Debug mode (stores output of all HTML transformers)",
+      "type": "boolean",
+      "description": "If enabled, the Actor will store the output of all types of HTML transformers, including the ones that are not used by default, and it will also store the HTML to Key-value Store with a link. All this data is stored under the `debug` field in the resulting Dataset.",
+      "default": false
+    },
+    "saveHtml": {
+      "sectionCaption": "Output settings",
+      "title": "Save HTML",
+      "type": "boolean",
+      "description": "If enabled, the crawler stores full transformed HTML of all pages found, under the `html` field in the output dataset. This is useful for debugging, but reduces performance and increases storage costs.",
+      "default": false
+    },
+    "saveMarkdown": {
+      "title": "Save Markdown",
+      "type": "boolean",
+      "description": "If enabled, the crawler converts the transformed HTML of all pages found to Markdown, and stores it under the `markdown` field in the output dataset.",
+      "default": true
+    },
+    "saveFiles": {
+      "title": "Save files",
+      "type": "boolean",
+      "description": "If enabled, the crawler downloads files linked from the web pages, as long as their URL has one of the following file extensions: PDF, DOC, DOCX, XLS, XLSX, and CSV. Note that unlike web pages, the files are downloaded regardless if they are under **Start URLs** or not. The files are stored to the default key-value store, and metadata about them to the output dataset, similarly as for web pages.",
+      "default": false
+    },
+    "saveScreenshots": {
+      "title": "Save screenshots (headless browser only)",
+      "type": "boolean",
+      "description": "If enabled, the crawler stores a screenshot for each article page to the default key-value store. The link to the screenshot is stored under the `screenshotUrl` field in the output dataset. It is useful for debugging, but reduces performance and increases storage costs.\n\nNote that this feature only works with headless browser crawler types.",
+      "default": false
+    },
+    "maxResults": {
+      "title": "Max results",
+      "type": "integer",
+      "description": "The maximum number of resulting web pages to store. The crawler will automatically finish after reaching this number. This setting is useful to prevent accidental crawler runaway. If both **Max page** and **Max results** are defined, then the crawler will finish when the first limit is reached. Note that the crawler skips pages with the canonical URL of a page that has already been crawled, hence it might crawl more pages than there are results.",
+      "minimum": 0,
+      "default": 9999999
+    },
+    "textExtractor": {
+      "title": "Text extractor (deprecated)",
+      "type": "string",
+      "description": "Removed in favor of the `htmlTransformer` option. Will be removed soon.",
+      "editor": "hidden"
+    }
+  },
+  "required": ["startUrls"]
+}

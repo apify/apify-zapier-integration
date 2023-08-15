@@ -66,10 +66,38 @@ describe('create actor run', () => {
         const actor = await apifyClient.actor(actorId).get();
         const { buildId } = actor.taggedBuilds[actor.defaultRunOptions.build];
         const { inputSchema } = await apifyClient.build(buildId).get();
+        const { properties } = JSON.parse(inputSchema);
 
         const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
+        const fieldKeys = fields.map(({ key }) => key);
+        Object.keys(properties).forEach((keyToFind) => {
+            expect(fieldKeys.includes(`input-${keyToFind}`)).to.be.equal(true);
+        });
+        // Test fields edge cases
+        const startUrlsField = fields.find(({ key }) => key === 'input-startUrls');
+        const startUrlsFieldSchema = properties.startUrls;
+        expect(startUrlsField.label).to.be.equal(startUrlsFieldSchema.title);
+        expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
+        expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
 
-        expect(Object.keys(JSON.parse(inputSchema).properties)).to.include.all.keys(Object.keys(fields));
+        const pseudoUrlsField = fields.find(({ key }) => key === 'input-pseudoUrls');
+        const pseudoUrlsFieldSchema = properties.pseudoUrls;
+        expect(pseudoUrlsField.label).to.be.equal(pseudoUrlsFieldSchema.title);
+        expect(pseudoUrlsField.helpText).to.be.equal(pseudoUrlsFieldSchema.description);
+        expect(pseudoUrlsField.default).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
+
+        const proxyConfigurationField = fields.find(({ key }) => key === 'input-proxyConfiguration');
+        const proxyConfigurationFieldSchema = properties.proxyConfiguration;
+        expect(proxyConfigurationField.label).to.be.equal(proxyConfigurationFieldSchema.title);
+        expect(proxyConfigurationField.helpText).to.be.equal(proxyConfigurationFieldSchema.description);
+        expect(proxyConfigurationField.default).to.be.equal(JSON.stringify(proxyConfigurationFieldSchema.prefill, null, 2));
+
+        const waitUntilField = fields.find(({ key }) => key === 'input-waitUntil');
+        const waitUntilFieldSchema = properties.waitUntil;
+        expect(waitUntilField.label).to.be.equal(waitUntilFieldSchema.title);
+        expect(waitUntilField.helpText).to.be.equal(waitUntilFieldSchema.description);
+        expect(waitUntilField.type).to.be.equal('text');
+        expect(waitUntilField.default).to.be.equal(JSON.stringify(waitUntilFieldSchema.prefill, null, 2));
     }).timeout(120000);
 
     it('runSync work', async () => {
@@ -82,7 +110,9 @@ describe('create actor run', () => {
             authData: {
                 token: TEST_USER_TOKEN,
             },
-            inputData: { actorId: testActorId,
+            inputData: {
+                actorId: testActorId,
+                inputBody: '',
                 runSync: true,
                 ...runOptions,
             },
@@ -110,7 +140,8 @@ describe('create actor run', () => {
             authData: {
                 token: TEST_USER_TOKEN,
             },
-            inputData: { actorId: testActorId,
+            inputData: {
+                actorId: testActorId,
                 runSync: true,
                 inputBody: JSON.stringify({
                     outputRandomFile: true,
@@ -145,6 +176,7 @@ describe('create actor run', () => {
                 actorId: testActorId,
                 runSync: false,
                 build: 'latest',
+                inputBody: '',
                 timeoutSecs: 120,
                 memoryMbytes: 1024,
             },

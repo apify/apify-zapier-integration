@@ -1,5 +1,11 @@
+const dayjs = require('dayjs');
 const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
-const { enrichActorRun, getActorAdditionalFields } = require('../apify_helpers');
+const {
+    enrichActorRun,
+    getActorAdditionalFields,
+    maybeGetInputSchemaFromActor,
+    prefixInputFieldKey,
+} = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const runActor = async (z, bundle) => {
@@ -21,8 +27,8 @@ const runActor = async (z, bundle) => {
             'Content-Type': inputContentType,
         };
     }
-    if (inputBody) {
-        if (inputContentType.includes('application/json')) {
+    if (inputBody !== undefined) {
+        if (inputContentType && inputContentType.includes('application/json')) {
             try {
                 JSON.parse(inputBody);
             } catch (err) {
@@ -30,6 +36,53 @@ const runActor = async (z, bundle) => {
             }
         }
         requestOpts.body = inputBody;
+    } else {
+        const actorResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
+        });
+        const inputSchema = await maybeGetInputSchemaFromActor(z, actorResponse.data, build);
+        if (inputSchema) {
+            const input = {};
+            const inputSchemaKeys = Object.keys(inputSchema.properties);
+            inputSchemaKeys.forEach((key) => {
+                const fieldKey = prefixInputFieldKey(key);
+                const value = bundle.inputData[fieldKey];
+                if (value) {
+                    const { editor, title } = inputSchema.properties[key];
+                    if (editor === 'datepicker') {
+                        const date = dayjs(value);
+                        input[key] = date.format('YYYY-MM-DD');
+                    } else if (editor === 'requestListSources') {
+                        input[key] = value.map((url) => {
+                            return { url: url.trim() };
+                        });
+                    } else if (editor === 'pseudoUrls') {
+                        input[key] = value.map((purl) => {
+                            return { purl: purl.trim() };
+                        });
+                    } else if (editor === 'globs') {
+                        input[key] = value.map((glob) => {
+                            return { glob: glob.trim() };
+                        });
+                    } else if (editor === 'proxy' || editor === 'json' || editor === 'keyValue') {
+                        try {
+                            input[key] = JSON.parse(value);
+                        } catch (err) {
+                            throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
+                        }
+                    } else {
+                        input[key] = value;
+                    }
+                }
+            });
+            requestOpts.body = JSON.stringify(input);
+            requestOpts.headers = {
+                'Content-Type': 'application/json; charset=utf-8',
+            };
+        } else {
+            // This can happen in very rare cases, when user deletes input schema by build actor without schema.
+            throw new Error(`It cannot run Actor, the build ${build} has no input schema, but the Zap was set up with it.`);
+        }
     }
 
     const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
@@ -43,7 +96,6 @@ module.exports = {
     display: {
         label: 'Run Actor',
         description: 'Runs a selected actor.',
-        important: true,
     },
 
     operation: {

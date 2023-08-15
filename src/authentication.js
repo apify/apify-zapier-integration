@@ -24,7 +24,7 @@ module.exports = {
             required: true,
             type: 'string',
             helpText: 'You can find the API token on your '
-                + '**[Apify account](https://my.apify.com/account#/integrations)** page.',
+                + '**[Apify account](https://console.apify.com/account/integrations)** page.',
         },
     ],
     // The test method allows Zapier to verify that the credentials a user provides are valid.
