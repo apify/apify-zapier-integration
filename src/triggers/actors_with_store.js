@@ -2,45 +2,69 @@ const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
+// Count of top store Actors to be fetched from store and always be the first in dropdown.
+const TOP_PUBLIC_ACTORS_LIMIT = 15;
+
+const getActorList = async (z, { offset, limit }) => {
+    return wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actors}`,
+        params: {
+            offset,
+            limit,
+        },
+    });
+};
+
+const getStoreActorList = async (z, { offset, limit }) => {
+    return wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.store}`,
+        params: {
+            limit,
+            offset,
+        },
+    });
+};
+
 /**
- * Fetches a list of Actors and possibly add Actors from store.
- * The pagination is handled in way the first returns user's Actors and them Actors from store.
+ * Fetches a list of user's Actors and Actors from store.
+ * The pagination is handled in way the first returns top store Actors, user's Actors and them Actors from store.
  * @param z
  * @param bundle
  * @returns {Promise<*>}
  */
 const getActorWithStoreList = async (z, bundle) => {
-    const { data: actorList } = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.actors}`,
-        params: {
-            limit: DEFAULT_PAGINATION_LIMIT,
-            offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
-        },
-    });
-    const actors = actorList.items;
+    // NOTE: Zapier UI can handle duplicates in dropdowns, but it's not possible to have duplicates in single page.
+    const actors = new Map();
 
-    // Add Actors from Store
+    // 1. This is for marketing purposes, show top public Actors from store the first.
+    if (!bundle.meta.page) {
+        const { data: topPublicActorList } = await getStoreActorList(z, { limit: TOP_PUBLIC_ACTORS_LIMIT, offset: 0 });
+        topPublicActorList.items.forEach((actor) => actors.set(actor.id, actor));
+    }
+
+    // 2. Add user's Actors
+    const { data: actorList } = await getActorList(z, {
+        limit: DEFAULT_PAGINATION_LIMIT,
+        offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
+    });
+    actorList.items.forEach((actor) => actors.set(actor.id, actor));
+
+    // 3. Add Actors from Store
     if (actorList.items.length < DEFAULT_PAGINATION_LIMIT) {
         // NOTE: Offset needs to be set based on already loaded actors from list of Actors
         // and Actors from store.
         const limit = DEFAULT_PAGINATION_LIMIT - actorList.items.length;
         const pageNumberDilutedActorList = bundle.meta.page - Math.floor(actorList.total / DEFAULT_PAGINATION_LIMIT);
         const offset = Math.max(
-            0,
-            pageNumberDilutedActorList * DEFAULT_PAGINATION_LIMIT - (actorList.total % DEFAULT_PAGINATION_LIMIT),
+            TOP_PUBLIC_ACTORS_LIMIT,
+            (pageNumberDilutedActorList * DEFAULT_PAGINATION_LIMIT - (actorList.total % DEFAULT_PAGINATION_LIMIT)) + TOP_PUBLIC_ACTORS_LIMIT,
         );
 
-        const { data: storeActorList } = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.store}`,
-            params: {
-                limit,
-                offset,
-            },
-        });
-        actors.push(...storeActorList.items);
+        const { data: storeActorList } = await getStoreActorList(z, { limit, offset });
+        storeActorList.items.forEach((actor) => actors.set(actor.id, actor));
     }
 
-    return actors.map((actor) => ({
+    return Array.from(actors.values()).map((actor) => ({
         id: actor.id,
         name: printPrettyActorOrTaskName(actor),
     }));

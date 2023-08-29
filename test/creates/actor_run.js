@@ -61,11 +61,9 @@ describe('create actor run', () => {
             page++;
         } while (actorList.length);
 
-        expect(actors.map((a) => a.id)).to.be.eql(allUserActors.concat(allPublicActor).map((a) => a.id));
-        expect(actors.length).to.be.eql(allUserActors.length + allPublicActor.length);
-        actors.forEach((actor, i) => {
+        expect(allUserActors.concat(allPublicActor).map((a) => a.id)).to.include.members(actors.map((a) => a.id));
+        actors.forEach((actor) => {
             expect(actor).to.have.all.keys('id', 'name');
-            expect(actor.id).to.be.eql(allUserActors.concat(allPublicActor)[i].id);
         });
     }).timeout(120000);
 

@@ -1,4 +1,4 @@
-## 3.0.5 / 2023-08-29
+## 3.0.8 / 2023-08-29
 
 * The Run Actor action allows to run Actors from Apify Store.
 
