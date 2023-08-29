@@ -40,10 +40,6 @@ const getActorWithStoreList = async (z, bundle) => {
         actors.push(...storeActorList.items);
     }
 
-    // Search in store in case we have search query
-    // if not items in response, return empty array
-    // Discuss with marketing if it makes sense to add web scraper/website content scraper as separate action
-
     return actors.map((actor) => ({
         id: actor.id,
         name: printPrettyActorOrTaskName(actor),
