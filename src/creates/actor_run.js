@@ -105,7 +105,7 @@ module.exports = {
                 helpText: 'Please select the actor to run.',
                 key: 'actorId',
                 required: true,
-                dynamic: 'actors.id.name',
+                dynamic: 'actorsWithStore.id.name',
                 altersDynamicFields: true,
             },
             {

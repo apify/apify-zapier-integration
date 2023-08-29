@@ -3,7 +3,6 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
 // Fetches a list of actors
-// TODO: Adds logic to load featured actors.
 const getActorList = async (z, bundle) => {
     const actorListResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}`,
