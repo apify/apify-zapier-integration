@@ -20,6 +20,7 @@ const APIFY_API_ENDPOINTS = {
     datasets: `${APIFY_API_BASE_URL}/v2/datasets`,
     keyValueStores: `${APIFY_API_BASE_URL}/v2/key-value-stores`,
     actors: `${APIFY_API_BASE_URL}/v2/acts`,
+    store: `${APIFY_API_BASE_URL}/v2/store`,
 };
 
 const ACTOR_RUN_SAMPLE = {
@@ -150,7 +151,8 @@ const KEY_VALUE_STORE_SAMPLE = {
 
 const DEFAULT_KEY_VALUE_STORE_KEYS = [KEY_VALUE_STORE_KEYS.OUTPUT];
 
-const DEFAULT_PAGINATION_LIMIT = 100;
+// NOTE: The pagination is searchable in the UI, so it's better to return more items to be able to search.
+const DEFAULT_PAGINATION_LIMIT = 500;
 
 // Actor ID of apify/legacy-phantomjs-crawler
 const LEGACY_PHANTOM_JS_CRAWLER_ID = 'YPh5JENjSSR6vBf2E';

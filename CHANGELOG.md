@@ -1,3 +1,7 @@
+## 3.0.9 / 2023-08-29
+
+* The Run Actor action allows to run Actors from Apify Store.
+
 ## 3.0.4 / 2023-08-15
 
 ❗ Action Run Actor generates UI based on Input Schema if Actor has one.

@@ -1,8 +1,11 @@
+const axios = require('axios');
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
+
+const searchApiBaseUrl = 'https://api.apify.com/v2/store';
 
 const App = require('../../index');
 
@@ -17,6 +20,52 @@ describe('create actor run', () => {
         const actor = await createAndBuildActor();
         testActorId = actor.id;
     });
+
+    it('load correctly Actors with Actors from store with hidden trigger', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {},
+            meta: {},
+        };
+
+        const allUserActors = [];
+        let actorListPage;
+        do {
+            actorListPage = await apifyClient.actors().list({ limit: 500, offset: allUserActors.length });
+            allUserActors.push(...actorListPage.items);
+        } while (actorListPage.items.length > 0);
+
+        const allPublicActor = [];
+        let storeActorList;
+        do {
+            ({ data: { data: storeActorList } } = await axios({
+                url: searchApiBaseUrl,
+                params: { offset: allPublicActor.length, limit: 100 },
+            }));
+            allPublicActor.push(...storeActorList.items);
+        } while (storeActorList.items.length);
+
+        const actors = [];
+        let page = 0;
+        let actorList;
+        do {
+            actorList = await appTester(App.triggers.actorsWithStore.operation.perform, {
+                ...bundle,
+                meta: {
+                    page: page === 0 ? undefined : page,
+                },
+            });
+            actors.push(...actorList);
+            page++;
+        } while (actorList.length);
+
+        expect(allUserActors.concat(allPublicActor).map((a) => a.id)).to.include.members(actors.map((a) => a.id));
+        actors.forEach((actor) => {
+            expect(actor).to.have.all.keys('id', 'name');
+        });
+    }).timeout(120000);
 
     it('loading of dynamic fields from exampleRunInput work', async () => {
         const actorFields = {

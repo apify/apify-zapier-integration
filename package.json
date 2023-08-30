@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "3.0.4",
+  "version": "3.0.9",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
@@ -24,6 +24,7 @@
     "zapier-platform-core": "15.0.1"
   },
   "devDependencies": {
+    "axios": "^1.4.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.42.0",

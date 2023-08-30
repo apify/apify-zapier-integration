@@ -481,10 +481,11 @@ const getActorAdditionalFields = async (z, bundle) => {
     }
 
     // Parse and stringify json input body if there is
-    const isContentTypeJson = inputContentType && inputContentType.includes('application/json');
+    let isContentTypeJson = inputContentType && inputContentType.includes('application/json');
     if (actor.exampleRunInput) {
         const { body, contentType } = actor.exampleRunInput;
         inputContentType = contentType;
+        isContentTypeJson = contentType.includes('application/json');
         // Try to parse JSON body
         if (isContentTypeJson) {
             try {
@@ -509,7 +510,7 @@ const getActorAdditionalFields = async (z, bundle) => {
             helpText: inputBodyHelpText,
             key: 'inputBody',
             required: false,
-            default: inputBody ?? isContentTypeJson ? '{}' : '',
+            default: inputBody ?? (isContentTypeJson ? '{}' : ''),
             type: 'text', // NICE TO HAVE: Input type 'file' regarding content type
         },
         {
