@@ -1,3 +1,7 @@
+## 3.0.10 / 2023-10-04
+
+* Fix cases where choices fields are incorrectly displayed in the UI.
+
 ## 3.0.9 / 2023-08-29
 
 * The Run Actor action allows to run Actors from Apify Store.
