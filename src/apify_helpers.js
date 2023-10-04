@@ -293,7 +293,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                     field.type = 'text';
                 } else if (definition.editor === 'datepicker') {
                     field.type = 'datetime';
-                } else if (definition.editor === 'select') {
+                } else if (definition.editor === 'select' || definition.enum) { // NOTE: Editor is not required, enum is enough.
                     field.choices = {};
                     definition.enum.forEach((key, i) => {
                         field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
