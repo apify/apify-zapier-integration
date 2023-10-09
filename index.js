@@ -10,6 +10,7 @@ const actorsWithStoreTrigger = require('./src/triggers/actors_with_store');
 const getActorAdditionalFieldsTest = require('./src/triggers/actor_additional_fields');
 const taskRunCreate = require('./src/creates/task_run');
 const actorRunCreate = require('./src/creates/actor_run');
+const scrapeSingleUrlCreate = require('./src/creates/scrape_single_url');
 const setValueCreate = require('./src/creates/set_value');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 const actorLastRunSearch = require('./src/searches/actor_last_run');
@@ -61,6 +62,7 @@ const App = {
         [taskRunCreate.key]: taskRunCreate,
         [actorRunCreate.key]: actorRunCreate,
         [setValueCreate.key]: setValueCreate,
+        [scrapeSingleUrlCreate.key]: scrapeSingleUrlCreate,
     },
 };
 

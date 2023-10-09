@@ -76,6 +76,73 @@ const ACTOR_RUN_SAMPLE = {
     },
 };
 
+const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
+    id: 'HG7ML7M8z78YcAPEB',
+    actId: 'h3J7Uk3kMAmLCLRAh',
+    buildId: '7ML7M8zcAPEB78Y',
+    buildNumber: '0.1.15',
+    startedAt: '2015-11-30T07:34:24.202Z',
+    finishedAt: '2015-12-12T09:30:12.202Z',
+    status: 'SUCCEEDED',
+    exitCode: 0,
+    defaultKeyValueStoreId: 'sfAjeR4QmeJCQzTfe',
+    defaultDatasetId: '3ZojQDdFTsyE7Moy4',
+    defaultRequestQueueId: 'so93g2shcDzK3pA85',
+    containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
+    detailsPageUrl: 'https://console.apify.com/actors/$actId/runs/HG7ML7M8z78YcAPEB',
+    isStatusMessageTerminal: true,
+    statusMessage: 'Actor finished!',
+    usage: {
+        ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
+        DATASET_READS: 0,
+        DATASET_WRITES: 0,
+        KEY_VALUE_STORE_READS: 2,
+        KEY_VALUE_STORE_WRITES: 2,
+        KEY_VALUE_STORE_LISTS: 0,
+        REQUEST_QUEUE_READS: 0,
+        REQUEST_QUEUE_WRITES: 0,
+        DATA_TRANSFER_INTERNAL_GBYTES: 0.0014107311144471169,
+        DATA_TRANSFER_EXTERNAL_GBYTES: 0,
+        PROXY_RESIDENTIAL_TRANSFER_GBYTES: 0,
+        PROXY_SERPS: 0,
+    },
+    usageTotalUsd: 0.0004075921112779114,
+    usageUsd: {
+        ACTOR_COMPUTE_UNITS: 0.00022705555555555554,
+        DATASET_READS: 0,
+        DATASET_WRITES: 0,
+        KEY_VALUE_STORE_READS: 0.00001,
+        KEY_VALUE_STORE_WRITES: 0.0001,
+        KEY_VALUE_STORE_LISTS: 0,
+        REQUEST_QUEUE_READS: 0,
+        REQUEST_QUEUE_WRITES: 0,
+        DATA_TRANSFER_INTERNAL_GBYTES: 0.00007053655572235585,
+        DATA_TRANSFER_EXTERNAL_GBYTES: 0,
+        PROXY_RESIDENTIAL_TRANSFER_GBYTES: 0,
+        PROXY_SERPS: 0,
+    },
+    pageUrl: 'https://www.example.com',
+    pageMetadata: {
+        canonicalUrl: 'https://example.com/',
+        title: 'Example Domain',
+        description: null,
+        author: null,
+        keywords: null,
+        languageCode: null,
+    },
+    pageContent: {
+        html: '<div id="readability-page-1" class="page"><div>\n    <h2>Example Domain</h2>\n    '
+            + '<p>This domain is for use in illustrative examples in documents. You may use this\n    '
+            + 'domain in literature without prior coordination or asking for permission.</p>\n    '
+            + '<p><a href="https://www.iana.org/domains/example">More information...</a></p>\n</div></div>',
+        markdown: '"## Example Domain\\n\\nThis domain is for use in illustrative examples in documents. '
+            + 'You may use this domain in literature without prior coordination or asking for permission.\\n\\n'
+            + '[More information...](https://www.iana.org/domains/example)"',
+        text: 'Example Domain\nThis domain is for use in illustrative examples in documents. '
+            + 'You may use this domain in literature without prior coordination or asking for permission.\nMore information...',
+    },
+};
+
 const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'id', label: 'ID', type: 'string' },
     { key: 'actId', label: 'Actor ID', type: 'string' },
@@ -93,6 +160,29 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'datasetItemsFileUrls', label: 'Dataset items file URLs', type: 'string' },
     { key: 'detailsPageUrl', label: 'Details page URL', type: 'string' },
     { key: 'containerUrl', label: 'Container URL', type: 'string' },
+];
+
+const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'actId', label: 'Actor ID', type: 'string' },
+    { key: 'buildId', label: 'Build ID', type: 'string' },
+    { key: 'buildNumber', label: 'Build number', type: 'string' },
+    { key: 'startedAt', label: 'Started at' },
+    { key: 'finishedAt', label: 'Finished at' },
+    { key: 'status', label: 'Status', type: 'string' },
+    { key: 'exitCode', label: 'Exit Code', type: 'number' },
+    { key: 'defaultKeyValueStoreId', label: 'Default key-value store ID', type: 'string' },
+    { key: 'defaultDatasetId', label: 'Default dataset ID', type: 'string' },
+    { key: 'defaultRequestQueueId', label: 'Default request queue ID', type: 'string' },
+    { key: 'detailsPageUrl', label: 'Details page URL', type: 'string' },
+    { key: 'containerUrl', label: 'Container URL', type: 'string' },
+    { key: 'pageUrl', label: 'Page URL', type: 'string' },
+    { key: 'pageMetadata', label: 'Page metadata' },
+    { key: 'pageMetadata__title', label: 'Page title' },
+    { key: 'pageContent', label: 'Page content' },
+    { key: 'pageContent__html', label: 'Page HTML', type: 'string' },
+    { key: 'pageContent__markdown', label: 'Page markdown', type: 'string' },
+    { key: 'pageContent__text', label: 'Page text', type: 'string' },
 ];
 
 const TASK_RUN_SAMPLE = {
@@ -190,4 +280,6 @@ module.exports = {
     DATASET_SAMPLE,
     DATASET_OUTPUT_FIELDS,
     KEY_VALUE_STORE_SAMPLE,
+    SCRAPE_SINGLE_URL_RUN_SAMPLE,
+    SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
 };

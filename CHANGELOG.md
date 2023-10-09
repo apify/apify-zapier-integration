@@ -1,3 +1,7 @@
+## 3.1.0 / 2023-10-09
+
+* Add action to Scrape single URL
+
 ## 3.0.9 / 2023-08-29
 
 * The Run Actor action allows to run Actors from Apify Store.
