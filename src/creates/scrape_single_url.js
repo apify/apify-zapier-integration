@@ -77,10 +77,20 @@ module.exports = {
     noun: 'Scrape Single URL',
     display: {
         label: 'Scrape Single URL',
-        description: 'Runs a scraper for website and returns its text content.',
+        description: 'Runs a scraper for the website and returns its content as text, markdown and HTML. '
+            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows.',
     },
     operation: {
         inputFields: [
+            {
+                label: 'Note',
+                key: 'note',
+                type: 'copy',
+                helpText: 'This action is made to get content on a single page. Under the hood, '
+                    + 'it uses [Website Content Scraper](https://apify.com/apify/website-content-crawler). '
+                    + 'You can run Website Content Scraper or Web Scraper, which have various options to help '
+                    + 'you with anti scraping protection or scraping multiple URLs using "Run Actor" action.',
+            },
             {
                 label: 'URL',
                 helpText: 'The URL of the website to scrape.',
