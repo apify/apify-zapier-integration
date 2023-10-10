@@ -88,9 +88,9 @@ module.exports = {
                 key: 'note',
                 type: 'copy',
                 helpText: 'This action is designed to scrape the content of a single web page. '
-                    + 'Behind the scenes, it utilizes the [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
-                    + 'You can choose to run either the [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
-                    + 'the [Web Scraper](https://apify.com/apify/web-scraper), '
+                    + 'Behind the scenes, it utilizes [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
+                    + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
+                    + '[Web Scraper](https://apify.com/apify/web-scraper), '
                     + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
                     + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
             },
@@ -106,7 +106,7 @@ module.exports = {
                 helpText: '- **Headless web browser** - Useful for modern websites with anti-scraping protections and JavaScript rendering. '
                     + 'It recognizes common blocking patterns like CAPTCHAs and automatically retries blocked requests through new sessions. \n'
                     + '- **Stealthy web browser** (default) - Another headless web browser with anti-blocking measures enabled. '
-                    + 'Try this if you encounter bot protection while scraping. \n'
+                    + 'Try this if you encounter anti-bot protections while scraping. \n'
                     + '- **Raw HTTP client** - High-performance crawling mode that uses raw HTTP requests to fetch the pages. '
                     + 'It is faster and cheaper, but it might not work on all websites.',
                 key: 'crawlerType',
@@ -114,7 +114,7 @@ module.exports = {
                 type: 'string',
                 choices: {
                     'playwright:firefox': 'Headless browser (stealthy Firefox+Playwright) - '
-                        + 'Very reliable, best in avoiding blocking, but might be slow',
+                        + 'Very reliable. Great for avoiding blocking, but it might be slow',
                     'playwright:chrome': 'Headless browser (Chrome+Playwright) - Reliable, but might be slow',
                     cheerio: 'Raw HTTP client (Cheerio) - Extremely fast, but cannot handle dynamic content',
                 },
