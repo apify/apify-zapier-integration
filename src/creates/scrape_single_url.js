@@ -14,10 +14,10 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     const { url, crawlerType } = bundle.inputData;
 
     // We can use lower memory for Cheerio crawler, because it's not using browser.
-    const memory = crawlerType === 'cheerio' ? 1024 : 2048;
+    const memory = crawlerType === 'cheerio' ? 1024 : 4096;
 
     // NOTE: The Zap wait just 30 seconds for the run to finish.
-    const timeoutSecs = 60;
+    const timeoutSecs = 30;
 
     const input = {
         startUrls: [{ url }],
@@ -39,7 +39,8 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         params: {
             timeout: timeoutSecs,
             memory,
-            waitForFinish: timeoutSecs,
+            // NOTE: There is some overhead with getting data from dataset.
+            waitForFinish: timeoutSecs - 2,
         },
         headers: {
             'Content-Type': 'application/json; charset=utf-8',
@@ -56,8 +57,8 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     if (defaultDatasetId) {
         const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
-            throw new Error('The data for the page content is missing, the page cannot be scraped or '
-            + `scraper did not finish in time. Please check ${run.detailsPageUrl} for more details.`);
+            throw new Error('The data for the page content is missing. The scraper cannot scrape the page '
+            + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
         }
         run.pageUrl = datasetItems.items[0].url;
         run.pageMetadata = datasetItems.items[0].metadata;
@@ -86,10 +87,12 @@ module.exports = {
                 label: 'Note',
                 key: 'note',
                 type: 'copy',
-                helpText: 'This action is made to get content on a single page. Under the hood, '
-                    + 'it uses [Website Content Scraper](https://apify.com/apify/website-content-crawler). '
-                    + 'You can run Website Content Scraper or Web Scraper, which have various options to help '
-                    + 'you with anti scraping protection or scraping multiple URLs using "Run Actor" action.',
+                helpText: 'This action is designed to scrape the content of a single web page. '
+                    + 'Behind the scenes, it utilizes the [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
+                    + 'You can choose to run either the [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
+                    + 'the [Web Scraper](https://apify.com/apify/web-scraper), '
+                    + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
+                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
             },
             {
                 label: 'URL',
@@ -100,8 +103,7 @@ module.exports = {
             },
             {
                 label: 'Crawler type',
-                helpText: 'Select the crawler type: \n'
-                    + '- **Headless web browser** - Useful for modern websites with anti-scraping protections and JavaScript rendering. '
+                helpText: '- **Headless web browser** - Useful for modern websites with anti-scraping protections and JavaScript rendering. '
                     + 'It recognizes common blocking patterns like CAPTCHAs and automatically retries blocked requests through new sessions. \n'
                     + '- **Stealthy web browser** (default) - Another headless web browser with anti-blocking measures enabled. '
                     + 'Try this if you encounter bot protection while scraping. \n'
@@ -116,7 +118,7 @@ module.exports = {
                     'playwright:chrome': 'Headless browser (Chrome+Playwright) - Reliable, but might be slow',
                     cheerio: 'Raw HTTP client (Cheerio) - Extremely fast, but cannot handle dynamic content',
                 },
-                default: 'playwright:firefox',
+                default: 'cheerio',
             },
         ],
 
