@@ -1,11 +1,11 @@
 ## 3.1.0 / 2023-10-09
 
 * Add action to Scrape single URL
+* Fix cases where choices fields are incorrectly displayed in the UI.
 
 ## 3.0.9 / 2023-08-29
 
 * The Run Actor action allows to run Actors from Apify Store.
-
 ## 3.0.4 / 2023-08-15
 
 ❗ Action Run Actor generates UI based on Input Schema if Actor has one.
