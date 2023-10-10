@@ -44,7 +44,7 @@ const ACTOR_RUN_SAMPLE = {
         xlsx: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=xlsx&clean=true&attachment=true',
     },
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
-    detailsPageUrl: 'https://console.apify.com/actors/$actId/runs/HG7ML7M8z78YcAPEB',
+    detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
         DATASET_READS: 0,
@@ -89,7 +89,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     defaultDatasetId: '3ZojQDdFTsyE7Moy4',
     defaultRequestQueueId: 'so93g2shcDzK3pA85',
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
-    detailsPageUrl: 'https://console.apify.com/actors/$actId/runs/HG7ML7M8z78YcAPEB',
+    detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     isStatusMessageTerminal: true,
     statusMessage: 'Actor finished!',
     usage: {
