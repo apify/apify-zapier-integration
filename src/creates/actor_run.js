@@ -47,7 +47,7 @@ const runActor = async (z, bundle) => {
             inputSchemaKeys.forEach((key) => {
                 const fieldKey = prefixInputFieldKey(key);
                 const value = bundle.inputData[fieldKey];
-                if (value) {
+                if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
                     const { editor, title } = inputSchema.properties[key];
                     if (editor === 'datepicker') {
                         const date = dayjs(value);

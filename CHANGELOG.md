@@ -1,3 +1,7 @@
+## 3.1.1 / 2023-11-14
+
+* Fix falsy values in Actor run action
+
 ## 3.1.0 / 2023-10-09
 
 * Add action to Scrape single URL
