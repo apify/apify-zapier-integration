@@ -16,15 +16,15 @@
     "npm": ">=5.6.0"
   },
   "dependencies": {
-    "@apify/consts": "^2.15.0",
-    "@apify/utilities": "^2.7.4",
-    "apify-client": "^2.7.1",
-    "dayjs": "^1.11.9",
+    "@apify/consts": "^2.29.0",
+    "@apify/utilities": "^2.10.6",
+    "apify-client": "^2.9.5",
+    "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "zapier-platform-core": "15.0.1"
+    "zapier-platform-core": "15.13.0"
   },
   "devDependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.7.5",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.42.0",
@@ -32,6 +32,6 @@
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-promise": "^6.1.1",
     "mocha": "^9.0.3",
-    "zapier-platform-schema": "^15.0.1"
+    "zapier-platform-schema": "^15.13.0"
   }
 }
