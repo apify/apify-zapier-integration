@@ -21,7 +21,7 @@
     "apify-client": "^2.9.5",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "zapier-platform-core": "^15.18.0"
+    "zapier-platform-core": "15.18.0"
   },
   "devDependencies": {
     "axios": "^1.7.5",
