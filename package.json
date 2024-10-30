@@ -21,17 +21,17 @@
     "apify-client": "^2.9.5",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "zapier-platform-core": "15.13.0"
+    "zapier-platform-core": "^15.18.0"
   },
   "devDependencies": {
     "axios": "^1.7.5",
-    "chai": "^4.3.4",
-    "chai-as-promised": "^7.1.1",
+    "chai": "^5.1.2",
+    "chai-as-promised": "^8.0.0",
     "eslint": "^8.42.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.23.4",
-    "eslint-plugin-promise": "^6.1.1",
-    "mocha": "^9.0.3",
+    "eslint-plugin-promise": "^7.1.0",
+    "mocha": "^10.8.1",
     "zapier-platform-schema": "^15.13.0"
   }
 }
