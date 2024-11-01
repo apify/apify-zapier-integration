@@ -156,10 +156,11 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'defaultDatasetId', label: 'Default dataset ID', type: 'string' },
     { key: 'defaultRequestQueueId', label: 'Default request queue ID', type: 'string' },
     { key: 'OUTPUT', label: 'Output' },
-    { key: 'datasetItems', label: 'Dataset items' },
-    { key: 'datasetItemsFileUrls', label: 'Dataset items file URLs', type: 'string' },
     { key: 'detailsPageUrl', label: 'Details page URL', type: 'string' },
     { key: 'containerUrl', label: 'Container URL', type: 'string' },
+    // TODO: Remove
+    // { key: 'datasetItems', label: 'Dataset items' },
+    // { key: 'datasetItemsFileUrls', label: 'Dataset items file URLs', type: 'string' },
 ];
 
 const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [

@@ -21,6 +21,10 @@ describe('create actor run', () => {
         testActorId = actor.id;
     });
 
+    after(async () => {
+        await apifyClient.actor(testActorId).delete();
+    });
+
     it('load correctly Actors with Actors from store with hidden trigger', async () => {
         const bundle = {
             authData: {
@@ -149,6 +153,31 @@ describe('create actor run', () => {
         expect(waitUntilField.default).to.be.equal(JSON.stringify(waitUntilFieldSchema.prefill, null, 2));
     }).timeout(120000);
 
+    it('loading of dynamic output fields for dataset items work', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                // Actor with input schema
+                actorId: testActorId,
+            },
+        };
+        const items = [
+            { a: 1, b: 2, c: 'c', d: 'd' },
+            { a: 2, b: 3, c: 'c', d: 'd' },
+            { a: 3, b: 4, e: { a: 1, b: 2 } },
+            { a: 4, b: 5, f: new Date() },
+            { a: 4, b: 5, g: ['a', 'b'], h: [{ a: 1, b: 2 }] },
+        ];
+        const run = await apifyClient.actor(testActorId).call({
+            datasetItems: items,
+        });
+        console.log(run);
+        const fields = await appTester(App.triggers.getDatasetOutputFieldsTest.operation.perform, bundle);
+        console.log(fields);
+    }).timeout(120000);
+
     it('runSync work', async () => {
         const runOptions = {
             build: 'latest',
@@ -235,8 +264,4 @@ describe('create actor run', () => {
         expect(testResult).to.have.all.keys(_.without(Object.keys(ACTOR_RUN_SAMPLE), 'exitCode'));
         expect(testResult.finishedAt).to.be.eql(null);
     }).timeout(50000);
-
-    after(async () => {
-        await apifyClient.actor(testActorId).delete();
-    });
 });

@@ -71,7 +71,11 @@ const createAndBuildActor = async () => {
     Apify.main(async (context) => {
         const input = await Apify.getInput();
         console.log('It works.');
-        await Apify.pushData({ foo: 'bar' });
+        if (input && input.datasetItems) {
+            await Apify.pushData(input.datasetItems);
+        } else {
+            await Apify.pushData({ foo: 'bar' });
+        }
         if (input && input.outputRandomFile) {
             await Apify.setValue('OUTPUT', 'blabla', { contentType: 'text/plain' });
         } else {
