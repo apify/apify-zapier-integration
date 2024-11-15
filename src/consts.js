@@ -158,9 +158,10 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
     { key: 'OUTPUT', label: 'Output' },
     { key: 'detailsPageUrl', label: 'Details page URL', type: 'string' },
     { key: 'containerUrl', label: 'Container URL', type: 'string' },
-    // TODO: Remove
-    // { key: 'datasetItems', label: 'Dataset items' },
-    // { key: 'datasetItemsFileUrls', label: 'Dataset items file URLs', type: 'string' },
+    { key: 'datasetItemsFileUrls__xml', label: 'Dataset items XML file URL', type: 'string' },
+    { key: 'datasetItemsFileUrls__csv', label: 'Dataset items CSV file URL', type: 'string' },
+    { key: 'datasetItemsFileUrls__json', label: 'Dataset items JSON file URL', type: 'string' },
+    { key: 'datasetItemsFileUrls__xlsx', label: 'Dataset items Excel file URL', type: 'string' },
 ];
 
 const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [
@@ -221,8 +222,11 @@ const DATASET_OUTPUT_FIELDS = [
     { key: 'cleanItemCount', label: 'Clean item count', type: 'integer' },
     { key: 'actId', label: 'Actor ID', type: 'string' },
     { key: 'actRunId', label: 'Actor run ID', type: 'string' },
-    { key: 'items', label: 'Items' },
     { key: 'itemsFileUrls', label: 'Items file URLs', type: 'string' },
+    { key: 'itemsFileUrls_xml', label: 'Items XML file URL', type: 'string' },
+    { key: 'itemsFileUrls_csv', label: 'Items CSV file URL', type: 'string' },
+    { key: 'itemsFileUrls_json', label: 'Items JSON file URL', type: 'string' },
+    { key: 'itemsFileUrls_xlsx', label: 'Items Excel file URL', type: 'string' },
 ];
 
 /**

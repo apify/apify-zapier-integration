@@ -3,32 +3,33 @@ const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
+const { getDatasetItemsOutputFields } = require('../output_fields');
 
-const getItems = async (z, bundle) => {
-    const { datasetIdOrName, limit, offset } = bundle.inputData;
-    let dataset;
+const findDatasetByNameOrId = async (z, datasetIdOrName) => {
     // The first try to get dataset by ID.
     try {
         const datasetResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.datasets}/${datasetIdOrName}`,
             method: 'GET',
         });
-        dataset = datasetResponse.data;
+        return datasetResponse.data;
     } catch (err) {
         if (!err.message.includes('not found')) throw err;
     }
-
     // The second creates dataset with name, in case datasetId not found.
-    if (!dataset) {
-        const storeResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.datasets}`,
-            method: 'POST',
-            params: {
-                name: datasetIdOrName,
-            },
-        });
-        dataset = storeResponse.data;
-    }
+    const storeResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.datasets}`,
+        method: 'POST',
+        params: {
+            name: datasetIdOrName,
+        },
+    });
+    return storeResponse.data;
+};
+
+const getItems = async (z, bundle) => {
+    const { datasetIdOrName, limit, offset } = bundle.inputData;
+    const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
 
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
     dataset.id = dataset.id || dataset._id;
@@ -42,6 +43,13 @@ const getItems = async (z, bundle) => {
         ...cleanDataset,
         ...datasetItems,
     }];
+};
+
+const getAdditionalDatasetItemsOutputFields = async (z, bundle) => {
+    const { datasetIdOrName } = bundle.inputData;
+    const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
+
+    return getDatasetItemsOutputFields(z, dataset.id, dataset.actId, 'items[]');
 };
 
 module.exports = {
@@ -80,6 +88,9 @@ module.exports = {
 
         perform: getItems,
         sample: DATASET_SAMPLE,
-        outputFields: DATASET_OUTPUT_FIELDS,
+        outputFields: [
+            ...DATASET_OUTPUT_FIELDS,
+            getAdditionalDatasetItemsOutputFields,
+        ],
     },
 };

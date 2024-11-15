@@ -170,12 +170,23 @@ describe('create actor run', () => {
             { a: 4, b: 5, f: new Date() },
             { a: 4, b: 5, g: ['a', 'b'], h: [{ a: 1, b: 2 }] },
         ];
-        const run = await apifyClient.actor(testActorId).call({
+        // Run an Actor, the output items will be generated based on latest success run
+        await apifyClient.actor(testActorId).call({
             datasetItems: items,
         });
-        console.log(run);
         const fields = await appTester(App.triggers.getDatasetOutputFieldsTest.operation.perform, bundle);
-        console.log(fields);
+        expect(fields).to.be.eql([
+            { key: 'datasetItems[]a', type: 'number' },
+            { key: 'datasetItems[]b', type: 'number' },
+            { key: 'datasetItems[]c', type: 'string' },
+            { key: 'datasetItems[]d', type: 'string' },
+            { key: 'datasetItems[]e__a', type: 'number' },
+            { key: 'datasetItems[]e__b', type: 'number' },
+            { key: 'datasetItems[]f', type: 'datetime' },
+            { key: 'datasetItems[]g', type: 'string', list: true },
+            { key: 'datasetItems[]h[]a', type: 'number' },
+            { key: 'datasetItems[]h[]b', type: 'number' },
+        ]);
     }).timeout(120000);
 
     it('runSync work', async () => {

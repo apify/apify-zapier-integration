@@ -10,7 +10,7 @@ const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
  * @param {string} datasetId
  * @returns {Promise<*[]>}
  */
-const getDatasetItemsOutputFields = async (z, datasetId, actorId) => {
+const getDatasetItemsOutputFields = async (z, datasetId, actorId, keyPrefix = 'datasetItems[]') => {
     let datasetItems;
     try {
         datasetItems = await getDatasetItems(z, datasetId, {
@@ -27,7 +27,7 @@ const getDatasetItemsOutputFields = async (z, datasetId, actorId) => {
     if (items.length === 0) return [];
     // NOTE: We are using the first 10 items to generate output fields to cover most of the cases.
     const mergedItem = _.merge({}, ...items);
-    return convertPlainObjectToFieldSchema(mergedItem, 'datasetItems');
+    return convertPlainObjectToFieldSchema(mergedItem, keyPrefix);
 };
 
 const getDatasetOutputFields = async (z, bundle) => {
