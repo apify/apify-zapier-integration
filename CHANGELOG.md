@@ -1,3 +1,9 @@
+## 3.2.0 / 2024-11-23
+
+* Improve output fields for all actions where dataset is included
+* Updated packages
+
+
 ## 3.1.1 / 2023-11-14
 
 * Fix falsy values in Actor run action
