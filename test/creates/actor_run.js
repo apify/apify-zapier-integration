@@ -173,8 +173,8 @@ describe('create actor run', () => {
         // Run an Actor, the output items will be generated based on latest success run
         await apifyClient.actor(testActorId).call({
             datasetItems: items,
-        });
-        const fields = await appTester(App.triggers.getDatasetOutputFieldsTest.operation.perform, bundle);
+        }, { build: 'latest' });
+        const fields = await appTester(App.triggers.getActorDatasetOutputFieldsTest.operation.perform, bundle);
         expect(fields).to.be.eql([
             { key: 'datasetItems[]a', type: 'number' },
             { key: 'datasetItems[]b', type: 'number' },

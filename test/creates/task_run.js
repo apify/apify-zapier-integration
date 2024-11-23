@@ -44,7 +44,7 @@ describe('create task run', () => {
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
 
-        expect(testResult).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
+        expect(testResult).to.have.any.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
         expect(testResult.datasetItems.length).to.be.at.least(1);

@@ -30,7 +30,7 @@ const getDatasetItemsOutputFields = async (z, datasetId, actorId, keyPrefix = 'd
     return convertPlainObjectToFieldSchema(mergedItem, keyPrefix);
 };
 
-const getDatasetOutputFields = async (z, bundle) => {
+const getActorDatasetOutputFields = async (z, bundle) => {
     const { actorId } = bundle.inputData;
     let lastSuccessDatasetItems;
     try {
@@ -52,7 +52,30 @@ const getDatasetOutputFields = async (z, bundle) => {
     return getDatasetItemsOutputFields(z, run.defaultDatasetId, actorId);
 };
 
+const getTaskDatasetOutputFields = async (z, bundle) => {
+    const { taskId } = bundle.inputData;
+    let lastSuccessDatasetItems;
+    try {
+        lastSuccessDatasetItems = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`,
+            params: {
+                status: ACTOR_JOB_STATUSES.SUCCEEDED,
+            },
+        });
+    } catch (err) {
+        // 404 status = There is not successful run yet.
+        if (err.status !== 404) {
+            z.console.error('Error while fetching dataset items', err);
+        }
+        // Return default output fields, if there is no successful run yet or any other error.
+        return [];
+    }
+    const { data: run } = lastSuccessDatasetItems;
+    return getDatasetItemsOutputFields(z, run.defaultDatasetId, run.actId);
+};
+
 module.exports = {
     getDatasetItemsOutputFields,
-    getDatasetOutputFields,
+    getActorDatasetOutputFields,
+    getTaskDatasetOutputFields,
 };

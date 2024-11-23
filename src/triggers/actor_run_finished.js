@@ -1,7 +1,8 @@
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
-const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
+const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
+const { getActorDatasetOutputFields } = require('../output_fields');
 
 const getFallbackActorRuns = async (z, bundle) => {
     const response = await wrapRequestWithRetries(z.request, {
@@ -41,14 +42,17 @@ module.exports = {
             },
         ],
         type: 'hook',
-        performSubscribe: (z, bundle) => subscribeWebkook(z, bundle, { actorId: bundle.inputData.actorId }),
+        performSubscribe: (z, bundle) => subscribeWebhook(z, bundle, { actorId: bundle.inputData.actorId }),
         performUnsubscribe: unsubscribeWebhook,
         // Perform is called after each hit to the webhook API
         perform: getActorRun,
         // PerformList is used to get testing data for users in Zapier app
         performList: getFallbackActorRuns,
         // In cases where Zapier needs to show an example record to the user, but we are unable to get a live example
-        sample: TASK_RUN_SAMPLE,
-        outputFields: TASK_RUN_OUTPUT_FIELDS,
+        sample: ACTOR_RUN_SAMPLE,
+        outputFields: [
+            ...ACTOR_RUN_OUTPUT_FIELDS,
+            getActorDatasetOutputFields,
+        ],
     },
 };

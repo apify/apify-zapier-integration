@@ -130,7 +130,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
 };
 
 // Process to subscribe to Apify webhook
-const subscribeWebkook = async (z, bundle, condition) => {
+const subscribeWebhook = async (z, bundle, condition) => {
     const webhookOpts = {
         eventTypes: WEBHOOK_EVENT_TYPE_GROUPS.ACTOR_RUN_TERMINAL,
         condition,
@@ -534,7 +534,7 @@ const printPrettyActorOrTaskName = (actorOrTask) => {
 
 module.exports = {
     enrichActorRun,
-    subscribeWebkook,
+    subscribeWebhook,
     unsubscribeWebhook,
     getActorRun,
     getOrCreateKeyValueStore,

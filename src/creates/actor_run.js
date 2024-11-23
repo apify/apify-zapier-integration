@@ -7,7 +7,7 @@ const {
     prefixInputFieldKey,
 } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
-const { getDatasetOutputFields } = require('../output_fields');
+const { getActorDatasetOutputFields } = require('../output_fields');
 
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
@@ -126,7 +126,7 @@ module.exports = {
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [
             ...ACTOR_RUN_OUTPUT_FIELDS,
-            getDatasetOutputFields,
+            getActorDatasetOutputFields,
         ],
     },
 };

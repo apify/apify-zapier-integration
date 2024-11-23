@@ -1,7 +1,8 @@
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
-const { enrichActorRun, subscribeWebkook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
+const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
+const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const getFallbackTaskActorRuns = async (z, bundle) => {
     const response = await wrapRequestWithRetries(z.request, {
@@ -46,11 +47,14 @@ module.exports = {
             },
         ],
         type: 'hook',
-        performSubscribe: (z, bundle) => subscribeWebkook(z, bundle, { actorTaskId: bundle.inputData.taskId }),
+        performSubscribe: (z, bundle) => subscribeWebhook(z, bundle, { actorTaskId: bundle.inputData.taskId }),
         performUnsubscribe: unsubscribeWebhook,
         perform: getActorRun,
         performList: getFallbackTaskActorRuns,
         sample: TASK_RUN_SAMPLE,
-        outputFields: TASK_RUN_OUTPUT_FIELDS,
+        outputFields: [
+            ...TASK_RUN_OUTPUT_FIELDS,
+            getTaskDatasetOutputFields,
+        ],
     },
 };

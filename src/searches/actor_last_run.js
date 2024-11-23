@@ -2,7 +2,7 @@ const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
-const { getDatasetOutputFields } = require('../output_fields');
+const { getActorDatasetOutputFields } = require('../output_fields');
 
 const getLastActorRun = async (z, bundle) => {
     const { actorId, status } = bundle.inputData;
@@ -54,7 +54,7 @@ module.exports = {
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [
             ...ACTOR_RUN_OUTPUT_FIELDS,
-            getDatasetOutputFields,
+            getActorDatasetOutputFields,
         ],
     },
 };

@@ -222,11 +222,10 @@ const DATASET_OUTPUT_FIELDS = [
     { key: 'cleanItemCount', label: 'Clean item count', type: 'integer' },
     { key: 'actId', label: 'Actor ID', type: 'string' },
     { key: 'actRunId', label: 'Actor run ID', type: 'string' },
-    { key: 'itemsFileUrls', label: 'Items file URLs', type: 'string' },
-    { key: 'itemsFileUrls_xml', label: 'Items XML file URL', type: 'string' },
-    { key: 'itemsFileUrls_csv', label: 'Items CSV file URL', type: 'string' },
-    { key: 'itemsFileUrls_json', label: 'Items JSON file URL', type: 'string' },
-    { key: 'itemsFileUrls_xlsx', label: 'Items Excel file URL', type: 'string' },
+    { key: 'itemsFileUrls__xml', label: 'Items XML file URL', type: 'string' },
+    { key: 'itemsFileUrls__csv', label: 'Items CSV file URL', type: 'string' },
+    { key: 'itemsFileUrls__json', label: 'Items JSON file URL', type: 'string' },
+    { key: 'itemsFileUrls__xlsx', label: 'Items Excel file URL', type: 'string' },
 ];
 
 /**
