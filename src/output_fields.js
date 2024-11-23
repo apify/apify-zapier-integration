@@ -6,7 +6,7 @@ const { APIFY_API_ENDPOINTS } = require('./consts');
 const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
 
 /**
- * Transforms object items to output fields.
+ * Download items from dataset and create FieldSchema out of them.
  * @param {string} datasetId
  * @returns {Promise<*[]>}
  */

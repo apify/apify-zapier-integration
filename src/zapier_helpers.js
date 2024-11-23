@@ -1,7 +1,8 @@
 const _ = require('lodash');
 const dayjs = require('dayjs');
 /**
- * Converts a plain object to an array of field schema objects.
+ * Converts a plain object to an array of FieldSchema objects.
+ * https://github.com/zapier/zapier-platform/blob/main/packages/schema/docs/build/schema.md#fieldschema
  * @param object
  * @param keyPrefix
  * @returns {*[]}
