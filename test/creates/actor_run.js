@@ -21,6 +21,10 @@ describe('create actor run', () => {
         testActorId = actor.id;
     });
 
+    after(async () => {
+        await apifyClient.actor(testActorId).delete();
+    });
+
     it('load correctly Actors with Actors from store with hidden trigger', async () => {
         const bundle = {
             authData: {
@@ -149,6 +153,42 @@ describe('create actor run', () => {
         expect(waitUntilField.default).to.be.equal(JSON.stringify(waitUntilFieldSchema.prefill, null, 2));
     }).timeout(120000);
 
+    it('loading of dynamic output fields for dataset items work', async () => {
+        const bundle = {
+            authData: {
+                token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                // Actor with input schema
+                actorId: testActorId,
+            },
+        };
+        const items = [
+            { a: 1, b: 2, c: 'c', d: 'd' },
+            { a: 2, b: 3, c: 'c', d: 'd' },
+            { a: 3, b: 4, e: { a: 1, b: 2 } },
+            { a: 4, b: 5, f: new Date() },
+            { a: 4, b: 5, g: ['a', 'b'], h: [{ a: 1, b: 2 }] },
+        ];
+        // Run an Actor, the output items will be generated based on latest success run
+        await apifyClient.actor(testActorId).call({
+            datasetItems: items,
+        }, { build: 'latest' });
+        const fields = await appTester(App.triggers.getActorDatasetOutputFieldsTest.operation.perform, bundle);
+        expect(fields).to.be.eql([
+            { key: 'datasetItems[]a', type: 'number' },
+            { key: 'datasetItems[]b', type: 'number' },
+            { key: 'datasetItems[]c', type: 'string' },
+            { key: 'datasetItems[]d', type: 'string' },
+            { key: 'datasetItems[]e__a', type: 'number' },
+            { key: 'datasetItems[]e__b', type: 'number' },
+            { key: 'datasetItems[]f', type: 'datetime' },
+            { key: 'datasetItems[]g', type: 'string', list: true },
+            { key: 'datasetItems[]h[]a', type: 'number' },
+            { key: 'datasetItems[]h[]b', type: 'number' },
+        ]);
+    }).timeout(120000);
+
     it('runSync work', async () => {
         const runOptions = {
             build: 'latest',
@@ -235,8 +275,4 @@ describe('create actor run', () => {
         expect(testResult).to.have.all.keys(_.without(Object.keys(ACTOR_RUN_SAMPLE), 'exitCode'));
         expect(testResult.finishedAt).to.be.eql(null);
     }).timeout(50000);
-
-    after(async () => {
-        await apifyClient.actor(testActorId).delete();
-    });
 });

@@ -1,6 +1,7 @@
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
+const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
 
@@ -85,6 +86,9 @@ module.exports = {
         perform: runTask,
 
         sample: TASK_RUN_SAMPLE,
-        outputFields: TASK_RUN_OUTPUT_FIELDS,
+        outputFields: [
+            ...TASK_RUN_OUTPUT_FIELDS,
+            getTaskDatasetOutputFields,
+        ],
     },
 };
