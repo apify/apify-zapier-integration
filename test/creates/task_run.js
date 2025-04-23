@@ -83,7 +83,7 @@ describe('create task run', () => {
         };
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
-        expect(testResult).to.have.all.keys(_.without(Object.keys(TASK_RUN_SAMPLE), 'exitCode'));
+        expect(testResult).to.have.all.keys(_.without(Object.keys(TASK_RUN_SAMPLE), 'exitCode', 'consoleUrl'));
         expect(testResult.finishedAt).to.be.eql(null);
     }).timeout(50000);
 

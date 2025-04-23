@@ -43,6 +43,7 @@ const ACTOR_RUN_SAMPLE = {
         json: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=json&clean=true&attachment=true',
         xlsx: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=xlsx&clean=true&attachment=true',
     },
+    generalAccess: {},
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
     detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     usage: {
@@ -92,6 +93,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     isStatusMessageTerminal: true,
     statusMessage: 'Actor finished!',
+    generalAccess: {},
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
         DATASET_READS: 0,
@@ -191,6 +193,7 @@ const TASK_RUN_SAMPLE = {
     ...ACTOR_RUN_SAMPLE,
     actorTaskId: 'UJNG9zau8PEB7U',
     detailsPageUrl: 'https://console.apify.com/actors/tasks/UJNG9zau8PEB7U/runs/HG7ML7M8z78YcAPEB',
+    consoleUrl: 'https://console.apify.com/view/runs/tbplDsWxC8dabcsRb',
 };
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);

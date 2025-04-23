@@ -1,5 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
+const _ = require('lodash');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 const App = require('../../index');
@@ -100,7 +101,7 @@ describe('actor run finished trigger', () => {
 
         expect(results.length).to.be.eql(3);
         expect(results[0].id).to.be.eql(runs.pop().id);
-        expect(results[0]).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
+        expect(results[0]).to.have.all.keys({ ...ACTOR_RUN_SAMPLE, consoleUrl: '' });
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
