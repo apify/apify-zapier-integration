@@ -8,8 +8,7 @@ const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal
  */
 const includeApiToken = (request, z, bundle) => {
     if (bundle.authData.token) {
-        request.params = request.params || {};
-        request.params.token = bundle.authData.token;
+        request.headers.Authorization = `Bearer ${bundle.authData.token}`;
     }
     return request;
 };
