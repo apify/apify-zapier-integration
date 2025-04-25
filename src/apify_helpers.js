@@ -1,8 +1,9 @@
 const _ = require('lodash');
-const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('@apify/consts');
+const { WEBHOOK_EVENT_TYPE_GROUPS, WEBHOOK_EVENT_TYPES, BUILD_TAG_LATEST } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
+    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATES
+} = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 // Key of field to use internally to compute changes in fields.
@@ -131,8 +132,12 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
 
 // Process to subscribe to Apify webhook
 const subscribeWebhook = async (z, bundle, condition) => {
+    const states = Array.from(new Set(bundle.inputData.states));
+    const filteredStates = states.filter((state) => Object.keys(ACTOR_RUN_TERMINAL_STATES).includes(state));
+    const eventTypes = filteredStates.map((state) => `ACTOR.RUN.${state.toUpperCase()}`);
+
     const webhookOpts = {
-        eventTypes: WEBHOOK_EVENT_TYPE_GROUPS.ACTOR_RUN_TERMINAL,
+        eventTypes,
         condition,
         requestUrl: bundle.targetUrl,
     };

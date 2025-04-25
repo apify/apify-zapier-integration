@@ -1,3 +1,7 @@
+## 3.2.9 / 2025-04-28
+
+* Add multiple choice dropdown for actor / task run triggers which allows selection of specific terminal state
+
 ## 3.2.1 / 2024-11-23
 
 * Updated packages

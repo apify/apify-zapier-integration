@@ -270,6 +270,13 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
+const ACTOR_RUN_TERMINAL_STATES = {
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    timed_out: 'Timed Out',
+    aborted: 'Aborted',
+};
+
 module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
@@ -289,4 +296,5 @@ module.exports = {
     KEY_VALUE_STORE_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
+    ACTOR_RUN_TERMINAL_STATES,
 };
