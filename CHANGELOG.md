@@ -1,3 +1,7 @@
+## 3.2.1 / 2024-11-23
+
+* Updated packages
+
 ## 3.2.0 / 2024-11-23
 
 * Improve output fields for all actions where dataset is included
