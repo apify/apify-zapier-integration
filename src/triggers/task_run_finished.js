@@ -47,7 +47,7 @@ module.exports = {
             },
             {
                 label: 'States',
-                helpText: 'Please select the terminal states of the actor.',
+                helpText: 'Please select the terminal states of the task run.',
                 key: 'states',
                 required: true,
                 list: true,
