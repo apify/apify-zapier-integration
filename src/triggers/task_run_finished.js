@@ -1,5 +1,5 @@
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATES} = require('../consts');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATES } = require('../consts');
 const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');

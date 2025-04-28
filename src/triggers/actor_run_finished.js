@@ -1,4 +1,4 @@
-const { ACTOR_JOB_STATUSES} = require('@apify/consts');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATES } = require('../consts');
 const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
