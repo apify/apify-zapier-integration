@@ -2,7 +2,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
-const { ACTOR_RUN_SAMPLE, ACTOR_RUN_TERMINAL_STATES } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE} = require('../../src/consts');
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
@@ -27,7 +27,6 @@ describe('actor run finished trigger', () => {
             },
             inputData: {
                 actorId: testActorId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
             meta: {},
         };
@@ -47,7 +46,6 @@ describe('actor run finished trigger', () => {
         const bundle = {
             authData: {
                 token: TEST_USER_TOKEN,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
             subscribeData,
             meta: {},
@@ -68,7 +66,6 @@ describe('actor run finished trigger', () => {
             },
             inputData: {
                 actorId: testActorId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
             cleanedRequest: { // Mock webhook payload
                 resource: {
@@ -97,7 +94,6 @@ describe('actor run finished trigger', () => {
             },
             inputData: {
                 actorId: testActorId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
         };
 

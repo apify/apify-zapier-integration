@@ -1,6 +1,7 @@
 const {
     KEY_VALUE_STORE_KEYS,
     ACTOR_LIMITS: { MIN_RUN_MEMORY_MBYTES, MAX_RUN_MEMORY_MBYTES },
+    WEBHOOK_EVENT_TYPES,
 } = require('@apify/consts');
 
 /**
@@ -270,11 +271,11 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
-const ACTOR_RUN_TERMINAL_STATES = {
-    succeeded: 'Succeeded',
-    failed: 'Failed',
-    timed_out: 'Timed Out',
-    aborted: 'Aborted',
+const ACTOR_RUN_TERMINAL_STATUSES = {
+    [WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED]: 'Succeeded',
+    [WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED]: 'Failed',
+    [WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT]: 'Timed Out',
+    [WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED]: 'Aborted',
 };
 
 module.exports = {
@@ -296,5 +297,5 @@ module.exports = {
     KEY_VALUE_STORE_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
-    ACTOR_RUN_TERMINAL_STATES,
+    ACTOR_RUN_TERMINAL_STATUSES,
 };

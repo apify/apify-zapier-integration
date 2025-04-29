@@ -2,7 +2,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask } = require('../helpers');
-const { TASK_RUN_SAMPLE, ACTOR_RUN_TERMINAL_STATES } = require('../../src/consts');
+const { TASK_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -33,7 +33,6 @@ describe('task run finished trigger', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
             meta: {},
         };
@@ -74,7 +73,6 @@ describe('task run finished trigger', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
             cleanedRequest: { // Mock webhook payload
                 resource: {
@@ -104,7 +102,6 @@ describe('task run finished trigger', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                states: Object.keys(ACTOR_RUN_TERMINAL_STATES),
             },
         };
 

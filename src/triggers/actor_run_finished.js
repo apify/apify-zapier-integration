@@ -1,5 +1,5 @@
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
-const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATES } = require('../consts');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATUSES } = require('../consts');
 const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
@@ -41,12 +41,12 @@ module.exports = {
                 dynamic: 'actors.id.name',
             },
             {
-                label: 'States',
-                helpText: 'Please select the terminal states of the actor run.',
-                key: 'states',
-                required: true,
+                label: 'Statuses',
+                helpText: 'Please select the terminal statuses of the Actor run. If no status is selected, all terminal statuses will be used.',
+                key: 'statuses',
+                required: false,
                 list: true,
-                choices: ACTOR_RUN_TERMINAL_STATES,
+                choices: ACTOR_RUN_TERMINAL_STATUSES,
             },
         ],
         type: 'hook',
