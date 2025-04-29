@@ -28,7 +28,7 @@ describe('create actor run', () => {
     it('load correctly Actors with Actors from store with hidden trigger', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {},
             meta: {},
@@ -87,7 +87,7 @@ describe('create actor run', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -109,7 +109,7 @@ describe('create actor run', () => {
         const actorId = 'apify~web-scraper';
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 // Actor with input schema
@@ -156,7 +156,7 @@ describe('create actor run', () => {
     it('loading of dynamic output fields for dataset items work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 // Actor with input schema
@@ -197,7 +197,7 @@ describe('create actor run', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -227,7 +227,7 @@ describe('create actor run', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -259,7 +259,7 @@ describe('create actor run', () => {
     it('runAsync work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,

@@ -29,7 +29,7 @@ describe('fetch dataset items', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 datasetIdOrName: testDatasetId,

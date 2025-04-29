@@ -27,7 +27,7 @@ describe('create task run', () => {
         const urlToScrape = 'http://example.com';
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTask1Id,
@@ -55,7 +55,7 @@ describe('create task run', () => {
     it('runSync work without output', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTask2Id,
@@ -74,7 +74,7 @@ describe('create task run', () => {
     it('runAsync work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTask1Id,
@@ -90,7 +90,7 @@ describe('create task run', () => {
     it('run legacy crawler and return simplified items work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTask3Id,

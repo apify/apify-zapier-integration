@@ -18,7 +18,7 @@ const getAccessToken = async (z, bundle) => {
     });
 
     return {
-        token: response.data.access_token,
+        access_token: response.data.access_token,
     };
 };
 

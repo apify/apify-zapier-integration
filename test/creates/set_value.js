@@ -6,7 +6,6 @@ const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
 
-
 describe('set key-value store value', () => {
     it('work for storeName', async () => {
         const expectedKey = randomString();
@@ -15,7 +14,7 @@ describe('set key-value store value', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 storeIdOrName: 'zapier-test',
@@ -40,7 +39,7 @@ describe('set key-value store value', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 storeIdOrName: store.id,

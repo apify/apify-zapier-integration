@@ -19,7 +19,7 @@ describe('search task last run', () => {
     it('work for task without run', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,
@@ -35,7 +35,7 @@ describe('search task last run', () => {
     it('work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,
@@ -53,11 +53,10 @@ describe('search task last run', () => {
         expect(testResult[0].id).to.be.eql(taskRun.id);
     }).timeout(240000);
 
-
     it('return empty array if there is no run with status', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,

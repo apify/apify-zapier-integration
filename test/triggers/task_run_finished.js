@@ -29,7 +29,7 @@ describe('task run finished trigger', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,
@@ -52,7 +52,7 @@ describe('task run finished trigger', () => {
     it('unsubscribe webhook work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             subscribeData,
             meta: {},
@@ -69,7 +69,7 @@ describe('task run finished trigger', () => {
         const runId = randomString();
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,
@@ -98,7 +98,7 @@ describe('task run finished trigger', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: testTaskId,
@@ -123,7 +123,7 @@ describe('task run finished trigger', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 taskId: legacyCrawlerTaskId,
@@ -144,7 +144,7 @@ describe('task run finished trigger', () => {
         it('work', async () => {
             const bundle = {
                 authData: {
-                    token: TEST_USER_TOKEN,
+                    access_token: TEST_USER_TOKEN,
                 },
                 inputData: {},
                 meta: {},
