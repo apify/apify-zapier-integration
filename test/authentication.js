@@ -10,7 +10,7 @@ describe('authentication', () => {
     it('passes authentication and returns user', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
         };
 
@@ -18,10 +18,10 @@ describe('authentication', () => {
         expect(tester).to.have.property('username');
     });
 
-    it('throw user error if token is invalide', async () => {
+    it('throw user error if token is invalid', async () => {
         const bundle = {
             authData: {
-                token: 'blabla',
+                access_token: 'blabla',
             },
         };
         try {

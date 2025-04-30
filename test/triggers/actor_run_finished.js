@@ -23,7 +23,7 @@ describe('actor run finished trigger', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -45,7 +45,7 @@ describe('actor run finished trigger', () => {
     it('unsubscribe webhook work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             subscribeData,
             meta: {},
@@ -62,7 +62,7 @@ describe('actor run finished trigger', () => {
         const runId = randomString();
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -90,7 +90,7 @@ describe('actor run finished trigger', () => {
         }
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -111,7 +111,7 @@ describe('actor run finished trigger', () => {
         it('work', async () => {
             const bundle = {
                 authData: {
-                    token: TEST_USER_TOKEN,
+                    access_token: TEST_USER_TOKEN,
                 },
                 inputData: {},
                 meta: {},

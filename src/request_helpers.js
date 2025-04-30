@@ -7,9 +7,8 @@ const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal
  * It runs runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
  */
 const includeApiToken = (request, z, bundle) => {
-    if (bundle.authData.token) {
-        request.params = request.params || {};
-        request.params.token = bundle.authData.token;
+    if (bundle.authData.access_token) {
+        request.headers.Authorization = `Bearer ${bundle.authData.access_token}`;
     }
     return request;
 };

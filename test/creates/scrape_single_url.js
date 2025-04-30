@@ -18,7 +18,7 @@ describe('scrape single URL', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: options,
         };
@@ -56,7 +56,7 @@ describe('scrape single URL', () => {
         };
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: options,
         };
