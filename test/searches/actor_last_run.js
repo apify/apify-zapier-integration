@@ -20,7 +20,7 @@ describe('search actor last run', () => {
     it('work for actor without run', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,
@@ -36,7 +36,7 @@ describe('search actor last run', () => {
     it('work', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 actorId: testActorId,

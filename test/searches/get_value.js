@@ -33,7 +33,7 @@ describe('get key-value store value', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 storeIdOrName: testStoreId,
@@ -57,7 +57,7 @@ describe('get key-value store value', () => {
 
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 storeIdOrName: testStoreId,
@@ -71,7 +71,7 @@ describe('get key-value store value', () => {
     it('work for empty value', async () => {
         const bundle = {
             authData: {
-                token: TEST_USER_TOKEN,
+                access_token: TEST_USER_TOKEN,
             },
             inputData: {
                 storeIdOrName: testStoreId,
