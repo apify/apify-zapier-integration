@@ -1,11 +1,10 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { WEBHOOK_EVENT_TYPES, WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
+const { WEBHOOK_EVENT_TYPES, WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_STATUSES} = require('@apify/consts');
 
 const App = require('../../index');
-const { createAndBuildActor, apifyClient, randomString, createWebScraperTask } = require('../helpers');
-const { ACTOR_RUN_TERMINAL_STATUSES } = require('../../src/consts');
+const {randomString } = require('../helpers');
 
 const appTester = zapier.createAppTester(App);
 
@@ -18,7 +17,7 @@ describe('actor and task webhook creation', () => {
         nock.cleanAll();
     });
 
-    it('create webhook with status failed for actor run', async () => {
+    it('create webhook with status failed and timed out for actor run', async () => {
         const requestUrl = `http://example.com/#${randomString()}`;
         const bundle = {
             targetUrl: requestUrl,
@@ -27,7 +26,7 @@ describe('actor and task webhook creation', () => {
             },
             inputData: {
                 actorId: testActorId,
-                statuses: [ACTOR_RUN_TERMINAL_STATUSES.FAILED],
+                statuses: ['FAILED', 'TIMED-OUT'],
             },
             meta: {},
         };
@@ -37,7 +36,7 @@ describe('actor and task webhook creation', () => {
                 expect(payload).to.have.property('requestUrl', requestUrl);
                 expect(payload).to.have.property('condition').that.has.property('actorId', testActorId);
                 expect(payload).to.have.property('eventTypes')
-                    .that.includes(WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED)
+                    .that.includes(WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED, WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT)
                     .and.not.includes([
                         WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
                         WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
@@ -61,7 +60,7 @@ describe('actor and task webhook creation', () => {
             },
             inputData: {
                 taskId: testTaskId,
-                statuses: [ACTOR_RUN_TERMINAL_STATUSES.ABORTED],
+                statuses: ['ABORTED'],
             },
             meta: {},
         };
@@ -95,7 +94,7 @@ describe('actor and task webhook creation', () => {
             },
             inputData: {
                 actorId: testActorId,
-                statuses: [ACTOR_RUN_TERMINAL_STATUSES.FAILED, 'WRONG_STATUS'],
+                statuses: ['FAILED', 'WRONG_STATUS'],
             },
             meta: {},
         };
