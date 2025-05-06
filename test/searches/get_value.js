@@ -21,14 +21,12 @@ describe('get key-value store value', () => {
 
     it('work', async () => {
         const storeKey = randomString();
-        const storeValue = {
-            myKey: randomString(),
-        };
+        const storeValue = 'j{}';
         // Create record
         await apifyClient.keyValueStore(testStoreId).setRecord({
             key: storeKey,
             contentType: 'application/json',
-            value: JSON.stringify(storeValue),
+            value: true,
         });
 
         const bundle = {
@@ -43,29 +41,7 @@ describe('get key-value store value', () => {
 
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
-        expect(storeValue).to.be.eql(testResult[0]);
-    }).timeout(10000);
-
-    it('throw error for non json value', async () => {
-        const storeKey = randomString();
-        // Create record
-        await apifyClient.keyValueStore(testStoreId).setRecord({
-            key: storeKey,
-            contentType: 'plain/text',
-            value: 'just text',
-        });
-
-        const bundle = {
-            authData: {
-                access_token: TEST_USER_TOKEN,
-            },
-            inputData: {
-                storeIdOrName: testStoreId,
-                key: storeKey,
-            },
-        };
-
-        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle)).to.be.rejectedWith(/is not JSON object/);
+        expect(storeValue).to.be.eql(testResult[0].value);
     }).timeout(10000);
 
     it('work for empty value', async () => {
@@ -82,6 +58,31 @@ describe('get key-value store value', () => {
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
         expect(testResult).to.be.eql([]);
+    }).timeout(10000);
+
+    it('work for existing pdf', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                storeIdOrName: 'oDtbjvjH3vIjUYWsy',
+                key: 'pdf',
+            },
+        };
+
+        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
+
+        expect(testResult).to.be.eql([{
+            contentType: 'application/pdf',
+            value: 'hydrate|||'
+                + '{"type":"file",'
+                + '"method":"searches.keyValueStoreGetValue.hydrators.getRecord",'
+                + '"bundle":{"storeId":"oDtbjvjH3vIjUYWsy",'
+                + '"key":"pdf",'
+                + '"raw":true}}'
+                + '|||hydrate',
+        }]);
     }).timeout(10000);
 
     after(async () => {
