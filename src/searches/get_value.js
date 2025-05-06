@@ -2,13 +2,18 @@ const { APIFY_API_ENDPOINTS } = require('../consts');
 const { getOrCreateKeyValueStore } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
-const stashFunction = (z, bundle) => {
-    const { contentLength, contentType, storeId, key } = bundle.inputData;
-    const filePromise = z.request({
+const getRecord = (z, options) => {
+    const { storeId, key, raw } = options;
+    return z.request({
         url: `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`,
         method: 'GET',
-        raw: true,
+        raw,
     });
+};
+
+const stashFunction = (z, bundle) => {
+    const { contentLength, contentType, key } = bundle.inputData;
+    const filePromise = getRecord(z, bundle);
     return z.stashFile(filePromise, contentLength, key, contentType);
 };
 
@@ -28,27 +33,18 @@ const getValue = async (z, bundle) => {
     const contentType = sizeRequest.getHeader('content-type');
     const contentLength = sizeRequest.getHeader('content-length');
 
+    // najit velky soubor 100mb±
+
     let data;
-
-    const PARSEABLE_MIMES = ['application/json', 'text/plain'];
-
-    // Maximum HTTP response payload = 20MB
-    if (PARSEABLE_MIMES.includes(contentType) && contentLength < 20 * (1000 ** 2)) {
-        const response = await z.request({
-            url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,
-            method: 'GET',
-        });
+    if (contentType === 'application/json' && contentLength < 20 * (1000 ** 2)) {
+        bundle.inputData = { storeId: store.id, key, raw: false };
+        const response = await getRecord(z, { storeId: store.id, key, raw: false });
         if (typeof response.data === 'object' && !Array.isArray(response.data) && response.data !== null) {
             data = response.data;
         } else {
             data = { value: response.data ?? null };
         }
     } else {
-        // There is a hard limit of 150MB on the size of dehydrated files.
-        // Depending on the complexity of the app, issues can also occur for files over ~100MB
-        if (contentLength > 120 * (1000 ** 2)) {
-            throw new Error('File size exceeds Zapier operating constraints.');
-        }
         const pointer = z.dehydrateFile(stashFunction, { storeId: store.id, key, raw: true, contentLength, contentType });
         data = {
             contentType,
