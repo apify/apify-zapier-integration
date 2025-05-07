@@ -4,12 +4,16 @@ const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal
 
 /**
  * Middleware includes the API token on all outbound requests.
- * It runs runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
+ * It runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
  */
 const includeApiToken = (request, z, bundle) => {
-    if (bundle.authData.access_token) {
-        request.headers.Authorization = `Bearer ${bundle.authData.access_token}`;
+    if (new URL(request.url).host === 'api.apify.com') {
+        if (bundle.authData.access_token) {
+            request.headers.Authorization = `Bearer ${bundle.authData.access_token}`;
+        }
+        request.headers['x-apify-integration-platform'] = 'zapier';
     }
+
     return request;
 };
 
