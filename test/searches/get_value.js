@@ -19,14 +19,39 @@ describe('get key-value store value', () => {
         testStoreId = store.id;
     });
 
-    it('work', async () => {
+    it('work for JSON with object structure', async () => {
         const storeKey = randomString();
-        const storeValue = 'j{}';
+        const storeValue = { key: 'value' };
         // Create record
         await apifyClient.keyValueStore(testStoreId).setRecord({
             key: storeKey,
             contentType: 'application/json',
-            value: true,
+            value: storeValue,
+        });
+
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                storeIdOrName: testStoreId,
+                key: storeKey,
+            },
+        };
+
+        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
+
+        expect(storeValue).to.be.eql(testResult[0]);
+    }).timeout(10000);
+
+    it('work for JSON without object structure', async () => {
+        const storeKey = randomString();
+        const storeValue = 'Just some text.';
+        // Create record
+        await apifyClient.keyValueStore(testStoreId).setRecord({
+            key: storeKey,
+            contentType: 'application/json',
+            value: storeValue,
         });
 
         const bundle = {
@@ -60,13 +85,13 @@ describe('get key-value store value', () => {
         expect(testResult).to.be.eql([]);
     }).timeout(10000);
 
-    it('work for existing pdf', async () => {
+    it('work for pdf', async () => {
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
             },
             inputData: {
-                storeIdOrName: 'oDtbjvjH3vIjUYWsy',
+                storeIdOrName: 'oDtbjvjH3vIjUYWsy', // TODO: move to test user account
                 key: 'pdf',
             },
         };
@@ -75,14 +100,33 @@ describe('get key-value store value', () => {
 
         expect(testResult).to.be.eql([{
             contentType: 'application/pdf',
-            value: 'hydrate|||'
-                + '{"type":"file",'
-                + '"method":"searches.keyValueStoreGetValue.hydrators.getRecord",'
-                + '"bundle":{"storeId":"oDtbjvjH3vIjUYWsy",'
+            value: 'hydrate|||{'
+                + '"type":"file",'
+                + '"method":"hydrators.stashFunction",'
+                + '"bundle":{'
+                + '"storeId":"oDtbjvjH3vIjUYWsy",'
                 + '"key":"pdf",'
-                + '"raw":true}}'
-                + '|||hydrate',
+                + '"raw":true,'
+                + '"contentLength":"196420",'
+                + '"contentType":"application/pdf"'
+                + '}'
+                + '}|||hydrate',
         }]);
+    }).timeout(10000);
+
+    it('throw for file bigger than 120MB', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                storeIdOrName: 'oDtbjvjH3vIjUYWsy', // TODO: move to test user account
+                key: '200MBzip',
+            },
+        };
+
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle)).to.be
+            .rejectedWith(/File size exceeds Zapier operating constraints/);
     }).timeout(10000);
 
     after(async () => {
