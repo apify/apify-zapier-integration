@@ -48,7 +48,8 @@ module.exports = {
             },
             {
                 label: 'Statuses',
-                helpText: 'Please select the terminal states of the task run. If no status is selected, all terminal statuses will be used.',
+                // eslint-disable-next-line max-len
+                helpText: 'Select one or more terminal statuses for the run. If none are selected, all terminal statuses will be included by default.',
                 key: 'statuses',
                 required: false,
                 list: true,

@@ -39,7 +39,6 @@ describe('actor and task webhook creation', () => {
                     .that.includes(WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED, WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT)
                     .and.not.includes([
                         WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
-                        WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
                         WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED,
                     ]);
                 return true;

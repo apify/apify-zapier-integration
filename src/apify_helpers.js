@@ -1,8 +1,8 @@
 const _ = require('lodash');
-const { BUILD_TAG_LATEST, WEBHOOK_EVENT_TYPES, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
+const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
+    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -147,14 +147,7 @@ const getActorStatusesFromBundle = (bundle) => {
 const subscribeWebhook = async (z, bundle, condition) => {
     const statuses = getActorStatusesFromBundle(bundle);
 
-    const eventTypes = statuses.map((status) => status.replace('-', '_')).map((status) => {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const eventType of Object.values(WEBHOOK_EVENT_TYPES)) {
-            if (eventType.includes(status)) {
-                return eventType;
-            }
-        }
-    });
+    const eventTypes = statuses.map((status) => ACTOR_RUN_TERMINAL_EVENT_TYPES[status]).filter((status) => status !== undefined);
 
     const webhookOpts = {
         eventTypes,

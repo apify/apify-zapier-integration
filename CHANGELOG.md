@@ -1,4 +1,4 @@
-## 4.1.0 / 2025-05-06
+## 4.1.0 / 2025-05-07
 * Add multiple choice dropdown for actor / task run triggers which allows selection of specific terminal state
 
 ## 4.0.0 / 2025-04-29
