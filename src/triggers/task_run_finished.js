@@ -20,9 +20,9 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
 
     const statuses = getActorStatusesFromBundle(bundle) || ACTOR_JOB_TERMINAL_STATUSES;
     const { items } = response.data;
-    const succeededRuns = items.filter((run) => (statuses.includes(run.status)));
+    const filteredRuns = items.filter((run) => (statuses.includes(run.status)));
 
-    return Promise.map(succeededRuns.slice(0, 3), async ({ id }) => {
+    return Promise.map(filteredRuns.slice(0, 3), async ({ id }) => {
         const runResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.data.actId}/runs/${id}`,
         });
