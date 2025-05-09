@@ -1,5 +1,5 @@
-## 4.0.0 / 2025-04-29
-* Authentication with Apify is now possible only via OAuth2
+## 4.0.0 / 2025-05-05
+❗Authentication with Apify is now possible only via OAuth2
 
 ## 3.2.1 / 2024-11-23
 
