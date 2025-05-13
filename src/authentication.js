@@ -9,10 +9,10 @@ const getAccessToken = async (z, bundle) => {
         body: {
             client_id: process.env.CLIENT_ID,
             client_secret: process.env.CLIENT_SECRET,
-            redirect_uri: '{{bundle.inputData.redirect_uri}}',
+            redirect_uri: bundle.inputData.redirect_uri,
             grant_type: 'authorization_code',
             code: bundle.inputData.code,
-            code_verifier: '{{bundle.inputData.code_verifier}}', // Added for PKCE
+            code_verifier: bundle.inputData.code_verifier, // Added for PKCE
         },
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
