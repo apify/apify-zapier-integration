@@ -1,3 +1,6 @@
+## 4.0.1 / 2025-05-13
+* Fix adding new connection issue with OAuth2
+
 ## 4.0.0 / 2025-05-05
 ❗Authentication with Apify is now possible only via OAuth2
 
