@@ -1,5 +1,8 @@
 ## 4.1.0 / 2025-05-09
-* Add multiple choice dropdown for actor / task run triggers which allows selection of specific terminal state
+* Add multiple choice dropdown for Actor / task run triggers which allows selection of specific terminal state
+
+## 4.0.1 / 2025-05-13
+* Fix adding new connection issue with OAuth2
 
 ## 4.0.0 / 2025-05-05
 ❗Authentication with Apify is now possible only via OAuth2
