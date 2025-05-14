@@ -1,3 +1,6 @@
+## 4.0.2 / 2025-05-13
+* Refactor adding integration header to the Apify Platform related requests
+
 ## 4.0.1 / 2025-05-13
 * Fix adding new connection issue with OAuth2
 

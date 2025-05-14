@@ -1,7 +1,7 @@
 const zapierCore = require('zapier-platform-core');
 const apifyApp = require('./package.json');
 const authentication = require('./src/authentication');
-const { parseDataApiObject, includeApiToken, validateApiResponse } = require('./src/request_helpers');
+const { parseDataApiObject, setApifyRequestHeaders, validateApiResponse } = require('./src/request_helpers');
 const taskRunFinishedTrigger = require('./src/triggers/task_run_finished');
 const tasksTrigger = require('./src/triggers/tasks');
 const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
@@ -28,7 +28,7 @@ const App = {
     authentication,
 
     beforeRequest: [
-        includeApiToken,
+        setApifyRequestHeaders,
     ],
 
     afterResponse: [
