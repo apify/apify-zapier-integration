@@ -2,7 +2,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString } = require('../helpers');
-const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE} = require('../../src/consts');
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);

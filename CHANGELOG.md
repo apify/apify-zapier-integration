@@ -1,3 +1,6 @@
+## 4.1.0 / 2025-05-16
+* Add multiple choice dropdown for Actor / task run triggers which allows selection of specific terminal state
+
 ## 4.0.2 / 2025-05-13
 * Refactor adding integration header to the Apify Platform related requests
 
