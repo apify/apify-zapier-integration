@@ -1,5 +1,6 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
+const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
 const { DATASET_SAMPLE } = require('../../src/consts');
 
@@ -7,13 +8,26 @@ const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
 
-
 describe('fetch dataset items', () => {
-    let testDatasetId;
+    let testDatasetId = DATASET_SAMPLE.id;
 
     before(async () => {
-        const dataset = await apifyClient.datasets().getOrCreate(`test-zapier-${randomString()}`);
-        testDatasetId = dataset.id;
+        if (TEST_USER_TOKEN) {
+            const dataset = await apifyClient.datasets().getOrCreate(`test-zapier-${randomString()}`);
+            testDatasetId = dataset.id;
+        }
+    });
+
+    after(async () => {
+        if (TEST_USER_TOKEN) {
+            await apifyClient.dataset(testDatasetId).delete();
+        }
+    });
+
+    afterEach(async () => {
+        if (!TEST_USER_TOKEN) {
+            nock.cleanAll();
+        }
     });
 
     it('work', async () => {
@@ -24,8 +38,11 @@ describe('fetch dataset items', () => {
                 i,
             });
         }
-        // Push data to dataset
-        await apifyClient.dataset(testDatasetId).pushItems(randomItems);
+
+        if (TEST_USER_TOKEN) {
+            // Push data to dataset
+            await apifyClient.dataset(testDatasetId).pushItems(randomItems);
+        }
 
         const bundle = {
             authData: {
@@ -36,14 +53,24 @@ describe('fetch dataset items', () => {
             },
         };
 
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/datasets/${testDatasetId}`)
+                .reply(200, {
+                    data: DATASET_SAMPLE,
+                });
+            scope.get(`/v2/datasets/${testDatasetId}/items`)
+                .query({ limit: null, offset: null, clean: true })
+                .reply(200, randomItems);
+        }
+
         const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
 
         expect(testResult[0].items.length).to.be.eql(randomItems.length);
         expect(testResult[0]).to.include.all.keys(Object.keys(DATASET_SAMPLE));
         expect(testResult[0].itemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx', 'html', 'rss');
-    }).timeout(120000);
 
-    after(async () => {
-        await apifyClient.dataset(testDatasetId).delete();
-    });
+        scope?.done();
+    }).timeout(120000);
 });
