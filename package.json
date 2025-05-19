@@ -32,6 +32,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-promise": "^7.2.1",
     "mocha": "^11.1.0",
+    "nock": "^14.0.4",
     "zapier-platform-schema": "^16.5.0"
   }
 }

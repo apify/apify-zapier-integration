@@ -1,8 +1,9 @@
 const _ = require('lodash');
-const { WEBHOOK_EVENT_TYPE_GROUPS, BUILD_TAG_LATEST } = require('@apify/consts');
+const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_ACTOR_MEMORY_MBYTES } = require('./consts');
+    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
+} = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
 // Key of field to use internally to compute changes in fields.
@@ -129,10 +130,27 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
     return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 };
 
+// Get actor statuses from bundle input data. This method makes sure that each status is unique and that it is valid
+const getActorStatusesFromBundle = (bundle) => {
+    if (bundle.inputData.statuses && bundle.inputData.statuses.length > 0) {
+        const statuses = Array.from(new Set(bundle.inputData.statuses));
+        const filteredStatuses = statuses
+            .filter((status) => Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(status));
+
+        return filteredStatuses.length > 0 ? filteredStatuses : ACTOR_JOB_TERMINAL_STATUSES;
+    }
+
+    return ACTOR_JOB_TERMINAL_STATUSES;
+};
+
 // Process to subscribe to Apify webhook
 const subscribeWebhook = async (z, bundle, condition) => {
+    const statuses = getActorStatusesFromBundle(bundle);
+
+    const eventTypes = statuses.map((status) => ACTOR_RUN_TERMINAL_EVENT_TYPES[status]).filter((status) => status !== undefined);
+
     const webhookOpts = {
-        eventTypes: WEBHOOK_EVENT_TYPE_GROUPS.ACTOR_RUN_TERMINAL,
+        eventTypes,
         condition,
         requestUrl: bundle.targetUrl,
     };
@@ -546,4 +564,5 @@ module.exports = {
     printPrettyActorOrTaskName,
     parseInputFieldKey,
     prefixInputFieldKey,
+    getActorStatusesFromBundle,
 };
