@@ -263,6 +263,48 @@ const getMockWebhookResponse = (condition, requestUrl, overrides) => {
     };
 };
 
+const getMockActorDetails = (actorFieldsOverrides) => {
+    return {
+        id: randomString(),
+        userId: randomString(),
+        name: 'test-actor-name',
+        username: 'test-user-name',
+        description: 'test-description',
+        restartOnError: false,
+        isPublic: false,
+        createdAt: new Date().toISOString(),
+        modifiedAt: new Date().toISOString(),
+        stats: {},
+        versions: [],
+        isDeprecated: false,
+        deploymentKey: '',
+        title: 'Test Actor',
+        defaultRunOptions: {
+            build: 'latest',
+            timeoutSecs: 3600,
+            memoryMbytes: 512,
+        },
+        taggedBuilds: {
+            latest: {
+                buildId: randomString(),
+                buildNumber: '0.0.1',
+                finishedAt: new Date().toISOString(),
+            },
+        },
+        ...actorFieldsOverrides,
+    };
+};
+
+const getMockActorBuild = (overrideFields) => {
+    return {
+        id: randomString(),
+        actId: randomString(),
+        userId: randomString(),
+        buildNumber: '0.0.1',
+        ...overrideFields,
+    };
+};
+
 module.exports = {
     TEST_USER_TOKEN,
     randomString,
@@ -273,4 +315,6 @@ module.exports = {
     getMockRun,
     getMockWebhookResponse,
     getMockTaskRun,
+    getMockActorDetails,
+    getMockActorBuild,
 };
