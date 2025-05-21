@@ -51,11 +51,15 @@ const App = {
         [actorsWithStoreTrigger.key]: actorsWithStoreTrigger,
     },
 
+    hydrators: {
+        ...getValueSearch.hydrators,
+    },
+
     // If you want your searches to show up, you better include it here!
     searches: {
         [taskLastRunSearch.key]: taskLastRunSearch,
         [actorLastRunSearch.key]: actorLastRunSearch,
-        [getValueSearch.key]: getValueSearch,
+        [getValueSearch.perform.key]: getValueSearch.perform,
         [fetchItemsSearch.key]: fetchItemsSearch,
     },
 
