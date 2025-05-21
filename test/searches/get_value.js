@@ -1,7 +1,11 @@
 const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
-const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
+const {
+    TEST_USER_TOKEN,
+    apifyClient,
+    randomString,
+} = require('../helpers');
 
 const { expect } = chai;
 chai.use(chaiAsPromised);
@@ -15,7 +19,8 @@ describe('get key-value store value', () => {
 
     before(async () => {
         // Create key-value store for testing
-        const store = await apifyClient.keyValueStores().getOrCreate(`test-zapier-${randomString()}`);
+        const store = await apifyClient.keyValueStores()
+            .getOrCreate(`test-zapier-${randomString()}`);
         testStoreId = store.id;
     });
 
@@ -23,11 +28,12 @@ describe('get key-value store value', () => {
         const storeKey = randomString();
         const storeValue = { key: 'value' };
         // Create record
-        await apifyClient.keyValueStore(testStoreId).setRecord({
-            key: storeKey,
-            contentType: 'application/json',
-            value: storeValue,
-        });
+        await apifyClient.keyValueStore(testStoreId)
+            .setRecord({
+                key: storeKey,
+                contentType: 'application/json',
+                value: storeValue,
+            });
 
         const bundle = {
             authData: {
@@ -41,18 +47,23 @@ describe('get key-value store value', () => {
 
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
-        expect(storeValue).to.be.eql(testResult[0]);
-    }).timeout(10000);
+        expect(storeValue)
+            .to
+            .be
+            .eql(testResult[0]);
+    })
+        .timeout(10000);
 
     it('work for JSON without object structure', async () => {
         const storeKey = randomString();
         const storeValue = 'Just some text.';
         // Create record
-        await apifyClient.keyValueStore(testStoreId).setRecord({
-            key: storeKey,
-            contentType: 'application/json',
-            value: storeValue,
-        });
+        await apifyClient.keyValueStore(testStoreId)
+            .setRecord({
+                key: storeKey,
+                contentType: 'application/json',
+                value: storeValue,
+            });
 
         const bundle = {
             authData: {
@@ -66,8 +77,12 @@ describe('get key-value store value', () => {
 
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
-        expect(storeValue).to.be.eql(testResult[0].value);
-    }).timeout(10000);
+        expect(storeValue)
+            .to
+            .be
+            .eql(testResult[0].value);
+    })
+        .timeout(10000);
 
     it('work for empty value', async () => {
         const bundle = {
@@ -82,8 +97,12 @@ describe('get key-value store value', () => {
 
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
-        expect(testResult).to.be.eql([]);
-    }).timeout(10000);
+        expect(testResult)
+            .to
+            .be
+            .eql([]);
+    })
+        .timeout(10000);
 
     it('work for pdf', async () => {
         const bundle = {
@@ -98,21 +117,23 @@ describe('get key-value store value', () => {
 
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
-        expect(testResult).to.be.eql([{
-            contentType: 'application/pdf',
-            value: 'hydrate|||{'
-                + '"type":"file",'
-                + '"method":"hydrators.stashFunction",'
-                + '"bundle":{'
-                + '"storeId":"oDtbjvjH3vIjUYWsy",'
-                + '"key":"pdf",'
-                + '"raw":true,'
-                + '"contentLength":"196420",'
-                + '"contentType":"application/pdf"'
-                + '}'
-                + '}|||hydrate',
-        }]);
-    }).timeout(10000);
+        expect(testResult)
+            .to
+            .be
+            .eql([{
+                contentType: 'application/pdf',
+                value: 'hydrate|||{'
+                    + '"type":"file",'
+                    + '"method":"hydrators.stashFunction",'
+                    + '"bundle":{'
+                    + '"storeId":"oDtbjvjH3vIjUYWsy",'
+                    + '"key":"pdf",'
+                    + '"contentType":"application/pdf"'
+                    + '}'
+                    + '}|||hydrate',
+            }]);
+    })
+        .timeout(10000);
 
     it('throw for file bigger than 120MB', async () => {
         const bundle = {
@@ -125,11 +146,15 @@ describe('get key-value store value', () => {
             },
         };
 
-        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle)).to.be
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+            .to
+            .be
             .rejectedWith(/File size exceeds Zapier operating constraints/);
-    }).timeout(10000);
+    })
+        .timeout(10000);
 
     after(async () => {
-        await apifyClient.keyValueStore(testStoreId).delete();
+        await apifyClient.keyValueStore(testStoreId)
+            .delete();
     });
 });
