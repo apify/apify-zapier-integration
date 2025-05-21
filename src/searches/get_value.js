@@ -19,7 +19,7 @@ const stashFunction = async (z, bundle) => {
 
         return z.stashFile(fileContent, finalContentLength, key, contentType);
     } catch (error) {
-        throw new z.errors.Error(`Error during stashing Apify KV store record: ${error.message}`);
+        throw new z.errors.Error(`Error during stashing Apify Key-value store record: ${error.message}`);
     }
 };
 
