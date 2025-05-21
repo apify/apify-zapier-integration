@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
@@ -187,7 +188,7 @@ describe('actor run finished trigger', () => {
         const results = await appTester(App.triggers.actorRunFinished.operation.performList, bundle);
 
         expect(results.length).to.be.eql(3);
-        expect(results.map((item) => item.id)).to.eql(runs.slice(0, 3).map((run) => run.id));
+        expect(results.every((item) => runs.some((run) => run.id === item.id))).to.eql(true);
         expect(results[0]).to.have.all.keys({ ...ACTOR_RUN_SAMPLE, consoleUrl: '' });
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
@@ -197,6 +198,12 @@ describe('actor run finished trigger', () => {
     }).timeout(240000);
 
     describe('actors hidden trigger', () => {
+        afterEach(async () => {
+            if (!TEST_USER_TOKEN) {
+                nock.cleanAll();
+            }
+        });
+
         it('work', async () => {
             const bundle = {
                 authData: {

@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const { expect } = require('chai');
 const zapier = require('zapier-platform-core');
 const chai = require('chai');
@@ -13,9 +14,7 @@ chai.use(chaiAsPromised);
 
 describe('scrape single URL', () => {
     afterEach(async () => {
-        if (!TEST_USER_TOKEN) {
-            nock.cleanAll();
-        }
+        nock.cleanAll();
     });
 
     it('runs scrape single URL with correct output fields (mocked)', async () => {

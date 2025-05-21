@@ -1,23 +1,24 @@
+/* eslint-env mocha */
 const axios = require('axios');
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const nock = require('nock');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
-const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, getMockActorBuild, randomString} = require('../helpers');
-const { ACTOR_RUN_SAMPLE} = require('../../src/consts');
+const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString } = require('../helpers');
+const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const searchApiBaseUrl = 'https://api.apify.com/v2/store';
 
 const App = require('../../index');
-const {ACTOR_JOB_STATUSES} = require("@apify/consts");
 
 const appTester = zapier.createAppTester(App);
 
 describe('create actor run', () => {
     let testActorId = randomString();
 
-    before(async () => {
+    before(async function () {
         if (TEST_USER_TOKEN) {
             this.timeout(120000); // We need time to build actor
             // Create actor for testing
@@ -52,16 +53,16 @@ describe('create actor run', () => {
             const allUserActors = [];
             let actorListPage;
             do {
-                actorListPage = await apifyClient.actors().list({limit: 500, offset: allUserActors.length});
+                actorListPage = await apifyClient.actors().list({ limit: 500, offset: allUserActors.length });
                 allUserActors.push(...actorListPage.items);
             } while (actorListPage.items.length > 0);
 
             const allPublicActor = [];
             let storeActorList;
             do {
-                ({data: {data: storeActorList}} = await axios({
+                ({ data: { data: storeActorList } } = await axios({
                     url: searchApiBaseUrl,
-                    params: {offset: allPublicActor.length, limit: 100},
+                    params: { offset: allPublicActor.length, limit: 100 },
                 }));
                 allPublicActor.push(...storeActorList.items);
             } while (storeActorList.items.length);

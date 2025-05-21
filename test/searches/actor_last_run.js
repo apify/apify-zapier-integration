@@ -1,11 +1,12 @@
+/* eslint-env mocha */
 const zapier = require('zapier-platform-core');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
-const { apifyClient, TEST_USER_TOKEN, createAndBuildActor, getMockRun} = require('../helpers');
+const nock = require('nock');
+const { apifyClient, TEST_USER_TOKEN, createAndBuildActor, getMockRun } = require('../helpers');
 
 const App = require('../../index');
-const nock = require("nock");
-const {KEY_VALUE_STORE_SAMPLE} = require("../../src/consts");
+const { KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 

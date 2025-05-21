@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');

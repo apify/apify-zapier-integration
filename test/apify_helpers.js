@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const { expect } = require('chai');
 const FieldSchema = require('zapier-platform-schema/lib/schemas/FieldSchema');
 const makeValidator = require('zapier-platform-schema/lib/utils/makeValidator');

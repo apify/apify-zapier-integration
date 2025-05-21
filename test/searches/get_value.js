@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
@@ -5,7 +6,7 @@ const nock = require('nock');
 
 const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
 const App = require('../../index');
-const { KEY_VALUE_STORE_SAMPLE, DATASET_SAMPLE} = require('../../src/consts');
+const { KEY_VALUE_STORE_SAMPLE} = require('../../src/consts');
 
 const { expect } = chai;
 chai.use(chaiAsPromised);

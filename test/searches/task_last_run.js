@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const zapier = require('zapier-platform-core');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
@@ -12,7 +13,7 @@ const appTester = zapier.createAppTester(App);
 describe('search task last run', () => {
     let testTaskId = 'test_task-id';
 
-    before(async () => {
+    before(async function () {
         if (TEST_USER_TOKEN) {
             this.timeout(120000); // We need time to build actor
             // Create task for testing
