@@ -92,7 +92,7 @@ module.exports = {
                 {
                     label: 'Record key',
                     // eslint-disable-next-line max-len
-                    helpText: 'Records that are not JSON objects (like texts, PDFs, or pictures) can be accessed via the "value" key in subsequent steps.',
+                    helpText: 'If the record is a valid JSON object, the output will include all parsed attributes as individual fields. If the record is any other file type (such as PDFs, images, or plain text), the output will instead be a file, which you can reference or use in later steps via the "value" key.',
                     key: 'key',
                     required: true,
                     type: 'string',
