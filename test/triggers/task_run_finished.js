@@ -3,10 +3,11 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
 const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
-const { randomString, apifyClient, createWebScraperTask,
+const { TASK_RUN_SAMPLE} = require('../../src/consts');
+const {
+    randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
 } = require('../helpers');
-const { TASK_RUN_SAMPLE} = require('../../src/consts');
 
 const App = require('../../index');
 

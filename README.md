@@ -15,7 +15,14 @@ If you are interested in adding a new feature or fixing a bug in the integration
 
 ### Tests
 
-You will need your Apify API token before you run tests.
+The test suite is able to run against the Apify platform or it can mock any requests to the Apify API.
+
+Mocked tests are invoked by running:
+```
+npm run test
+```
+
+But if you want to run the tests against the Apify platform you will need your Apify API token before you run tests.
 You can find the token [on the Integrations page of your Apify account](https://console.apify.com/account/integrations).
 Run this command to test the app:
 ```text

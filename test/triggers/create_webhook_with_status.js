@@ -2,10 +2,10 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { WEBHOOK_EVENT_TYPES, WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_STATUSES} = require('@apify/consts');
+const { WEBHOOK_EVENT_TYPES, WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
 
 const App = require('../../index');
-const {randomString } = require('../helpers');
+const { randomString } = require('../helpers');
 
 const appTester = zapier.createAppTester(App);
 

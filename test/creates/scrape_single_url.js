@@ -6,7 +6,7 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, getMockRun} = require('../helpers');
 const App = require('../../index');
-const { SCRAPE_SINGLE_URL_RUN_SAMPLE, ACTOR_RUN_SAMPLE} = require('../../src/consts');
+const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
