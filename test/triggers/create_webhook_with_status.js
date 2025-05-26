@@ -23,7 +23,7 @@ describe('actor and task webhook creation', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: testToken,
+                access_token: testToken,
             },
             inputData: {
                 actorId: testActorId,
@@ -44,7 +44,7 @@ describe('actor and task webhook creation', () => {
                     ]);
                 return true;
             })
-            .query(true)
+            .matchHeader('x-apify-integration-platform', 'zapier')
             .reply(201, {});
 
         await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
@@ -56,7 +56,7 @@ describe('actor and task webhook creation', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: testToken,
+                access_token: testToken,
             },
             inputData: {
                 taskId: testTaskId,
@@ -78,7 +78,7 @@ describe('actor and task webhook creation', () => {
                     ]);
                 return true;
             })
-            .query(true)
+            .matchHeader('x-apify-integration-platform', 'zapier')
             .reply(201, {});
 
         await appTester(App.triggers.taskRunFinished.operation.performSubscribe, bundle);
@@ -90,7 +90,7 @@ describe('actor and task webhook creation', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: testToken,
+                access_token: testToken,
             },
             inputData: {
                 actorId: testActorId,
@@ -112,7 +112,7 @@ describe('actor and task webhook creation', () => {
                     ]);
                 return true;
             })
-            .query(true)
+            .matchHeader('x-apify-integration-platform', 'zapier')
             .reply(201, {});
 
         await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
@@ -124,7 +124,7 @@ describe('actor and task webhook creation', () => {
         const bundle = {
             targetUrl: requestUrl,
             authData: {
-                token: testToken,
+                access_token: testToken,
             },
             inputData: {
                 actorId: testActorId,
@@ -141,7 +141,7 @@ describe('actor and task webhook creation', () => {
                     .that.includes(...WEBHOOK_EVENT_TYPE_GROUPS.ACTOR_RUN_TERMINAL);
                 return true;
             })
-            .query(true)
+            .matchHeader('x-apify-integration-platform', 'zapier')
             .reply(201, {});
 
         await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);

@@ -2,10 +2,15 @@
 const { expect } = require('chai');
 const FieldSchema = require('zapier-platform-schema/lib/schemas/FieldSchema');
 const makeValidator = require('zapier-platform-schema/lib/utils/makeValidator');
+const nock = require('nock');
+const zapier = require('zapier-platform-core');
+
 const { getPrefilledValuesFromInputSchema, createFieldsFromInputSchemaV1 } = require('../src/apify_helpers');
 const webScraperInputSchemaJson = require('./helpers/webScraperInputSchema.json');
 const websiteContentCrawlerInputSchema = require('./helpers/websiteContentCrawlerInputSchema.json');
 const generatedInputSchema = require('./helpers/generatedInputSchema.json');
+const { randomString } = require('./helpers');
+const App = require('../index');
 
 describe('apify utils', () => {
     it('getPrefilledValuesFromInputSchema work', () => {
@@ -58,6 +63,41 @@ describe('apify utils', () => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
             });
+        });
+    });
+
+    describe('test request helper', () => {
+        const appTester = zapier.createAppTester(App);
+
+        const testToken = 'test-token';
+        const testActorId = 'test-actor-id';
+
+        afterEach(() => {
+            nock.cleanAll();
+        });
+
+        // Run the trigger test with a mock request and matching of the headers
+        it('should set headers correctly', async () => {
+            const requestUrl = `https://example.com/#${randomString()}`;
+            const bundle = {
+                targetUrl: requestUrl,
+                authData: {
+                    access_token: testToken,
+                },
+                inputData: {
+                    actorId: testActorId,
+                },
+                meta: {},
+            };
+
+            const scope = nock('https://api.apify.com')
+                .post('/v2/webhooks')
+                .matchHeader('Authorization', `Bearer ${testToken}`)
+                .matchHeader('x-apify-integration-platform', 'zapier')
+                .reply(201);
+
+            await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
+            scope.done();
         });
     });
 });
