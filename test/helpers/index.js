@@ -1,8 +1,6 @@
 const { ApifyClient } = require('apify-client');
 const zapier = require('zapier-platform-core');
 const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_STATUSES } = require('@apify/consts');
-const { getRandomInt } = require('@apify/utilities');
-const { ACTOR_RUN_SAMPLE, TASK_RUN_SAMPLE } = require('../../src/consts');
 
 const DEFAULT_PAGE_FUNCTION = `
 async function pageFunction({ request, setValue }) {
