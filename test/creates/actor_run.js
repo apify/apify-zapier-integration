@@ -1,4 +1,6 @@
 /* eslint-env mocha */
+const { EventEmitter } = require('events');
+
 const axios = require('axios');
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
@@ -42,6 +44,9 @@ describe('create actor run', () => {
     // This test whether retrieving actors from store works
     if (TEST_USER_TOKEN) {
         it('load correctly Actors with Actors from store with hidden trigger', async () => {
+            // Increase max listeners to avoid warning about too many listeners
+            EventEmitter.defaultMaxListeners = 50;
+
             const bundle = {
                 authData: {
                     access_token: TEST_USER_TOKEN,
