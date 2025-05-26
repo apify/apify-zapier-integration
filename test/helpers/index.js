@@ -305,6 +305,45 @@ const getMockActorBuild = (overrideFields) => {
     };
 };
 
+const getMockDataset = (overrides) => {
+    return {
+        id: randomString(),
+        name: randomString(),
+        userId: randomString(),
+        createdAt: '2019-12-12T07:34:14.202Z',
+        modifiedAt: '2019-12-13T08:36:13.202Z',
+        accessedAt: '2019-12-14T08:36:13.202Z',
+        itemCount: 5,
+        cleanItemCount: 5,
+        actId: null,
+        actRunId: null,
+        fields: [],
+        consoleUrl: `https://console.apify.com/storage/datasets/${randomString()}`,
+        ...overrides,
+    };
+};
+
+const getMockKVStore = (overrides) => ({
+    id: randomString(),
+    name: randomString(),
+    userId: randomString(),
+    username: randomString(),
+    createdAt: '2019-12-12T07:34:14.202Z',
+    modifiedAt: '2019-12-13T08:36:13.202Z',
+    accessedAt: '2019-12-14T08:36:13.202Z',
+    actId: null,
+    actRunId: null,
+    consoleUrl: 'https://console.apify.com/storage/key-value-stores/27TmTznX9YPeAYhkC',
+    stats: {
+        readCount: 9,
+        writeCount: 3,
+        deleteCount: 6,
+        listCount: 2,
+        s3StorageBytes: 18,
+    },
+    ...overrides,
+});
+
 module.exports = {
     TEST_USER_TOKEN,
     randomString,
@@ -317,4 +356,6 @@ module.exports = {
     getMockTaskRun,
     getMockActorDetails,
     getMockActorBuild,
+    getMockDataset,
+    getMockKVStore,
 };

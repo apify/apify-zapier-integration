@@ -4,7 +4,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 
-const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore} = require('../helpers');
 const App = require('../../index');
 const { KEY_VALUE_STORE_SAMPLE} = require('../../src/consts');
 
@@ -14,7 +14,7 @@ chai.use(chaiAsPromised);
 const appTester = zapier.createAppTester(App);
 
 describe('get key-value store value', () => {
-    let testStoreId = KEY_VALUE_STORE_SAMPLE.id;
+    let testStoreId = randomString();
 
     before(async () => {
         if (TEST_USER_TOKEN) {
@@ -64,8 +64,8 @@ describe('get key-value store value', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             scope = nock('https://api.apify.com');
-            scope.get(`/v2/key-value-stores/${TEST_USER_TOKEN}`)
-                .reply(200, KEY_VALUE_STORE_SAMPLE);
+            scope.get(`/v2/key-value-stores/${testStoreId}`)
+                .reply(200, { data: getMockKVStore({ id: testStoreId }) });
             scope.get(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
                 .reply(200, storeValue);
         }
@@ -102,7 +102,7 @@ describe('get key-value store value', () => {
         if (!TEST_USER_TOKEN) {
             scope = nock('https://api.apify.com');
             scope.get(`/v2/key-value-stores/${testStoreId}`)
-                .reply(200, KEY_VALUE_STORE_SAMPLE);
+                .reply(200, { data: getMockKVStore({ id: testStoreId }) });
             scope.get(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
                 .reply(200, 'just text', {
                     'content-type': 'plain/text',
@@ -130,7 +130,7 @@ describe('get key-value store value', () => {
         if (!TEST_USER_TOKEN) {
             scope = nock('https://api.apify.com');
             scope.get(`/v2/key-value-stores/${testStoreId}`)
-                .reply(200, KEY_VALUE_STORE_SAMPLE);
+                .reply(200, { data: getMockKVStore({ id: testStoreId }) });
             scope.get(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
                 .reply(404);
         }

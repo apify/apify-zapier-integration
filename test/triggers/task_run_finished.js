@@ -6,7 +6,7 @@ const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
 const { randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
 } = require('../helpers');
-const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
+const { TASK_RUN_SAMPLE} = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -191,7 +191,7 @@ describe('task run finished trigger', () => {
                     .reply(200, run);
 
                 scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
-                    .reply(200, KEY_VALUE_STORE_SAMPLE);
+                    .reply(200, { foo: 'bar' });
 
                 scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                     .query({ limit: 100, clean: true })

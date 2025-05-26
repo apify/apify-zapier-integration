@@ -2,31 +2,11 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore} = require('../helpers');
 const { KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 const App = require('../../index');
 
 const appTester = zapier.createAppTester(App);
-
-const getMockKVStore = (storeName) => ({
-    id: randomString(),
-    name: storeName,
-    userId: randomString(),
-    username: randomString(),
-    createdAt: '2019-12-12T07:34:14.202Z',
-    modifiedAt: '2019-12-13T08:36:13.202Z',
-    accessedAt: '2019-12-14T08:36:13.202Z',
-    actId: null,
-    actRunId: null,
-    consoleUrl: 'https://console.apify.com/storage/key-value-stores/27TmTznX9YPeAYhkC',
-    stats: {
-        readCount: 9,
-        writeCount: 3,
-        deleteCount: 6,
-        listCount: 2,
-        s3StorageBytes: 18,
-    },
-});
 
 describe('set key-value store value', () => {
     afterEach(async () => {
@@ -54,7 +34,7 @@ describe('set key-value store value', () => {
 
         let scope;
         if (!TEST_USER_TOKEN) {
-            const mockKVStore = getMockKVStore(storeName);
+            const mockKVStore = getMockKVStore({ name: storeName });
             scope = nock('https://api.apify.com');
             scope.put(`/v2/key-value-stores/${mockKVStore.id}/records/${expectedKey}`, JSON.stringify(expectedValue))
                 .reply(201);

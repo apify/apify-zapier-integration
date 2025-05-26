@@ -6,7 +6,7 @@ const _ = require('lodash');
 const nock = require('nock');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
-const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString } = require('../helpers');
+const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const searchApiBaseUrl = 'https://api.apify.com/v2/store';
@@ -211,11 +211,13 @@ describe('create actor run', () => {
                 datasetItems: items,
             }, { build: 'latest' });
         } else {
+            const run = getMockRun();
+
             scope = nock('https://api.apify.com');
             scope.get(`/v2/acts/${testActorId}/runs/last`)
                 .query({ status: ACTOR_JOB_STATUSES.SUCCEEDED })
-                .reply(200, { data: ACTOR_RUN_SAMPLE });
-            scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
+                .reply(200, { data: run });
+            scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 10, clean: true })
                 .reply(200, items);
         }
@@ -257,6 +259,9 @@ describe('create actor run', () => {
 
         let scope;
         if (!TEST_USER_TOKEN) {
+            const run = getMockRun({ actId: testActorId, options: runOptions });
+            delete run.consoleUrl;
+
             scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${testActorId}/runs`)
                 .query({
@@ -265,12 +270,12 @@ describe('create actor run', () => {
                     build: runOptions.build,
                     waitForFinish: runOptions.timeoutSecs,
                 })
-                .reply(200, { data: ACTOR_RUN_SAMPLE });
-            scope.get(`/v2/actor-runs/${ACTOR_RUN_SAMPLE.id}`)
-                .reply(200, { data: { ...ACTOR_RUN_SAMPLE, options: runOptions } });
-            scope.get(`/v2/key-value-stores/${ACTOR_RUN_SAMPLE.defaultKeyValueStoreId}/records/OUTPUT`)
+                .reply(200, { data: run });
+            scope.get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+            scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { foo: 'bar' });
-            scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
+            scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
         }
@@ -312,6 +317,9 @@ describe('create actor run', () => {
 
         let scope;
         if (!TEST_USER_TOKEN) {
+            const run = getMockRun({ actId: testActorId, options: runOptions });
+            delete run.consoleUrl;
+
             scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${testActorId}/runs`)
                 .query({
@@ -320,16 +328,16 @@ describe('create actor run', () => {
                     build: runOptions.build,
                     waitForFinish: runOptions.timeoutSecs,
                 })
-                .reply(200, { data: ACTOR_RUN_SAMPLE });
-            scope.get(`/v2/actor-runs/${ACTOR_RUN_SAMPLE.id}`)
-                .reply(200, { data: { ...ACTOR_RUN_SAMPLE, options: runOptions } });
-            scope.get(`/v2/key-value-stores/${ACTOR_RUN_SAMPLE.defaultKeyValueStoreId}/records/OUTPUT`)
+                .reply(200, { data: run });
+            scope.get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+            scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, {
-                    file: `https://api.apify.com/v2/key-value-stores/${ACTOR_RUN_SAMPLE.defaultKeyValueStoreId}/records/OUTPUT`,
+                    file: `https://api.apify.com/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`,
                     filename: 'OUTPUT',
                     contentType: 'text/plain; charset=utf-8',
                 });
-            scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
+            scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
         }

@@ -2,7 +2,7 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, randomString } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset} = require('../helpers');
 const { DATASET_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -10,7 +10,7 @@ const App = require('../../index');
 const appTester = zapier.createAppTester(App);
 
 describe('fetch dataset items', () => {
-    let testDatasetId = DATASET_SAMPLE.id;
+    let testDatasetId = randomString();
 
     before(async () => {
         if (TEST_USER_TOKEN) {
@@ -59,7 +59,7 @@ describe('fetch dataset items', () => {
             scope = nock('https://api.apify.com');
             scope.get(`/v2/datasets/${testDatasetId}`)
                 .reply(200, {
-                    data: DATASET_SAMPLE,
+                    data: getMockDataset({ id: testDatasetId, items: 1000, cleanItems: 1000 }),
                 });
             scope.get(`/v2/datasets/${testDatasetId}/items`)
                 .query({ limit: null, offset: null, clean: true })
