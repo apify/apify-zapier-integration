@@ -1,7 +1,5 @@
-## 4.2.0 / 2025-05-19
+## 4.3.0 / 2025-05-26
 * Add support for Apify key-value store records with non-JSON values
-
-## 4.1.0 / 2025-05-16
 * Add multiple choice dropdown for Actor / task run triggers which allows selection of specific terminal state
 
 ## 4.0.2 / 2025-05-13
