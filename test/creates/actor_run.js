@@ -53,7 +53,7 @@ describe('create actor run', () => {
             };
 
             const userActors = await apifyClient.actors().list({ limit: 1000, my: true });
-            const publicActor = await apifyClient.store().list({ limit: 100 });
+            const publicActor = await apifyClient.store().list({ limit: 10 });
 
             const actors = [];
             let page = 0;
