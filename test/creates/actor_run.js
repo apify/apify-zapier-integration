@@ -57,6 +57,7 @@ describe('create actor run', () => {
             do {
                 actorListPage = await apifyClient.actors().list({ limit: 1000, offset: allUserActors.length });
                 allUserActors.push(...actorListPage.items);
+                console.log(`Loaded ${allUserActors.length} Actors from user's store.`);
             } while (actorListPage.items.length > 0);
 
             const allPublicActor = [];
@@ -64,6 +65,7 @@ describe('create actor run', () => {
             do {
                 storeActorList = await apifyClient.store().list({ limit: 1000, offset: allPublicActor.length });
                 allPublicActor.push(...storeActorList.items);
+                console.log(`Loaded ${allPublicActor.length} Actors from store.`);
             } while (storeActorList.items.length);
 
             const actors = [];
@@ -78,6 +80,7 @@ describe('create actor run', () => {
                 });
                 actors.push(...actorList);
                 page++;
+                console.log(`Loaded ${actors.length} Actors from dynamic trigger.`);
             } while (actorList.length);
 
             expect(allUserActors.concat(allPublicActor).map((a) => a.id)).to.include.members(actors.map((a) => a.id));
