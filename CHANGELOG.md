@@ -1,4 +1,7 @@
-## 4.3.0 / 2025-05-26
+## 4.3.1 / 2025-05-27
+* Fix finding of last Actor and Task runs with 'TIMING-OUT' AND 'TIMED-OUT' statuses
+
+* ## 4.3.0 / 2025-05-26
 * Add support for Apify key-value store records with non-JSON values
 * Add multiple choice dropdown for Actor / task run triggers which allows selection of specific terminal state
 
