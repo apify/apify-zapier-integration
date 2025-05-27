@@ -52,21 +52,8 @@ describe('create actor run', () => {
                 meta: {},
             };
 
-            const allUserActors = [];
-            let actorListPage;
-            do {
-                actorListPage = await apifyClient.actors().list({ limit: 1000, offset: allUserActors.length });
-                allUserActors.push(...actorListPage.items);
-                console.log(`Loaded ${allUserActors.length} Actors from user's store.`);
-            } while (actorListPage.items.length > 0);
-
-            const allPublicActor = [];
-            let storeActorList;
-            do {
-                storeActorList = await apifyClient.store().list({ limit: 500, offset: allPublicActor.length });
-                allPublicActor.push(...storeActorList.items);
-                console.log(`Loaded ${allPublicActor.length} Actors from store.`);
-            } while (storeActorList.items.length);
+            const userActors = await apifyClient.actors().list({ limit: 1000, my: true });
+            const publicActor = await apifyClient.store().list({ limit: 100 });
 
             const actors = [];
             let page = 0;
@@ -80,10 +67,9 @@ describe('create actor run', () => {
                 });
                 actors.push(...actorList);
                 page++;
-                console.log(`Loaded ${actors.length} Actors from dynamic trigger.`);
             } while (actorList.length);
 
-            expect(allUserActors.concat(allPublicActor).map((a) => a.id)).to.include.members(actors.map((a) => a.id));
+            expect(actors.map((a) => a.id)).to.include.members(userActors.items.concat(publicActor.items).map((a) => a.id));
             actors.forEach((actor) => {
                 expect(actor).to.have.all.keys('id', 'name');
             });
