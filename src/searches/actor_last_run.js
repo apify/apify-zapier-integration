@@ -1,5 +1,9 @@
-const { ACTOR_JOB_STATUSES } = require('@apify/consts');
-const { ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, APIFY_API_ENDPOINTS } = require('../consts');
+const {
+    ACTOR_RUN_SAMPLE,
+    ACTOR_RUN_OUTPUT_FIELDS,
+    APIFY_API_ENDPOINTS,
+    ACTOR_RUN_STATUSES,
+} = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
@@ -44,8 +48,9 @@ module.exports = {
                 label: 'Run status',
                 key: 'status',
                 required: false,
-                default: ACTOR_JOB_STATUSES.SUCCEEDED,
-                choices: ACTOR_JOB_STATUSES,
+                // Zapier selection dropdown expects individual options to be passed in { value: label } form
+                default: ACTOR_RUN_STATUSES.SUCCEEDED,
+                choices: ACTOR_RUN_STATUSES,
             },
         ],
 
