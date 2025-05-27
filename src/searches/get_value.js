@@ -52,7 +52,7 @@ const getValue = async (z, bundle) => {
         if (typeof response.data === 'object' && !Array.isArray(response.data) && response.data !== null) {
             data = response.data;
         } else {
-            data = { value: response.data ?? null };
+            data = { value: response.content ?? null };
         }
     } else {
         // There is a hard limit of 150MB on the size of dehydrated files.
