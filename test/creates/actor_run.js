@@ -55,14 +55,14 @@ describe('create actor run', () => {
             const allUserActors = [];
             let actorListPage;
             do {
-                actorListPage = await apifyClient.actors().list({ limit: 500, offset: allUserActors.length });
+                actorListPage = await apifyClient.actors().list({ limit: 1000, offset: allUserActors.length });
                 allUserActors.push(...actorListPage.items);
             } while (actorListPage.items.length > 0);
 
             const allPublicActor = [];
             let storeActorList;
             do {
-                storeActorList = await apifyClient.store().list({ limit: 100, offset: allPublicActor.length });
+                storeActorList = await apifyClient.store().list({ limit: 1000, offset: allPublicActor.length });
                 allPublicActor.push(...storeActorList.items);
             } while (storeActorList.items.length);
 
