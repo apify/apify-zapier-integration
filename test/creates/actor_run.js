@@ -84,7 +84,7 @@ describe('create actor run', () => {
             actors.forEach((actor) => {
                 expect(actor).to.have.all.keys('id', 'name');
             });
-        }).timeout(120000);
+        }).timeout(300_000); // Timeout of 5 minutes to allow apify client to load all Actors from store and user's Actors
     }
 
     it('loading of dynamic fields from exampleRunInput work', async () => {
