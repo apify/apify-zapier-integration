@@ -63,7 +63,7 @@ describe('create actor run', () => {
             const allPublicActor = [];
             let storeActorList;
             do {
-                storeActorList = await apifyClient.store().list({ limit: 1000, offset: allPublicActor.length });
+                storeActorList = await apifyClient.store().list({ limit: 500, offset: allPublicActor.length });
                 allPublicActor.push(...storeActorList.items);
                 console.log(`Loaded ${allPublicActor.length} Actors from store.`);
             } while (storeActorList.items.length);
