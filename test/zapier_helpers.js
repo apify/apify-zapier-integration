@@ -1,3 +1,4 @@
+/* eslint-env mocha */
 const { expect } = require('chai');
 const { convertPlainObjectToFieldSchema } = require('../src/zapier_helpers');
 
