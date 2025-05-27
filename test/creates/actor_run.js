@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 const { EventEmitter } = require('events');
 
-const axios = require('axios');
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
@@ -10,8 +9,6 @@ const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
-
-const searchApiBaseUrl = 'https://api.apify.com/v2/store';
 
 const App = require('../../index');
 
@@ -65,10 +62,7 @@ describe('create actor run', () => {
             const allPublicActor = [];
             let storeActorList;
             do {
-                ({ data: { data: storeActorList } } = await axios({
-                    url: searchApiBaseUrl,
-                    params: { offset: allPublicActor.length, limit: 100 },
-                }));
+                storeActorList = await apifyClient.store().list({ limit: 100, offset: allPublicActor.length });
                 allPublicActor.push(...storeActorList.items);
             } while (storeActorList.items.length);
 
