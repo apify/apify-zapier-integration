@@ -4,7 +4,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 
-const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore} = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore } = require('../helpers');
 const App = require('../../index');
 
 const { expect } = chai;
@@ -150,6 +150,53 @@ describe('get key-value store value', () => {
         const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
 
         expect(testResult).to.be.eql([]);
+        scope?.done();
+    }).timeout(10000);
+
+    it('work for plain text', async () => {
+        const storeKey = randomString();
+        const storeValue = 'Just some text.';
+
+        if (TEST_USER_TOKEN) {
+            // Create record
+            await apifyClient.keyValueStore(testStoreId)
+                .setRecord({
+                    key: storeKey,
+                    contentType: 'text/plain',
+                    value: storeValue,
+                });
+        }
+
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                storeIdOrName: testStoreId,
+                key: storeKey,
+            },
+        };
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/key-value-stores/${testStoreId}`)
+                .reply(200, { data: getMockKVStore({ id: testStoreId }) });
+            scope.head(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
+                .reply(200, undefined, {
+                    'content-type': 'text/plain',
+                    'content-length': Buffer.byteLength(JSON.stringify(storeValue)),
+                });
+            scope.get(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
+                .reply(200, `"${storeValue}"`, {
+                    'content-type': 'text/plain',
+                });
+        }
+
+        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
+
+        expect(storeValue).to.be.eql(testResult[0].value);
+
         scope?.done();
     }).timeout(10000);
 
