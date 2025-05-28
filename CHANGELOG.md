@@ -1,3 +1,6 @@
+## 4.3.2 / 2025-05-28
+* Fix key-value store records with text values
+
 ## 4.3.1 / 2025-05-27
 * Fix finding of last Actor and Task runs with 'TIMING-OUT' AND 'TIMED-OUT' statuses
 * Add support for Apify key-value store records with non-JSON values
