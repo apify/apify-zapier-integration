@@ -1,4 +1,4 @@
-const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT, SORT_BY } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
@@ -9,6 +9,7 @@ const getActorList = async (z, bundle) => {
         params: {
             limit: DEFAULT_PAGINATION_LIMIT,
             offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
+            sortBy: SORT_BY.LAST_RUN_STARTED_AT,
         },
     });
     return actorListResponse.data.items.map((actor) => ({

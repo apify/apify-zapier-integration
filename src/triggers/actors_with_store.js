@@ -1,4 +1,4 @@
-const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT, SORT_BY } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
@@ -11,6 +11,7 @@ const getActorList = async (z, { offset, limit }) => {
         params: {
             offset,
             limit,
+            sortBy: SORT_BY.LAST_RUN_STARTED_AT,
         },
     });
 };
