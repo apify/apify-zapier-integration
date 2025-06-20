@@ -10,6 +10,7 @@ const getActorList = async (z, bundle) => {
             limit: DEFAULT_PAGINATION_LIMIT,
             offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
             sortBy: SORT_BY.LAST_RUN_STARTED_AT,
+            desc: 1
         },
     });
     return actorListResponse.data.items.map((actor) => ({
