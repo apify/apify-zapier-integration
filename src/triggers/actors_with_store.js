@@ -12,7 +12,7 @@ const getActorList = async (z, { offset, limit }) => {
             offset,
             limit,
             sortBy: SORT_BY.LAST_RUN_STARTED_AT,
-            desc: 1
+            desc: 1,
         },
     });
 };
