@@ -42,6 +42,7 @@ const ACTOR_RUN_SAMPLE = {
     defaultKeyValueStoreId: 'sfAjeR4QmeJCQzTfe',
     defaultDatasetId: '3ZojQDdFTsyE7Moy4',
     defaultRequestQueueId: 'so93g2shcDzK3pA85',
+    platformUsageBillingModel: 'USER',
     OUTPUT: {},
     datasetItems: [],
     datasetItemsFileUrls: {
@@ -100,6 +101,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     isStatusMessageTerminal: true,
     statusMessage: 'Actor finished!',
+    platformUsageBillingModel: 'USER',
     generalAccess: {},
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
