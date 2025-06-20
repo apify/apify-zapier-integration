@@ -5,7 +5,7 @@ const nock = require('nock');
 const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
 
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMockRun, getMockWebhookResponse } = require('../helpers');
-const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE, SORT_BY } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -217,7 +217,7 @@ describe('actor run finished trigger', () => {
             if (!TEST_USER_TOKEN) {
                 scope = nock('https://api.apify.com')
                     .get('/v2/acts')
-                    .query({ limit: 500, offset: 0 })
+                    .query({ limit: 500, offset: 0, sortBy: SORT_BY.LAST_RUN_STARTED_AT, desc: 1 })
                     .reply(200, {
                         data: {
                             total: 1,

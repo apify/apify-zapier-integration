@@ -12,6 +12,11 @@ const {
  */
 const APIFY_API_BASE_URL = 'https://api.apify.com';
 
+const SORT_BY = {
+    CREATED_AT: 'createdAt',
+    LAST_RUN_STARTED_AT: 'lastRunStartedAt',
+};
+
 /**
  * Apify API URL endpoints, which we will use in integration.
  */
@@ -37,6 +42,7 @@ const ACTOR_RUN_SAMPLE = {
     defaultKeyValueStoreId: 'sfAjeR4QmeJCQzTfe',
     defaultDatasetId: '3ZojQDdFTsyE7Moy4',
     defaultRequestQueueId: 'so93g2shcDzK3pA85',
+    platformUsageBillingModel: 'USER',
     OUTPUT: {},
     datasetItems: [],
     datasetItemsFileUrls: {
@@ -95,6 +101,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     isStatusMessageTerminal: true,
     statusMessage: 'Actor finished!',
+    platformUsageBillingModel: 'USER',
     generalAccess: {},
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
@@ -316,4 +323,5 @@ module.exports = {
     ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     ACTOR_RUN_STATUSES,
+    SORT_BY,
 };
