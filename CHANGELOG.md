@@ -1,3 +1,6 @@
+## 4.3.3 / 2025-06-23
+* Add support for `sortBy` param to `GET /acts` for sorting user-ran actors by latest run
+
 ## 4.3.2 / 2025-05-28
 * Fix key-value store records with text values
 
