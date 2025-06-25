@@ -202,6 +202,7 @@ const getMockRun = (overrides) => {
         defaultKeyValueStoreId: randomString(),
         defaultDatasetId: randomString(),
         defaultRequestQueueId: randomString(),
+        platformUsageBillingModel: 'USER',
         buildNumber: '0.0.36',
         containerUrl: 'https://g8kd8kbc5ge8.runs.apify.net',
         consoleUrl: 'https://console.apify.com/v2/actor/runs/1',
