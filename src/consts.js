@@ -14,7 +14,7 @@ const APIFY_API_BASE_URL = 'https://api.apify.com';
 
 const SORT_BY = {
     CREATED_AT: 'createdAt',
-    LAST_RUN_STARTED_AT: 'lastRunStartedAt',
+    LAST_RUN_STARTED_AT: 'stats.lastRunStartedAt',
 };
 
 /**
