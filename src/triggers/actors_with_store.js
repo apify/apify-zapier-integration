@@ -38,18 +38,18 @@ const getActorWithStoreList = async (z, bundle) => {
     // NOTE: Zapier UI can handle duplicates in dropdowns, but it's not possible to have duplicates in single page.
     const actors = new Map();
 
-    // 1. This is for marketing purposes, show top public Actors from store the first.
-    if (!bundle.meta.page) {
-        const { data: topPublicActorList } = await getStoreActorList(z, { limit: TOP_PUBLIC_ACTORS_LIMIT, offset: 0 });
-        topPublicActorList.items.forEach((actor) => actors.set(actor.id, actor));
-    }
-
-    // 2. Add user's Actors
+    // 1. Add user's Actors
     const { data: actorList } = await getActorList(z, {
         limit: DEFAULT_PAGINATION_LIMIT,
         offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
     });
     actorList.items.forEach((actor) => actors.set(actor.id, actor));
+
+    // 2. This is for marketing purposes, show top public Actors from store the first.
+    if (!bundle.meta.page) {
+        const { data: topPublicActorList } = await getStoreActorList(z, { limit: TOP_PUBLIC_ACTORS_LIMIT, offset: 0 });
+        topPublicActorList.items.forEach((actor) => actors.set(actor.id, actor));
+    }
 
     // 3. Add Actors from Store
     if (actorList.items.length < DEFAULT_PAGINATION_LIMIT) {
