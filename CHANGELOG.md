@@ -1,5 +1,5 @@
 ## 4.3.3 / 2025-06-23
-* Added a new sorting option to list your most recently used Actors first.
+* Actors are now sorted by their most recent run started by the user
 
 ## 4.3.2 / 2025-05-28
 * Fix key-value store records with text values
