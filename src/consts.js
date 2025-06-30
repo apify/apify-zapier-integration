@@ -12,11 +12,6 @@ const {
  */
 const APIFY_API_BASE_URL = 'https://api.apify.com';
 
-const SORT_BY = {
-    CREATED_AT: 'createdAt',
-    LAST_RUN_STARTED_AT: 'stats.lastRunStartedAt',
-};
-
 /**
  * Apify API URL endpoints, which we will use in integration.
  */
@@ -323,5 +318,4 @@ module.exports = {
     ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     ACTOR_RUN_STATUSES,
-    SORT_BY,
 };

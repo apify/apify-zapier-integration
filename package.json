@@ -20,13 +20,13 @@
     "@apify/utilities": "^2.15.4",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
+    "apify-client": "2.12.6",
     "zapier-platform-core": "16.5.0"
   },
   "devDependencies": {
     "chai": "^4.5.0",
     "chai-as-promised": "^7.1.2",
     "eslint": "^8.42.0",
-    "apify-client": "2.12.6",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-promise": "^7.2.1",
