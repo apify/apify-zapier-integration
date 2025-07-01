@@ -19,7 +19,7 @@ const runTask = async (z, bundle) => {
 
     let run = await apifyClient.task(taskId).start(parsedInput);
     if (runSync) {
-        run = await apifyClient.run(run.id).waitForFinish();
+        run = await apifyClient.run(run.id).waitForFinish({ waitSecs: 360 });
     }
 
     return enrichActorRun(z, run);
