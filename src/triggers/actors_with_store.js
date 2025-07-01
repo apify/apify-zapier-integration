@@ -25,8 +25,6 @@ const getStoreActorList = async (z, { offset, limit }) => {
             limit,
             offset,
         },
-        keepAlive: false,
-        keepAliveTimeout: 0,
     });
 };
 
