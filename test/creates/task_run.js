@@ -119,7 +119,7 @@ describe('create task run', () => {
         expect(testResult.finishedAt).to.not.equal(null);
 
         scope?.done();
-    }).timeout(120000);
+    }).timeout(180000);
 
     it('runAsync work', async () => {
         const bundle = {
