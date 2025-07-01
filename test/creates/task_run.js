@@ -175,8 +175,11 @@ describe('create task run', () => {
             const mockRun = getMockRun({ actorTaskId: testTask3Id });
 
             scope = nock('https://api.apify.com');
-            scope.post(`/v2/actor-tasks/${testTask3Id}/runs`)
+            scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
                 .reply(201, { data: mockRun });
+            scope.get(`/v2/actor-runs/${mockRun.id}`)
+                .query({ waitForFinish: 360 })
+                .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
