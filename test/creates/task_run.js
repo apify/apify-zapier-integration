@@ -63,7 +63,7 @@ describe('create task run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask1Id });
-            scope = nock('https://api.apify.com');
+            scope = nock('https://api.apify.com').persist();
             scope.post(`/v2/actor-tasks/${testTask1Id}/runs`, { startUrls: [{ url: urlToScrape }] })
                 .query({ waitForFinish: 120 })
                 .reply(201, { data: mockRun });
@@ -100,7 +100,7 @@ describe('create task run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask2Id });
-            scope = nock('https://api.apify.com');
+            scope = nock('https://api.apify.com').persist();
             scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
                 .query({ waitForFinish: 120 })
                 .reply(201, { data: mockRun });
