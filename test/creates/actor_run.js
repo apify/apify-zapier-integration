@@ -271,7 +271,6 @@ describe('create actor run', () => {
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
         const actorRun = await apifyClient.run(testResult.id).get();
-
         expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);

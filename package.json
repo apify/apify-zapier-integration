@@ -1,6 +1,6 @@
 {
   "name": "apify-zapier-integration",
-  "version": "4.3.2",
+  "version": "4.3.3",
   "description": "Apify integration for Zapier platform",
   "homepage": "https://apify.com/",
   "author": "Jakub Drobník <jakub.drobnik@apify.com>",
@@ -18,9 +18,9 @@
   "dependencies": {
     "@apify/consts": "^2.40.0",
     "@apify/utilities": "^2.15.4",
-    "apify-client": "^2.12.2",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
+    "apify-client": "2.12.6",
     "zapier-platform-core": "16.5.0"
   },
   "devDependencies": {

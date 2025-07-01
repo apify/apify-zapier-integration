@@ -8,6 +8,7 @@ const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMock
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
+const { ActorListSortBy } = require('apify-client');
 
 const appTester = zapier.createAppTester(App);
 
@@ -217,7 +218,7 @@ describe('actor run finished trigger', () => {
             if (!TEST_USER_TOKEN) {
                 scope = nock('https://api.apify.com')
                     .get('/v2/acts')
-                    .query({ limit: 500, offset: 0 })
+                    .query({ limit: 500, offset: 0, sortBy: ActorListSortBy.LAST_RUN_STARTED_AT, desc: 1 })
                     .reply(200, {
                         data: {
                             total: 1,
