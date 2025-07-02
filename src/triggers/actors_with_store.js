@@ -1,3 +1,5 @@
+const { Agent } = require('https');
+
 const { ActorListSortBy } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
@@ -5,6 +7,25 @@ const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
 // Count of top store Actors to be fetched from store and always be the first in dropdown.
 const TOP_PUBLIC_ACTORS_LIMIT = 15;
+
+class PatchedKeepAliveAgent extends Agent {
+    // eslint-disable-next-line no-useless-constructor
+    constructor(opts) {
+        super(opts);
+    }
+
+    addRequest(req, options) {
+        req.once('socket', (socket) => {
+            socket.setMaxListeners(0);
+        });
+        super.addRequest(req, options);
+    }
+}
+
+const keepAliveAgent = new PatchedKeepAliveAgent({
+    keepAlive: true,
+    maxSockets: 5,
+});
 
 const getActorList = async (z, { offset, limit }) => {
     return wrapRequestWithRetries(z.request, {
@@ -25,6 +46,8 @@ const getStoreActorList = async (z, { offset, limit }) => {
             limit,
             offset,
         },
+        agent: keepAliveAgent,
+        headers: { 'Accept-Encoding': 'identity' },
     });
 };
 
