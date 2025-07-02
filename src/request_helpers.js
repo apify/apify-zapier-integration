@@ -108,10 +108,9 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
                 return run;
             }
         } catch (error) {
-            console.error(`Error while polling for run ${JSON.stringify(options)}:`, error);
+            throw error(`Error while polling for run ${options.url}:`, error);
         }
 
-        console.log(`waiting for ${pollIntervalMillis}`);
         await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
     }
 
