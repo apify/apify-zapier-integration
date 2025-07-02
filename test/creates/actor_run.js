@@ -1,6 +1,8 @@
 /* eslint-env mocha */
 const { EventEmitter } = require('events');
 
+EventEmitter.defaultMaxListeners = 0;
+
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
@@ -43,7 +45,7 @@ describe('create actor run', () => {
     if (TEST_USER_TOKEN) {
         it('load correctly Actors with Actors from store with hidden trigger', async () => {
             // Increase max listeners to avoid warning about too many listeners
-            EventEmitter.defaultMaxListeners = 50;
+            EventEmitter.setMaxListeners(100);
 
             const bundle = {
                 authData: {
@@ -139,8 +141,8 @@ describe('create actor run', () => {
             };
             const actor = await apifyClient.actor(actorId).get();
             const { buildId } = actor.taggedBuilds[actor.defaultRunOptions.build];
-            const { inputSchema } = await apifyClient.build(buildId).get();
-            const { properties } = JSON.parse(inputSchema);
+            const { actorDefinition: { input: inputSchema } } = await apifyClient.build(buildId).get();
+            const { properties } = inputSchema;
 
             const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
             const fieldKeys = fields.map(({ key }) => key);
