@@ -112,9 +112,6 @@ describe('scrape single URL', () => {
             const kvsClient = await apifyClient.keyValueStore(scrapeSingleUrlRun.defaultKeyValueStoreId);
             const input = await kvsClient.getRecord('INPUT');
 
-            console.log(`scrape single URL => runs scrape single URL with correct output fields (E2E) =>
-            ${TEST_USER_TOKEN ? 'received response from API:' : 'mock response:'}`, testResult);
-
             expect(testResult).to.have.all.keys(Object.keys(SCRAPE_SINGLE_URL_RUN_SAMPLE));
             expect(scrapeSingleUrlRun.status).to.be.eql('SUCCEEDED');
             // Run scraper just one single URL
