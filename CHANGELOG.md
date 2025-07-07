@@ -1,4 +1,4 @@
-## 4.3.3 / 2025-06-23
+## 4.3.3 / 2025-07-07
 * Actors are now sorted by their most recent run started by the user
 
 ## 4.3.2 / 2025-05-28
