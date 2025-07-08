@@ -1,3 +1,6 @@
+## 4.3.4 / 2025-07-08
+* Fixes issue with connecting a new Apify Account
+
 ## 4.3.3 / 2025-07-07
 * Actors are now sorted by their most recent run started by the user
 
