@@ -1,5 +1,5 @@
 const dayjs = require('dayjs');
-const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES, RECENTLY_USED_ACTORS_KEY } = require('../consts');
 const {
     enrichActorRun,
     getActorAdditionalFields,
@@ -101,6 +101,16 @@ module.exports = {
 
     operation: {
         inputFields: [
+            {
+                label: 'Search Actors from',
+                helpText: 'Please select the source to search Actors from.',
+                key: 'searchLocation',
+                required: true,
+                type: 'string',
+                default: RECENTLY_USED_ACTORS_KEY,
+                choices: ACTOR_SEARCH_SOURCES,
+                altersDynamicFields: true,
+            },
             {
                 label: 'Actor',
                 helpText: 'Please select the actor to run.',
