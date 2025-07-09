@@ -63,10 +63,12 @@ describe('create task run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask1Id });
-            scope = nock('https://api.apify.com');
-            scope.post(`/v2/actor-tasks/${testTask1Id}/runs`, { startUrls: [{ url: urlToScrape }] })
-                .query({ waitForFinish: 120 })
+            scope = nock('https://api.apify.com').persist();
+            scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
                 .reply(201, { data: mockRun });
+            scope.get(`/v2/actor-runs/${mockRun.id}`)
+                .query({ waitForFinish: 60 })
+                .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
@@ -99,11 +101,13 @@ describe('create task run', () => {
 
         let scope;
         if (!TEST_USER_TOKEN) {
-            const mockRun = getMockRun({ actorTaskId: testTask2Id });
-            scope = nock('https://api.apify.com');
-            scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
-                .query({ waitForFinish: 120 })
+            const mockRun = getMockRun({ actorTaskId: testTask2Id, status: 'READY' });
+            scope = nock('https://api.apify.com').persist();
+            scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
                 .reply(201, { data: mockRun });
+            scope.get(`/v2/actor-runs/${mockRun.id}`)
+                .query({ waitForFinish: 60 })
+                .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { ...KEY_VALUE_STORE_SAMPLE, error: 'No output' });
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
@@ -119,7 +123,7 @@ describe('create task run', () => {
         expect(testResult.finishedAt).to.not.equal(null);
 
         scope?.done();
-    }).timeout(120000);
+    }).timeout(180000);
 
     it('runAsync work', async () => {
         const bundle = {
@@ -171,9 +175,11 @@ describe('create task run', () => {
             const mockRun = getMockRun({ actorTaskId: testTask3Id });
 
             scope = nock('https://api.apify.com');
-            scope.post(`/v2/actor-tasks/${testTask3Id}/runs`)
-                .query({ waitForFinish: 120 })
+            scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
                 .reply(201, { data: mockRun });
+            scope.get(`/v2/actor-runs/${mockRun.id}`)
+                .query({ waitForFinish: 60 })
+                .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
