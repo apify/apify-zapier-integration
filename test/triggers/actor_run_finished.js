@@ -4,12 +4,12 @@ const { expect } = require('chai');
 const nock = require('nock');
 const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
 
-const _ = require("lodash");
+const _ = require('lodash');
+const { ActorListSortBy } = require('apify-client');
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMockRun, getMockWebhookResponse } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
-const { ActorListSortBy } = require('apify-client');
 
 const appTester = zapier.createAppTester(App);
 

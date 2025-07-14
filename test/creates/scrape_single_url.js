@@ -4,7 +4,6 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const _ = require('lodash');
 const { TEST_USER_TOKEN, apifyClient, getMockRun } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
