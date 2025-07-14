@@ -53,21 +53,27 @@ jobs:
             - name: Bump package.json version
               run: |
                   echo "Updating package.json version to ${{ env.VERSION }}"
-                  npm version ${{ env.VERSION }} --no-git-tag-version
+                  npm version ${{ env.VERSION }} --no-git-tag-version --allow-same-version
 
             - name: Update CHANGELOG.md
               run: |
                   if [ -n "${{ github.event.release.body }}" ]; then
-                    echo "${{ github.event.release.body }}" >> temp_changelog.md
-                    echo "" >> temp_changelog.md
+                    # Check if CHANGELOG.md already contains the release body
+                    if [ -f CHANGELOG.md ] && grep -Fq "${{ github.event.release.body }}" CHANGELOG.md; then
+                      echo "CHANGELOG.md already contains the release notes. Skipping update."
+                    else
+                      echo "${{ github.event.release.body }}" >> temp_changelog.md
+                      echo "" >> temp_changelog.md
 
-                    # Prepend to existing CHANGELOG.md
-                    if [ -f CHANGELOG.md ]; then
-                      cat CHANGELOG.md >> temp_changelog.md
+                      # Prepend to existing CHANGELOG.md
+                      if [ -f CHANGELOG.md ]; then
+                        cat CHANGELOG.md >> temp_changelog.md
+                      fi
+
+                      # Replace the original CHANGELOG.md with the new one
+                      mv temp_changelog.md CHANGELOG.md
+                      echo "CHANGELOG.md updated with release notes."
                     fi
-
-                    # Replace the original CHANGELOG.md with the new one
-                    mv temp_changelog.md CHANGELOG.md
                   fi
 
             - name: Commit changes
