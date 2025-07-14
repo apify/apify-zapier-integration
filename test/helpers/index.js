@@ -206,6 +206,7 @@ const getMockRun = (overrides) => {
         buildNumber: '0.0.36',
         containerUrl: 'https://g8kd8kbc5ge8.runs.apify.net',
         consoleUrl: 'https://console.apify.com/v2/actor/runs/1',
+        integrationTracking: { platform: 'zapier', appId: null },
         generalAccess: false,
         usageTotalUsd: 0.2654,
         usage: {},

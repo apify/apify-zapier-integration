@@ -4,6 +4,7 @@ const { expect } = require('chai');
 const nock = require('nock');
 const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
 
+const _ = require("lodash");
 const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMockRun, getMockWebhookResponse } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
@@ -161,6 +162,8 @@ describe('actor run finished trigger', () => {
             runs.push(getMockRun());
             runs.push(getMockRun());
 
+            runs.forEach((run) => { delete run.integrationTracking; });
+
             scope = nock('https://api.apify.com');
             scope.get(`/v2/acts/${testActorId}/runs`)
                 .query({ limit: 100, desc: true })
@@ -190,7 +193,7 @@ describe('actor run finished trigger', () => {
 
         expect(results.length).to.be.eql(3);
         expect(results.every((item) => runs.some((run) => run.id === item.id))).to.eql(true);
-        expect(results[0]).to.have.all.keys({ ...ACTOR_RUN_SAMPLE, consoleUrl: '' });
+        expect(results[0]).to.have.all.keys(_.omit({ ...ACTOR_RUN_SAMPLE, consoleUrl: '' }, 'integrationTracking'));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');

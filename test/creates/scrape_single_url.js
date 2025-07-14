@@ -4,7 +4,8 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, getMockRun} = require('../helpers');
+const _ = require('lodash');
+const { TEST_USER_TOKEN, apifyClient, getMockRun } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
 
@@ -108,7 +109,7 @@ describe('scrape single URL', () => {
             const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
             const scrapeSingleUrlRun = await apifyClient.run(testResult.id).get();
             const datasetClient = await apifyClient.dataset(scrapeSingleUrlRun.defaultDatasetId);
-            const datasetItems = await datasetClient.listItems({limit: 1});
+            const datasetItems = await datasetClient.listItems({ limit: 1 });
             const kvsClient = await apifyClient.keyValueStore(scrapeSingleUrlRun.defaultKeyValueStoreId);
             const input = await kvsClient.getRecord('INPUT');
 
