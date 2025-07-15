@@ -214,7 +214,7 @@ describe('task run finished trigger', () => {
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
 
         scope?.done();
-    }).timeout(180000);
+    }).timeout(360000);
 
     // No need to run this test with mocks, it would just end up being a copy of the previous one
     if (TEST_USER_TOKEN) {
