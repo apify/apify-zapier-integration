@@ -3,7 +3,8 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
 const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
-const { TASK_RUN_SAMPLE} = require('../../src/consts');
+const _ = require('lodash');
+const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
     randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
@@ -150,6 +151,8 @@ describe('task run finished trigger', () => {
             runs.push(getMockTaskRun());
             runs.push(getMockTaskRun());
             runs.push(getMockTaskRun());
+
+            runs.forEach((run) => { delete run.integrationTracking; })
         }
 
         const bundle = {
@@ -204,7 +207,8 @@ describe('task run finished trigger', () => {
 
         expect(results.length).to.be.eql(3);
         expect(results.every((item) => runs.some((run) => run.id === item.id))).to.eql(true);
-        expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
+        // eslint-disable-next-line max-len
+        expect(results[0]).to.have.all.keys(Object.keys(_.omit(TASK_RUN_SAMPLE, 'integrationTracking')).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(results[0].OUTPUT).to.not.equal(null);
         expect(results[0].datasetItems.length).to.be.at.least(1);
         expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
@@ -233,7 +237,7 @@ describe('task run finished trigger', () => {
 
             expect(results.length).to.be.eql(1);
             expect(results[0].id).to.be.eql(taskRun.id);
-            expect(results[0]).to.have.all.keys(Object.keys(TASK_RUN_SAMPLE));
+            expect(results[0]).to.have.all.keys(Object.keys(_.omit(TASK_RUN_SAMPLE, 'integrationTracking')));
             expect(results[0].datasetItems.length).to.be.at.least(1);
             expect(results[0].datasetItems[0]).to.be.eql(testedResult);
             expect(results[0].datasetItemsFileUrls).to.include.all.keys('xml', 'csv', 'json', 'xlsx');
