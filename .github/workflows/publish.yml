@@ -40,8 +40,8 @@ jobs:
 
             - name: Configure git
               run: |
-                  git config --global user.name "Apify Release Bot"
-                  git config --global user.email "noreply@apify.com"
+                  git config --global user.name "Apify Service Account"
+                  git config --global user.email "apify-service-account@users.noreply.github.com"
 
             - name: Extract release version
               id: get_version
