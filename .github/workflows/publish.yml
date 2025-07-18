@@ -11,6 +11,9 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v2
+              with:
+                  token: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
+
 
             - name: Set up Node.js
               uses: actions/setup-node@v3
@@ -40,8 +43,8 @@ jobs:
 
             - name: Configure git
               run: |
-                  git config --global user.name "Apify Release Bot"
-                  git config --global user.email "noreply@apify.com"
+                  git config --global user.name "Apify Service Account"
+                  git config --global user.email "apify-service-account@users.noreply.github.com"
 
             - name: Extract release version
               id: get_version
