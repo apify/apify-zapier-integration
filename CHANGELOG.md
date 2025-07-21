@@ -1,3 +1,5 @@
+This is dummy release to test releasing workflow.
+
 ## What's Changed
 * fix: Fix automated deployment
 
