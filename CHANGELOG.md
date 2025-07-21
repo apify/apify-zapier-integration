@@ -1,3 +1,9 @@
+## What's Changed
+* fix: Fix automated deployment
+
+
+**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.3.5...v4.3.8
+
 ## 4.3.4 / 2025-07-08
 * Fixes issue with connecting a new Apify Account
 
