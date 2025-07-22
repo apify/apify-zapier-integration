@@ -70,7 +70,7 @@ jobs:
                     CHANGELOG_ENTRY="${CHANGELOG_ENTRY}"$'\n'
 
                     # Check if CHANGELOG.md already contains this version
-                    if [ -f CHANGELOG.md ] && grep -q "## ${{ env.VERSION }} /" CHANGELOG.md; then
+                    if [ -f CHANGELOG.md ] && grep -q "^## ${{ env.VERSION }} /" CHANGELOG.md; then
                       echo "CHANGELOG.md already contains version ${{ env.VERSION }}. Skipping update."
                     else
                       # Create temporary file with new entry
