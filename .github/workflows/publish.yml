@@ -61,21 +61,29 @@ jobs:
             - name: Update CHANGELOG.md
               run: |
                   if [ -n "${{ github.event.release.body }}" ]; then
-                    # Check if CHANGELOG.md already contains the release body
-                    if [ -f CHANGELOG.md ] && grep -Fq "${{ github.event.release.body }}" CHANGELOG.md; then
-                      echo "CHANGELOG.md already contains the release notes. Skipping update."
-                    else
-                      echo "${{ github.event.release.body }}" >> temp_changelog.md
-                      echo "" >> temp_changelog.md
+                    # Get current date in YYYY-MM-DD format
+                    CURRENT_DATE=$(date '+%Y-%m-%d')
 
-                      # Prepend to existing CHANGELOG.md
+                    # Compose the entire changelog entry with proper format
+                    CHANGELOG_ENTRY="## ${{ env.VERSION }} / ${CURRENT_DATE}"
+                    CHANGELOG_ENTRY="${CHANGELOG_ENTRY}"$'\n'"${{ github.event.release.body }}"
+                    CHANGELOG_ENTRY="${CHANGELOG_ENTRY}"$'\n'
+
+                    # Check if CHANGELOG.md already contains this version
+                    if [ -f CHANGELOG.md ] && grep -q "## ${{ env.VERSION }} /" CHANGELOG.md; then
+                      echo "CHANGELOG.md already contains version ${{ env.VERSION }}. Skipping update."
+                    else
+                      # Create temporary file with new entry
+                      echo "${CHANGELOG_ENTRY}" > temp_changelog.md
+
+                      # Append existing CHANGELOG.md content if it exists
                       if [ -f CHANGELOG.md ]; then
                         cat CHANGELOG.md >> temp_changelog.md
                       fi
 
                       # Replace the original CHANGELOG.md with the new one
                       mv temp_changelog.md CHANGELOG.md
-                      echo "CHANGELOG.md updated with release notes."
+                      echo "CHANGELOG.md updated with release notes for version ${{ env.VERSION }}."
                     fi
                   fi
 
