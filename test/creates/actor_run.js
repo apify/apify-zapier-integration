@@ -1,6 +1,8 @@
 /* eslint-env mocha */
 const { EventEmitter } = require('events');
 
+EventEmitter.defaultMaxListeners = 0;
+
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
@@ -40,42 +42,42 @@ describe('create actor run', () => {
 
     // This test whether retrieving actors from store works
     // TODO: This test is disabled because the requests to the Apify store API ends with Premature close error.
-    // if (TEST_USER_TOKEN) {
-    //     it('load correctly Actors with Actors from store with hidden trigger', async () => {
-    //         // Increase max listeners to avoid warning about too many listeners
-    //         EventEmitter.defaultMaxListeners = 50;
-    //
-    //         const bundle = {
-    //             authData: {
-    //                 access_token: TEST_USER_TOKEN,
-    //             },
-    //             inputData: {},
-    //             meta: {},
-    //         };
-    //
-    //         const userActors = await apifyClient.actors().list({ limit: 1000, my: true });
-    //         const publicActor = await apifyClient.store().list({ limit: 10 });
-    //
-    //         const actors = [];
-    //         let page = 0;
-    //         let actorList;
-    //         do {
-    //             actorList = await appTester(App.triggers.actorsWithStore.operation.perform, {
-    //                 ...bundle,
-    //                 meta: {
-    //                     page: page === 0 ? undefined : page,
-    //                 },
-    //             });
-    //             actors.push(...actorList);
-    //             page++;
-    //         } while (actorList.length);
-    //
-    //         expect(actors.map((a) => a.id)).to.include.members(userActors.items.concat(publicActor.items).map((a) => a.id));
-    //         actors.forEach((actor) => {
-    //             expect(actor).to.have.all.keys('id', 'name');
-    //         });
-    //     }).timeout(300_000); // Timeout of 5 minutes to allow apify client to load all Actors from store and user's Actors
-    // }
+    if (TEST_USER_TOKEN) {
+        it('load correctly Actors with Actors from store with hidden trigger', async () => {
+            // Increase max listeners to avoid warning about too many listeners
+            EventEmitter.setMaxListeners(100);
+
+            const bundle = {
+                authData: {
+                    access_token: TEST_USER_TOKEN,
+                },
+                inputData: {},
+                meta: {},
+            };
+
+            const userActors = await apifyClient.actors().list({ limit: 1000, my: true });
+            const publicActor = await apifyClient.store().list({ limit: 10 });
+
+            const actors = [];
+            let page = 0;
+            let actorList;
+            do {
+                actorList = await appTester(App.triggers.actorsWithStore.operation.perform, {
+                    ...bundle,
+                    meta: {
+                        page: page === 0 ? undefined : page,
+                    },
+                });
+                actors.push(...actorList);
+                page++;
+            } while (actorList.length);
+
+            expect(actors.map((a) => a.id)).to.include.members(userActors.items.concat(publicActor.items).map((a) => a.id));
+            actors.forEach((actor) => {
+                expect(actor).to.have.all.keys('id', 'name');
+            });
+        }).timeout(300_000); // Timeout of 5 minutes to allow apify client to load all Actors from store and user's Actors
+    }
 
     it('loading of dynamic fields from exampleRunInput work', async () => {
         const actorFields = {
@@ -122,7 +124,7 @@ describe('create actor run', () => {
         expect(JSON.parse(actorFields.exampleRunInput.body)).to.be.eql(JSON.parse(fieldsByKey.inputBody.default));
 
         scope?.done();
-    });
+    }).timeout(30_000);
 
     if (TEST_USER_TOKEN) {
         it('loading of dynamic fields from inputSchema work', async () => {
@@ -139,8 +141,8 @@ describe('create actor run', () => {
             };
             const actor = await apifyClient.actor(actorId).get();
             const { buildId } = actor.taggedBuilds[actor.defaultRunOptions.build];
-            const { inputSchema } = await apifyClient.build(buildId).get();
-            const { properties } = JSON.parse(inputSchema);
+            const { actorDefinition: { input: inputSchema } } = await apifyClient.build(buildId).get();
+            const { properties } = inputSchema;
 
             const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
             const fieldKeys = fields.map(({ key }) => key);

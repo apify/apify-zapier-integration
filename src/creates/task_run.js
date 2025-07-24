@@ -1,27 +1,31 @@
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
-
 const runTask = async (z, bundle) => {
     const { taskId, runSync, rawInput } = bundle.inputData;
 
     const requestOpts = {
         url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs`,
         method: 'POST',
-        params: runSync ? { waitForFinish: 120 } : {},
     };
+
+    let parsedInput;
     if (rawInput) {
         try {
-            const parseInput = JSON.parse(rawInput);
-            requestOpts.body = parseInput;
+            parsedInput = JSON.parse(rawInput);
+            requestOpts.body = parsedInput;
         } catch (err) {
             throw new Error(`Please check that your ${RAW_INPUT_LABEL} is a valid JSON.`);
         }
     }
-    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    if (runSync) {
+        run = await waitForRunToFinish(z.request, run.id, 360);
+    }
 
     return enrichActorRun(z, run);
 };

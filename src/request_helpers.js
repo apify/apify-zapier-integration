@@ -1,4 +1,5 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
+const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -88,9 +89,38 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
     expBackoffMaxRepeats: 3,
 });
 
+const waitForRunToFinish = async (request, runId, timeoutSecs) => {
+    const maxWaitingForRequest = 60;
+    const pollIntervalMillis = maxWaitingForRequest * 1000;
+    const timeoutMillis = timeoutSecs * 1000;
+    const startTime = Date.now();
+    const options = {
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}?waitForFinish=${maxWaitingForRequest}`,
+    };
+
+    while (Date.now() - startTime < timeoutMillis) {
+        try {
+            const { data: run } = await wrapRequestWithRetries(request, options);
+
+            const runStatus = await run.status;
+
+            if (Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(runStatus)) {
+                return run;
+            }
+        } catch (error) {
+            throw new Error(`Error while polling for run ${options.url}: ${error}`);
+        }
+
+        await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
+    }
+
+    throw new Error(`Timeout of ${timeoutSecs} seconds reached for run ${runId}`);
+};
+
 module.exports = {
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,
     wrapRequestWithRetries,
+    waitForRunToFinish,
 };
