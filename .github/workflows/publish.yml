@@ -1,0 +1,109 @@
+name: Release & Publish Apify on Zapier
+on:
+    release:
+        types: [published]
+
+jobs:
+    setup_and_test:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+              with:
+                  token: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
+
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version-file: '.nvmrc'
+
+            - name: Install Zapier CLI
+              run: npm install -g zapier-platform-cli
+
+            - name: Create .zapierrc file
+              run: |
+                  echo '{ "deployKey": "${{ secrets.APIFY_ZAPIER_DEPLOY_KEY }}" }' > ~/.zapierrc
+
+            - name: Install dependencies
+              run: npm install --no-audit
+
+            - name: Validate Zapier app
+              run: zapier validate --without-style
+
+            - name: Run lint
+              run: npm run lint
+
+            - name: Run tests
+              run: npm run test
+              env:
+                  TEST_USER_TOKEN: ${{ secrets.APIFY_TEST_USER_API_TOKEN }}
+
+            - name: Configure git
+              run: |
+                  git config --global user.name "Apify Service Account"
+                  git config --global user.email "apify-service-account@users.noreply.github.com"
+
+            - name: Extract release version
+              id: get_version
+              run: |
+                  FULL_TAG_NAME="${{ github.event.release.tag_name }}"
+                  VERSION_NUMBER="${FULL_TAG_NAME#v}"
+                  echo "VERSION=${VERSION_NUMBER}" >> $GITHUB_ENV
+
+            - name: Bump package.json version
+              run: |
+                  echo "Updating package.json version to ${{ env.VERSION }}"
+                  npm version ${{ env.VERSION }} --no-git-tag-version --allow-same-version
+
+            - name: Update CHANGELOG.md
+              run: |
+                  if [ -n "${{ github.event.release.body }}" ]; then
+                    # Get current date in YYYY-MM-DD format
+                    CURRENT_DATE=$(date '+%Y-%m-%d')
+
+                    # Compose the entire changelog entry with proper format
+                    CHANGELOG_ENTRY="## ${{ env.VERSION }} / ${CURRENT_DATE}"
+                    CHANGELOG_ENTRY="${CHANGELOG_ENTRY}"$'\n'"${{ github.event.release.body }}"
+                    CHANGELOG_ENTRY="${CHANGELOG_ENTRY}"$'\n'
+
+                    # Check if CHANGELOG.md already contains this version
+                    if [ -f CHANGELOG.md ] && grep -q "^## ${{ env.VERSION }} /" CHANGELOG.md; then
+                      echo "CHANGELOG.md already contains version ${{ env.VERSION }}. Skipping update."
+                    else
+                      # Create temporary file with new entry
+                      echo "${CHANGELOG_ENTRY}" > temp_changelog.md
+
+                      # Append existing CHANGELOG.md content if it exists
+                      if [ -f CHANGELOG.md ]; then
+                        cat CHANGELOG.md >> temp_changelog.md
+                      fi
+
+                      # Replace the original CHANGELOG.md with the new one
+                      mv temp_changelog.md CHANGELOG.md
+                      echo "CHANGELOG.md updated with release notes for version ${{ env.VERSION }}."
+                    fi
+                  fi
+
+            - name: Commit changes
+              run: |
+                  git add package.json package-lock.json CHANGELOG.md
+                  if ! git diff --staged --quiet; then
+                      TARGET_BRANCH="${{ github.event.release.target_commitish }}"
+                      echo "Target branch for push: $TARGET_BRANCH"
+                      git commit -m "chore(release): set version to ${{ env.VERSION }}"
+                      echo "Pushing changes to $TARGET_BRANCH"
+                      git push origin HEAD:"refs/heads/$TARGET_BRANCH"
+                  else
+                      echo "No changes to commit."
+                  fi
+              env:
+                  GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
+
+            - name: Push Zapier app
+              run: zapier push
+
+            - name: Promote new version
+              run: zapier promote --yes ${{ env.VERSION }}

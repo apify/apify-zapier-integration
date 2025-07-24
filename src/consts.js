@@ -40,6 +40,7 @@ const ACTOR_RUN_SAMPLE = {
     platformUsageBillingModel: 'USER',
     OUTPUT: {},
     datasetItems: [],
+    integrationTracking: { platform: 'zapier', appId: null },
     datasetItemsFileUrls: {
         xml: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=xml&clean=true&attachment=true',
         csv: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=csv&clean=true&attachment=true',
@@ -97,6 +98,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     isStatusMessageTerminal: true,
     statusMessage: 'Actor finished!',
     platformUsageBillingModel: 'USER',
+    integrationTracking: { platform: 'zapier', appId: null },
     generalAccess: {},
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,

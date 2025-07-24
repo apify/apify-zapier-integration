@@ -1,4 +1,7 @@
 {
   "id": 15018,
-  "key": "App15018"
+  "key": "App15018",
+  "includeInBuild": [
+    "node_modules/axios/dist/*.js"
+  ]
 }

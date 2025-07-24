@@ -1,4 +1,15 @@
-## 4.3.3 / 2025-06-23
+This is dummy release to test releasing workflow.
+
+## What's Changed
+* fix: Fix automated deployment
+
+
+**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.3.5...v4.3.8
+
+## 4.3.4 / 2025-07-08
+* Fixes issue with connecting a new Apify Account
+
+## 4.3.3 / 2025-07-07
 * Actors are now sorted by their most recent run started by the user
 
 ## 4.3.2 / 2025-05-28
