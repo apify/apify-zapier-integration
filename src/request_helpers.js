@@ -1,5 +1,5 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
-const { ACTOR_RUN_TERMINAL_STATUSES } = require('./consts');
+const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -95,7 +95,7 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
     const timeoutMillis = timeoutSecs * 1000;
     const startTime = Date.now();
     const options = {
-        url: `https://api.apify.com/v2/actor-runs/${runId}?waitForFinish=${maxWaitingForRequest}`,
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}?waitForFinish=${maxWaitingForRequest}`,
     };
 
     while (Date.now() - startTime < timeoutMillis) {

@@ -16,13 +16,14 @@ const APIFY_API_BASE_URL = 'https://api.apify.com';
  * Apify API URL endpoints, which we will use in integration.
  */
 const APIFY_API_ENDPOINTS = {
-    users: `${APIFY_API_BASE_URL}/v2/users`,
-    webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
-    tasks: `${APIFY_API_BASE_URL}/v2/actor-tasks`,
+    actorRuns: `${APIFY_API_BASE_URL}/v2/actor-runs`,
+    actors: `${APIFY_API_BASE_URL}/v2/acts`,
     datasets: `${APIFY_API_BASE_URL}/v2/datasets`,
     keyValueStores: `${APIFY_API_BASE_URL}/v2/key-value-stores`,
-    actors: `${APIFY_API_BASE_URL}/v2/acts`,
     store: `${APIFY_API_BASE_URL}/v2/store`,
+    tasks: `${APIFY_API_BASE_URL}/v2/actor-tasks`,
+    users: `${APIFY_API_BASE_URL}/v2/users`,
+    webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
 };
 
 const ACTOR_RUN_SAMPLE = {
