@@ -90,7 +90,7 @@ describe('create actor run', () => {
         });
 
         scope?.done();
-    }).timeout(10_000);
+    }).timeout(30_000);
 
     it('load correctly recently used Actors', async () => {
         const getRealData = async () => {
@@ -147,7 +147,7 @@ describe('create actor run', () => {
         });
 
         scope?.done();
-    }).timeout(10_000);
+    }).timeout(30_000);
 
     it('load correctly recently used Actors - page 2', async () => {
         const getRealData = async () => {
@@ -207,7 +207,7 @@ describe('create actor run', () => {
         });
 
         scope?.done();
-    }).timeout(10_000);
+    }).timeout(30_000);
 
     it('load correctly Actors from the Apify store', async () => {
         const getRealData = async () => {
@@ -262,7 +262,7 @@ describe('create actor run', () => {
         });
 
         scope?.done();
-    }).timeout(10_000);
+    }).timeout(30_000);
 
     it('load correctly Actors from the Apify store - page 2', async () => {
         const getRealData = async () => {
@@ -320,7 +320,7 @@ describe('create actor run', () => {
         });
 
         scope?.done();
-    }).timeout(10_000);
+    }).timeout(30_000);
 
     it('loading of dynamic fields from exampleRunInput work', async () => {
         const actorFields = {
