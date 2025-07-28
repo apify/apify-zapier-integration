@@ -7,7 +7,7 @@ const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const { ActorListSortBy } = require('apify-client');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun } = require('../helpers');
-const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -258,7 +258,7 @@ describe('create actor run', () => {
         result.forEach((actor, index) => {
             expect(actor).to.have.all.keys('id', 'name');
             expect(actor.id).to.equal(testData[index].id);
-            expect(actor.name).to.contain(testData[index].name);
+            expect(actor.name).to.contains(testData[index].name);
         });
 
         scope?.done();
@@ -316,7 +316,7 @@ describe('create actor run', () => {
         result.forEach((actor, index) => {
             expect(actor).to.have.all.keys('id', 'name');
             expect(actor.id).to.equal(testData[index].id);
-            expect(actor.name).to.contain(testData[index].name);
+            expect(actor.name).to.contains(testData[index].name);
         });
 
         scope?.done();
