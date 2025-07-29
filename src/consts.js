@@ -82,6 +82,11 @@ const ACTOR_RUN_SAMPLE = {
     },
 };
 
+const ACTOR_RUN_SAMPLE_SYNC = {
+    ...ACTOR_RUN_SAMPLE,
+    consoleUrl: 'https://console.apify.com/view/runs/tbplDsWxC8dabcsRb',
+};
+
 const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -302,6 +307,7 @@ const ACTOR_RUN_STATUSES = {
 module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
+    ACTOR_RUN_SAMPLE_SYNC,
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
