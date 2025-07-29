@@ -69,14 +69,15 @@ describe('scrape single URL', () => {
             saveMarkdown: true,
         })
             .query({
-                timeout: 30,
                 memory: 1024,
-                waitForFinish: 28,
             })
             .reply(200, { data: mockRun });
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
             .query({ limit: 1, clean: true })
             .reply(200, [mockDatasetItem]);
+        scope.get(`/v2/actor-runs/${mockRun.id}`)
+            .query(true)
+            .reply(200, { data: mockRun });
 
         const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
 
@@ -112,7 +113,8 @@ describe('scrape single URL', () => {
             const kvsClient = await apifyClient.keyValueStore(scrapeSingleUrlRun.defaultKeyValueStoreId);
             const input = await kvsClient.getRecord('INPUT');
 
-            expect(testResult).to.have.all.keys(Object.keys(SCRAPE_SINGLE_URL_RUN_SAMPLE));
+            const expectedKeys = [...Object.keys(SCRAPE_SINGLE_URL_RUN_SAMPLE), 'consoleUrl'];
+            expect(testResult).to.have.all.keys(expectedKeys);
             expect(scrapeSingleUrlRun.status).to.be.eql('SUCCEEDED');
             // Run scraper just one single URL
             expect(datasetItems.items.length).to.be.eql(1);
@@ -161,14 +163,15 @@ describe('scrape single URL', () => {
                 saveMarkdown: true,
             })
                 .query({
-                    timeout: 30,
                     memory: 1024,
-                    waitForFinish: 28,
                 })
                 .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });
             scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 1, clean: true })
                 .reply(200, []);
+            scope.get(`/v2/actor-runs/${SCRAPE_SINGLE_URL_RUN_SAMPLE.id}`)
+                .query(true)
+                .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });
         }
 
         await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/page content is missing/);
