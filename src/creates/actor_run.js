@@ -6,11 +6,12 @@ const {
     maybeGetInputSchemaFromActor,
     prefixInputFieldKey,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
+    const FIVE_MINUTES = 360;
 
     const requestOpts = {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs`,
@@ -22,7 +23,6 @@ const runActor = async (z, bundle) => {
         },
     };
 
-    if (runSync) requestOpts.params.waitForFinish = 120;
     if (inputContentType) {
         requestOpts.headers = {
             'Content-Type': inputContentType,
@@ -86,7 +86,8 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, FIVE_MINUTES);
 
     return enrichActorRun(z, run);
 };
@@ -112,7 +113,7 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, the Zap will wait until the actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                    + 'Beware that the hard timeout for the run is 360 seconds.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
