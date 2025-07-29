@@ -1,5 +1,5 @@
 const dayjs = require('dayjs');
-const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
 const {
     enrichActorRun,
     getActorAdditionalFields,
@@ -11,7 +11,6 @@ const { getActorDatasetOutputFields } = require('../output_fields');
 
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
-    const FIVE_MINUTES = 360;
 
     const requestOpts = {
         url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs`,
@@ -87,7 +86,7 @@ const runActor = async (z, bundle) => {
     }
 
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, FIVE_MINUTES);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
 
     return enrichActorRun(z, run);
 };
