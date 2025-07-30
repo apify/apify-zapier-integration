@@ -1,4 +1,4 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
@@ -24,7 +24,7 @@ const runTask = async (z, bundle) => {
 
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
     if (runSync) {
-        run = await waitForRunToFinish(z.request, run.id, 360);
+        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
     }
 
     return enrichActorRun(z, run);
@@ -33,7 +33,7 @@ const runTask = async (z, bundle) => {
 const getRawInputField = async (z, bundle) => {
     const { taskId } = bundle.inputData;
     let helpText = 'Here you can enter a JSON object to override the task input configuration. '
-    + 'Only the provided fields will be overridden, the rest will be left unchanged.';
+        + 'Only the provided fields will be overridden, the rest will be left unchanged.';
 
     const { data: task } = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
