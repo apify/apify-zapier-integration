@@ -7,6 +7,7 @@ const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, getMockRun } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
+const { waitForRunToFinish } = require('../../src/request_helpers');
 
 const appTester = zapier.createAppTester(App);
 
@@ -76,7 +77,7 @@ describe('scrape single URL', () => {
             .query({ limit: 1, clean: true })
             .reply(200, [mockDatasetItem]);
         scope.get(`/v2/actor-runs/${mockRun.id}`)
-            .query(true)
+            .query({ waitForFinish: 60 })
             .reply(200, { data: mockRun });
 
         const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);

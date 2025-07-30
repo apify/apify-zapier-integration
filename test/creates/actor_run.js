@@ -263,7 +263,7 @@ describe('create actor run', () => {
             scope.get(`/v2/actor-runs/${run.id}`)
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
-                .query(true)
+                .query({ waitForFinish: 60 })
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { foo: 'bar' });
@@ -321,7 +321,7 @@ describe('create actor run', () => {
             scope.get(`/v2/actor-runs/${run.id}`)
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
-                .query(true)
+                .query({ waitForFinish: 60 })
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, {
