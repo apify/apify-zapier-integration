@@ -1,4 +1,8 @@
 /* eslint-env mocha */
+const { EventEmitter } = require('events');
+
+EventEmitter.defaultMaxListeners = 0;
+
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
@@ -211,6 +215,8 @@ describe('create actor run', () => {
 
     it('load correctly Actors from the Apify store', async () => {
         const getRealData = async () => {
+            EventEmitter.setMaxListeners(100);
+
             const { items } = await apifyClient.store().list({
                 limit: DEFAULT_PAGINATION_LIMIT,
                 sortBy: 'popularity',
@@ -266,6 +272,8 @@ describe('create actor run', () => {
 
     it('load correctly Actors from the Apify store - page 2', async () => {
         const getRealData = async () => {
+            EventEmitter.setMaxListeners(100);
+
             const { items } = await apifyClient.store().list({
                 limit: DEFAULT_PAGINATION_LIMIT,
                 offset: DEFAULT_PAGINATION_LIMIT,
