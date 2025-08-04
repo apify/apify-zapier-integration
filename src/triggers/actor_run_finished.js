@@ -23,7 +23,7 @@ const getFallbackActorRuns = async (z, bundle) => {
                 url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
             });
             return enrichActorRun(z, runResponse.data);
-        })
+        }),
     );
 };
 
