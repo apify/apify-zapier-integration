@@ -17,12 +17,14 @@ const getFallbackActorRuns = async (z, bundle) => {
     const { items } = response.data;
     const filteredRuns = items.filter((run) => (statuses.includes(run.status)));
 
-    return Promise.map(filteredRuns.slice(0, 3), async ({ id }) => {
-        const runResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
-        });
-        return enrichActorRun(z, runResponse.data);
-    });
+    return Promise.all(
+        filteredRuns.slice(0, 3).map(async ({ id }) => {
+            const runResponse = await wrapRequestWithRetries(z.request, {
+                url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
+            });
+            return enrichActorRun(z, runResponse.data);
+        })
+    );
 };
 
 module.exports = {
