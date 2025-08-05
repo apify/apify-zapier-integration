@@ -4,8 +4,9 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
+    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../consts');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 
 const WEBSITE_CONTENT_CRAWLER_ACTOR_ID = 'aYG0l9s7dbB7j3gbS';
@@ -15,9 +16,6 @@ const runWebsiteContentCrawler = async (z, bundle) => {
 
     // We can use lower memory for Cheerio crawler, because it's not using browser.
     const memory = crawlerType === 'cheerio' ? 1024 : 4096;
-
-    // NOTE: The Zap wait just 30 seconds for the run to finish.
-    const timeoutSecs = 30;
 
     const input = {
         startUrls: [{ url }],
@@ -37,10 +35,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         url: `${APIFY_API_ENDPOINTS.actors}/${WEBSITE_CONTENT_CRAWLER_ACTOR_ID}/runs`,
         method: 'POST',
         params: {
-            timeout: timeoutSecs,
             memory,
-            // NOTE: There is some overhead with getting data from dataset.
-            waitForFinish: timeoutSecs - 2,
         },
         headers: {
             'Content-Type': 'application/json; charset=utf-8',
@@ -48,7 +43,8 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         body: JSON.stringify(input),
     };
 
-    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
 
     const { defaultDatasetId } = run;
     // Attach Apify app URL to detail of run
@@ -58,7 +54,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
             throw new Error('The data for the page content is missing. The scraper cannot scrape the page '
-            + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
+                + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
         }
         run.pageUrl = datasetItems.items[0].url;
         run.pageMetadata = datasetItems.items[0].metadata;

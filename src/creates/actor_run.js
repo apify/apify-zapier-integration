@@ -1,12 +1,12 @@
 const dayjs = require('dayjs');
-const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
 const {
     enrichActorRun,
     getActorAdditionalFields,
     maybeGetInputSchemaFromActor,
     prefixInputFieldKey,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const runActor = async (z, bundle) => {
@@ -22,7 +22,6 @@ const runActor = async (z, bundle) => {
         },
     };
 
-    if (runSync) requestOpts.params.waitForFinish = 120;
     if (inputContentType) {
         requestOpts.headers = {
             'Content-Type': inputContentType,
@@ -86,7 +85,8 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
 
     return enrichActorRun(z, run);
 };
