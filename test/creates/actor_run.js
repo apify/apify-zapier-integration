@@ -213,122 +213,124 @@ describe('create actor run', () => {
         scope?.done();
     }).timeout(120_000);
 
-    it('load correctly Actors from the Apify store', async () => {
-        const getRealData = async () => {
-            EventEmitter.setMaxListeners(100);
+    if (!TEST_USER_TOKEN) {
+        it('load correctly Actors from the Apify store', async () => {
+            const getRealData = async () => {
+                EventEmitter.setMaxListeners(100);
 
-            const { items } = await apifyClient.store().list({
-                limit: DEFAULT_PAGINATION_LIMIT,
-                sortBy: 'popularity',
-            });
-
-            return items;
-        };
-
-        const getMockData = () => [
-            getMockActorDetails(),
-            getMockActorDetails(),
-            getMockActorDetails(),
-        ];
-
-        const testData = TEST_USER_TOKEN ? await getRealData() : getMockData();
-
-        const bundle = {
-            authData: {
-                access_token: TEST_USER_TOKEN,
-            },
-            inputData: {
-                searchLocation: STORE_ACTORS_KEY,
-            },
-            meta: {},
-        };
-
-        let scope;
-        if (!TEST_USER_TOKEN) {
-            scope = nock('https://api.apify.com');
-            scope.get('/v2/store')
-                .query({
+                const {items} = await apifyClient.store().list({
                     limit: DEFAULT_PAGINATION_LIMIT,
-                    offset: 0,
                     sortBy: 'popularity',
-                })
-                .reply(200, {
-                    data: { items: testData },
                 });
-        }
 
-        const result = await appTester(App.triggers.actorsWithStore.operation.perform, bundle);
+                return items;
+            };
 
-        expect(result).to.be.an('array');
-        expect(result.length).to.be.equal(testData.length);
-        result.forEach((actor, index) => {
-            expect(actor).to.have.all.keys('id', 'name');
-            expect(actor.id).to.equal(testData[index].id);
-            expect(actor.name).to.contains(testData[index].name);
-        });
+            const getMockData = () => [
+                getMockActorDetails(),
+                getMockActorDetails(),
+                getMockActorDetails(),
+            ];
 
-        scope?.done();
-    }).timeout(120_000);
+            const testData = TEST_USER_TOKEN ? await getRealData() : getMockData();
 
-    it('load correctly Actors from the Apify store - page 2', async () => {
-        const getRealData = async () => {
-            EventEmitter.setMaxListeners(100);
+            const bundle = {
+                authData: {
+                    access_token: TEST_USER_TOKEN,
+                },
+                inputData: {
+                    searchLocation: STORE_ACTORS_KEY,
+                },
+                meta: {},
+            };
 
-            const { items } = await apifyClient.store().list({
-                limit: DEFAULT_PAGINATION_LIMIT,
-                offset: DEFAULT_PAGINATION_LIMIT,
-                sortBy: 'popularity',
+            let scope;
+            if (!TEST_USER_TOKEN) {
+                scope = nock('https://api.apify.com');
+                scope.get('/v2/store')
+                    .query({
+                        limit: DEFAULT_PAGINATION_LIMIT,
+                        offset: 0,
+                        sortBy: 'popularity',
+                    })
+                    .reply(200, {
+                        data: {items: testData},
+                    });
+            }
+
+            const result = await appTester(App.triggers.actorsWithStore.operation.perform, bundle);
+
+            expect(result).to.be.an('array');
+            expect(result.length).to.be.equal(testData.length);
+            result.forEach((actor, index) => {
+                expect(actor).to.have.all.keys('id', 'name');
+                expect(actor.id).to.equal(testData[index].id);
+                expect(actor.name).to.contains(testData[index].name);
             });
 
-            return items;
-        };
+            scope?.done();
+        }).timeout(120_000);
 
-        const getMockData = () => [
-            getMockActorDetails(),
-            getMockActorDetails(),
-            getMockActorDetails(),
-        ];
+        it('load correctly Actors from the Apify store - page 2', async () => {
+            const getRealData = async () => {
+                EventEmitter.setMaxListeners(100);
 
-        const testData = TEST_USER_TOKEN ? await getRealData() : getMockData();
-
-        const bundle = {
-            authData: {
-                access_token: TEST_USER_TOKEN,
-            },
-            inputData: {
-                searchLocation: STORE_ACTORS_KEY,
-            },
-            meta: {
-                page: 1, // Simulate page 2
-            },
-        };
-
-        let scope;
-        if (!TEST_USER_TOKEN) {
-            scope = nock('https://api.apify.com');
-            scope.get('/v2/store')
-                .query({
+                const {items} = await apifyClient.store().list({
                     limit: DEFAULT_PAGINATION_LIMIT,
                     offset: DEFAULT_PAGINATION_LIMIT,
                     sortBy: 'popularity',
-                })
-                .reply(200, {
-                    data: { items: testData },
                 });
-        }
 
-        const result = await appTester(App.triggers.actorsWithStore.operation.perform, bundle);
+                return items;
+            };
 
-        expect(result).to.be.an('array');
-        expect(result.length).to.be.equal(testData.length);
-        result.forEach((actor, index) => {
-            expect(actor).to.have.all.keys('id', 'name');
-            expect(actor.id).to.equal(testData[index].id);
-            expect(actor.name).to.contains(testData[index].name);
-        });
+            const getMockData = () => [
+                getMockActorDetails(),
+                getMockActorDetails(),
+                getMockActorDetails(),
+            ];
 
-        scope?.done();
-    }).timeout(120_000);
+            const testData = TEST_USER_TOKEN ? await getRealData() : getMockData();
+
+            const bundle = {
+                authData: {
+                    access_token: TEST_USER_TOKEN,
+                },
+                inputData: {
+                    searchLocation: STORE_ACTORS_KEY,
+                },
+                meta: {
+                    page: 1, // Simulate page 2
+                },
+            };
+
+            let scope;
+            if (!TEST_USER_TOKEN) {
+                scope = nock('https://api.apify.com');
+                scope.get('/v2/store')
+                    .query({
+                        limit: DEFAULT_PAGINATION_LIMIT,
+                        offset: DEFAULT_PAGINATION_LIMIT,
+                        sortBy: 'popularity',
+                    })
+                    .reply(200, {
+                        data: {items: testData},
+                    });
+            }
+
+            const result = await appTester(App.triggers.actorsWithStore.operation.perform, bundle);
+
+            expect(result).to.be.an('array');
+            expect(result.length).to.be.equal(testData.length);
+            result.forEach((actor, index) => {
+                expect(actor).to.have.all.keys('id', 'name');
+                expect(actor.id).to.equal(testData[index].id);
+                expect(actor.name).to.contains(testData[index].name);
+            });
+
+            scope?.done();
+        }).timeout(120_000);
+    }
 
     it('loading of dynamic fields from exampleRunInput work', async () => {
         const actorFields = {

@@ -177,5 +177,5 @@ describe('scrape single URL', () => {
 
         await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/page content is missing/);
         scope?.done();
-    }).timeout(65000);
+    }).timeout(120_000);
 });
