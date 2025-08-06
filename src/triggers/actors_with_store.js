@@ -1,12 +1,9 @@
 const { Agent } = require('https');
 
 const { ActorListSortBy } = require('apify-client');
-const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT } = require('../consts');
+const { APIFY_API_ENDPOINTS, DEFAULT_PAGINATION_LIMIT, RECENTLY_USED_ACTORS_KEY, STORE_ACTORS_KEY } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
-
-// Count of top store Actors to be fetched from store and always be the first in dropdown.
-const TOP_PUBLIC_ACTORS_LIMIT = 15;
 
 class PatchedKeepAliveAgent extends Agent {
     // eslint-disable-next-line no-useless-constructor
@@ -45,6 +42,7 @@ const getStoreActorList = async (z, { offset, limit }) => {
         params: {
             limit,
             offset,
+            sortBy: 'popularity',
         },
         agent: keepAliveAgent,
         headers: { 'Accept-Encoding': 'identity' },
@@ -52,45 +50,23 @@ const getStoreActorList = async (z, { offset, limit }) => {
 };
 
 /**
- * Fetches a list of user's Actors and Actors from store.
- * The pagination is handled in way the first returns top store Actors, user's Actors and them Actors from store.
+ * Fetches a list of Actors, either recently used or from the Apify store. Recently used Actors are used by default.
+ *
  * @param z
  * @param bundle
  * @returns {Promise<*>}
  */
 const getActorWithStoreList = async (z, bundle) => {
-    // NOTE: Zapier UI can handle duplicates in dropdowns, but it's not possible to have duplicates in single page.
-    const actors = new Map();
+    const source = bundle.inputData.searchLocation || RECENTLY_USED_ACTORS_KEY;
 
-    // 1. Add user's Actors
-    const { data: actorList } = await getActorList(z, {
+    const fetchFn = source === STORE_ACTORS_KEY ? getStoreActorList : getActorList;
+
+    const actors = await fetchFn(z, {
         limit: DEFAULT_PAGINATION_LIMIT,
         offset: bundle.meta.page ? bundle.meta.page * DEFAULT_PAGINATION_LIMIT : 0,
     });
-    actorList.items.forEach((actor) => actors.set(actor.id, actor));
 
-    // 2. This is for marketing purposes, show top public Actors from store the first.
-    if (!bundle.meta.page) {
-        const { data: topPublicActorList } = await getStoreActorList(z, { limit: TOP_PUBLIC_ACTORS_LIMIT, offset: 0 });
-        topPublicActorList.items.forEach((actor) => actors.set(actor.id, actor));
-    }
-
-    // 3. Add Actors from Store
-    if (actorList.items.length < DEFAULT_PAGINATION_LIMIT) {
-        // NOTE: Offset needs to be set based on already loaded actors from list of Actors
-        // and Actors from store.
-        const limit = DEFAULT_PAGINATION_LIMIT - actorList.items.length;
-        const pageNumberDilutedActorList = bundle.meta.page - Math.floor(actorList.total / DEFAULT_PAGINATION_LIMIT);
-        const offset = Math.max(
-            TOP_PUBLIC_ACTORS_LIMIT,
-            (pageNumberDilutedActorList * DEFAULT_PAGINATION_LIMIT - (actorList.total % DEFAULT_PAGINATION_LIMIT)) + TOP_PUBLIC_ACTORS_LIMIT,
-        );
-
-        const { data: storeActorList } = await getStoreActorList(z, { limit, offset });
-        storeActorList.items.forEach((actor) => actors.set(actor.id, actor));
-    }
-
-    return Array.from(actors.values()).map((actor) => ({
+    return actors.data.items.map((actor) => ({
         id: actor.id,
         name: printPrettyActorOrTaskName(actor),
     }));
