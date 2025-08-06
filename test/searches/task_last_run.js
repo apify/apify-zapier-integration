@@ -50,7 +50,12 @@ describe('search task last run', () => {
             scope = nock('https://api.apify.com')
                 .get(`/v2/actor-tasks/${testTaskId}/runs/last`)
                 .query({ status: ACTOR_JOB_STATUSES.SUCCEEDED })
-                .reply(404, 'Run not found');
+                .reply(404, {
+                    error: {
+                        type: 'not-found',
+                        message: 'Run not found',
+                    },
+                });
         }
 
         const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
@@ -115,7 +120,12 @@ describe('search task last run', () => {
             scope = nock('https://api.apify.com')
                 .get(`/v2/actor-tasks/${testTaskId}/runs/last`)
                 .query({ status: ACTOR_JOB_STATUSES.TIMING_OUT })
-                .reply(404, 'Run not found');
+                .reply(404, {
+                    error: {
+                        type: 'not-found',
+                        message: 'Run not found',
+                    },
+                });
         }
 
         const testResult = await appTester(App.searches.searchTaskRun.operation.perform, bundle);
