@@ -11,7 +11,7 @@ const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const { ActorListSortBy } = require('apify-client');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun } = require('../helpers');
-const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC} = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -502,7 +502,6 @@ describe('create actor run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const run = getMockRun({ actId: testActorId, options: runOptions });
-            delete run.consoleUrl;
 
             scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${testActorId}/runs`)
@@ -510,10 +509,12 @@ describe('create actor run', () => {
                     timeout: runOptions.timeoutSecs,
                     memory: runOptions.memoryMbytes,
                     build: runOptions.build,
-                    waitForFinish: runOptions.timeoutSecs,
                 })
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+            scope.get(`/v2/actor-runs/${run.id}`)
+                .query({ waitForFinish: 60 })
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { foo: 'bar' });
@@ -524,7 +525,7 @@ describe('create actor run', () => {
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
         const actorRun = await apifyClient.run(testResult.id).get();
-        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE_SYNC));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);
         expect(testResult.OUTPUT).to.be.eql({ foo: 'bar' });
@@ -559,7 +560,6 @@ describe('create actor run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const run = getMockRun({ actId: testActorId, options: runOptions });
-            delete run.consoleUrl;
 
             scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${testActorId}/runs`)
@@ -567,10 +567,12 @@ describe('create actor run', () => {
                     timeout: runOptions.timeoutSecs,
                     memory: runOptions.memoryMbytes,
                     build: runOptions.build,
-                    waitForFinish: runOptions.timeoutSecs,
                 })
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+            scope.get(`/v2/actor-runs/${run.id}`)
+                .query({ waitForFinish: 60 })
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, {
@@ -586,7 +588,7 @@ describe('create actor run', () => {
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
         const actorRun = await apifyClient.run(testResult.id).get();
 
-        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE));
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE_SYNC));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.finishedAt).to.not.equal(null);
         expect(testResult.OUTPUT).to.be.eql({

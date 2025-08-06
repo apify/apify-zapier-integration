@@ -50,7 +50,12 @@ describe('search actor last run', () => {
             scope = nock('https://api.apify.com')
                 .get(`/v2/acts/${testActorId}/runs/last`)
                 .query({ status: ACTOR_JOB_STATUSES.SUCCEEDED })
-                .reply(404, 'Run not found');
+                .reply(404, {
+                    error: {
+                        type: 'not-found',
+                        message: 'Run not found',
+                    },
+                });
         }
 
         const testResult = await appTester(App.searches.searchActorRun.operation.perform, bundle);
