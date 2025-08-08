@@ -2,7 +2,7 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { WEBHOOK_EVENT_TYPE_GROUPS } = require('@apify/consts');
+const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 
 const _ = require('lodash');
 const { ActorListSortBy } = require('apify-client');
@@ -166,7 +166,7 @@ describe('actor run finished trigger', () => {
 
             scope = nock('https://api.apify.com');
             scope.get(`/v2/acts/${testActorId}/runs`)
-                .query({ limit: 100, desc: true })
+                .query({ limit: 100, desc: true, status: ACTOR_JOB_TERMINAL_STATUSES.join(',') })
                 .reply(200, {
                     data: {
                         items: runs.map((run) => {

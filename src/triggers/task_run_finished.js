@@ -5,11 +5,14 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const getFallbackTaskActorRuns = async (z, bundle) => {
+    const statuses = getActorStatusesFromBundle(bundle) || ACTOR_JOB_TERMINAL_STATUSES;
+
     const response = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
         params: {
             limit: 100,
             desc: true,
+            status: statuses.join(','),
         },
     });
 
@@ -18,12 +21,10 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
         url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}`,
     });
 
-    const statuses = getActorStatusesFromBundle(bundle) || ACTOR_JOB_TERMINAL_STATUSES;
     const { items } = response.data;
-    const filteredRuns = items.filter((run) => (statuses.includes(run.status)));
 
     return Promise.all(
-        filteredRuns.slice(0, 3).map(async ({ id }) => {
+        items.slice(0, 3).map(async ({ id }) => {
             const runResponse = await wrapRequestWithRetries(z.request, {
                 url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.data.actId}/runs/${id}`,
             });
