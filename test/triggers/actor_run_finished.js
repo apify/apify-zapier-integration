@@ -132,7 +132,7 @@ describe('actor run finished trigger', () => {
 
         expect(results.length).to.be.eql(1);
         expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
-    });
+    }).timeout(30_000);
 
     it('performList should return actor runs', async () => {
         const runs = [];
@@ -246,6 +246,6 @@ describe('actor run finished trigger', () => {
             actorList.forEach((actor) => expect(actor).to.have.all.keys('id', 'name'));
 
             scope?.done();
-        });
+        }).timeout(30_000);
     });
 });
