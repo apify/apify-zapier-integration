@@ -1,3 +1,10 @@
+## 4.4.0 / 2025-08-14
+- Improved publishing workflow for smoother updates.
+- Fixed a security vulnerability.
+- Enhanced the "Select Actor" dropdown for easier selection.
+- Optimized filtering of runs with multiple statuses
+
+
 This is dummy release to test releasing workflow.
 
 ## What's Changed
