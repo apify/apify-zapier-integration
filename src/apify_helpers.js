@@ -3,15 +3,26 @@ const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
+    SIGNED_URL_EXPIRATION_SECONDS,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
+
+const { ApifyClient } = require('apify-client');
 
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 
-const createDatasetUrls = (datasetId, cleanParamName) => {
+const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {
+    const publicUrl = await getDatasetPublicUrl(token, datasetId, options);
+
     const createDatasetUrl = (format) => {
-        return `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items?${cleanParamName}=true&attachment=true&format=${format}`;
+        const url = new URL(publicUrl);
+
+        url.searchParams.set(cleanParamName, 'true');
+        url.searchParams.set('attachment', 'true');
+        url.searchParams.set('format', format);
+
+        return url.toString();
     };
     return {
         xml: createDatasetUrl('xml'),
@@ -28,7 +39,7 @@ const createDatasetUrls = (datasetId, cleanParamName) => {
  * it will attach item with info about reaching limit.
  */
 // eslint-disable-next-line default-param-last
-const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigger = false) => {
+const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFromTrigger = false) => {
     /**
      * For backwards compatible with old phantomJs crawler we need to use
      * simplified dataset instead of clean.
@@ -57,7 +68,7 @@ const getDatasetItems = async (z, datasetId, params = {}, actorId, runFromTrigge
 
     return {
         items,
-        itemsFileUrls: createDatasetUrls(datasetId, cleanParamName),
+        itemsFileUrls: await createDatasetUrls(datasetId, token, params, cleanParamName),
     };
 };
 
@@ -106,7 +117,7 @@ const getValuesFromKeyValueStore = async (z, storeId, keys) => {
  * Enriches actor run object with data from dataset and key-value store.
  * It is used for actor runs same as task runs.
  */
-const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
+const enrichActorRun = async (z, token, run, storeKeysToInclude = []) => {
     const { defaultKeyValueStoreId, defaultDatasetId } = run;
 
     if (defaultKeyValueStoreId) {
@@ -116,7 +127,7 @@ const enrichActorRun = async (z, run, storeKeysToInclude = []) => {
     }
 
     if (defaultDatasetId) {
-        const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId, true);
+        const datasetItems = await getDatasetItems(z, defaultDatasetId, token, { limit: FETCH_DATASET_ITEMS_ITEMS_LIMIT }, run.actId, true);
         run.datasetItems = datasetItems.items;
         run.datasetItemsFileUrls = datasetItems.itemsFileUrls;
     }
@@ -179,7 +190,7 @@ const unsubscribeWebhook = async (z, bundle) => {
 // Gets actor run from bundle clean request and enriches it.
 const getActorRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
-    const enrichedRun = await enrichActorRun(z, run);
+    const enrichedRun = await enrichActorRun(z, bundle.authData.access_token, run);
     return [enrichedRun];
 };
 
@@ -550,6 +561,18 @@ const printPrettyActorOrTaskName = (actorOrTask) => {
         : idLikeName;
 };
 
+const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
+    const apifyClient = new ApifyClient({ token });
+    const datasetClient = apifyClient.dataset(datasetIdOrName);
+
+    return await datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS })
+}
+
+const getKvsPublicUrl = async (token) => {
+    const apifyClient = new ApifyClient({ token });
+    return await apifyClient.createKeysPublicUrl(SIGNED_URL_EXPIRATION_SECONDS)
+}
+
 module.exports = {
     enrichActorRun,
     subscribeWebhook,
@@ -565,4 +588,6 @@ module.exports = {
     parseInputFieldKey,
     prefixInputFieldKey,
     getActorStatusesFromBundle,
+    getKvsPublicUrl,
+    getDatasetPublicUrl,
 };
