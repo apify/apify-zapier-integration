@@ -25,9 +25,11 @@ const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
     return datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
 };
 
-const getKvsPublicUrl = async (token) => {
+const getKvsPublicUrl = async (token, kvsIdOrName, options) => {
     const apifyClient = new ApifyClient({ token });
-    return apifyClient.createKeysPublicUrl(SIGNED_URL_EXPIRATION_SECONDS);
+    const kvsClient = apifyClient.keyValueStore(kvsIdOrName);
+
+    return kvsClient.createKeysPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
 };
 
 const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {
@@ -595,5 +597,4 @@ module.exports = {
     prefixInputFieldKey,
     getActorStatusesFromBundle,
     getKvsPublicUrl,
-    getDatasetPublicUrl,
 };
