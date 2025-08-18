@@ -589,5 +589,4 @@ module.exports = {
     parseInputFieldKey,
     prefixInputFieldKey,
     getActorStatusesFromBundle,
-    getKvsPublicUrl,
 };
