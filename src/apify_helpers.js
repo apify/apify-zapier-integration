@@ -12,6 +12,13 @@ const { wrapRequestWithRetries } = require('./request_helpers');
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 
 const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
+    // Legacy crawler uses simplified instead of clean
+    // This causes the Apify Client to throw errors while generating url
+    if ('simplified' in options) {
+        const { simplified, ...rest } = options;
+        options = rest;
+    }
+
     const apifyClient = new ApifyClient({ token });
     const datasetClient = apifyClient.dataset(datasetIdOrName);
 
