@@ -94,7 +94,7 @@ const runActor = async (z, bundle) => {
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
     if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
 
-    return enrichActorRun(z, run);
+    return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
 module.exports = {

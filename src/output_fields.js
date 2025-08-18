@@ -10,10 +10,10 @@ const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
  * @param {string} datasetId
  * @returns {Promise<*[]>}
  */
-const getDatasetItemsOutputFields = async (z, datasetId, actorId, keyPrefix = 'datasetItems[]') => {
+const getDatasetItemsOutputFields = async (z, datasetId, actorId, token, keyPrefix = 'datasetItems[]') => {
     let datasetItems;
     try {
-        datasetItems = await getDatasetItems(z, datasetId, {
+        datasetItems = await getDatasetItems(z, datasetId, token, {
             limit: 10,
         }, actorId);
     } catch (err) {

@@ -27,7 +27,7 @@ const runTask = async (z, bundle) => {
         run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
     }
 
-    return enrichActorRun(z, run);
+    return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
 const getRawInputField = async (z, bundle) => {
