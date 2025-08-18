@@ -566,7 +566,7 @@ describe('create actor run', () => {
         let scope;
         if (!TEST_USER_TOKEN) {
             const run = getMockRun({ actId: testActorId, options: runOptions });
-            console.log(run.defaultKeyValueStoreId)
+
             scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${testActorId}/runs`)
                 .query({
