@@ -25,7 +25,7 @@ describe('create task run', () => {
             const task3 = await createLegacyCrawlerTask('function pageFunction(context) { return { testedField: "testValue" } }');
             testTask3Id = task3.id;
         }
-    });
+    }).timeout(5000);
 
     afterEach(async () => {
         if (!TEST_USER_TOKEN) {
