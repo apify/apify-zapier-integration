@@ -1,17 +1,8 @@
 ## 4.4.0 / 2025-08-14
-- Improved publishing workflow for smoother updates.
-- Fixed a security vulnerability.
-- Enhanced the "Select Actor" dropdown for easier selection.
-- Optimized filtering of runs with multiple statuses
-
-
-This is dummy release to test releasing workflow.
-
-## What's Changed
-* fix: Fix automated deployment
-
-
-**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.3.5...v4.3.8
+* Improved publishing workflow for smoother updates.
+* Fixed a security vulnerability.
+* Enhanced the "Select Actor" dropdown for easier selection.
+* Optimized filtering of runs with multiple statuses
 
 ## 4.3.4 / 2025-07-08
 * Fixes issue with connecting a new Apify Account
