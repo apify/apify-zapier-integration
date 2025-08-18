@@ -54,6 +54,14 @@ describe('scrape single URL', () => {
             markdown: '# Example Domain\n\nThis domain is for use in illustrative examples in documents.',
             text: 'Example Domain\n\nThis domain is for use in illustrative examples in documents.',
         };
+        const mockDatasetPublicUrl = {
+            data: {
+                consoleUrl: `https://console.apify.com/storage/datasets/${mockRun.defaultDatasetId}`,
+                itemsPublicUrl: `https://api.apify.com/v2/datasets/${mockRun.defaultDatasetId}/items`,
+                generalAccess: 'FOLLOW_USER_SETTING',
+                urlSigningSecretKey: 'RzPjuWxnQp4LNBkHANZ7tq36B15GgO',
+            },
+        }
 
         const scope = nock('https://api.apify.com');
         scope.post(`/v2/acts/${mockRun.actId}/runs`, {
@@ -76,6 +84,8 @@ describe('scrape single URL', () => {
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
             .query({ limit: 1, clean: true })
             .reply(200, [mockDatasetItem]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl);
         scope.get(`/v2/actor-runs/${mockRun.id}`)
             .query({ waitForFinish: 60 })
             .reply(200, { data: mockRun });

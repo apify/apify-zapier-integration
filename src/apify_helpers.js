@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
+const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
@@ -7,10 +8,20 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
-const { ApifyClient } = require('apify-client');
-
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
+
+const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
+    const apifyClient = new ApifyClient({ token });
+    const datasetClient = apifyClient.dataset(datasetIdOrName);
+
+    return datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
+};
+
+const getKvsPublicUrl = async (token) => {
+    const apifyClient = new ApifyClient({ token });
+    return apifyClient.createKeysPublicUrl(SIGNED_URL_EXPIRATION_SECONDS);
+};
 
 const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {
     const publicUrl = await getDatasetPublicUrl(token, datasetId, options);
@@ -560,18 +571,6 @@ const printPrettyActorOrTaskName = (actorOrTask) => {
         ? `${actorOrTask.title} (${idLikeName})`
         : idLikeName;
 };
-
-const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
-    const apifyClient = new ApifyClient({ token });
-    const datasetClient = apifyClient.dataset(datasetIdOrName);
-
-    return await datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS })
-}
-
-const getKvsPublicUrl = async (token) => {
-    const apifyClient = new ApifyClient({ token });
-    return await apifyClient.createKeysPublicUrl(SIGNED_URL_EXPIRATION_SECONDS)
-}
 
 module.exports = {
     enrichActorRun,
