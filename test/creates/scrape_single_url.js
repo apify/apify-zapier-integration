@@ -4,7 +4,7 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, getMockRun } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
 const { waitForRunToFinish } = require('../../src/request_helpers');
@@ -54,14 +54,6 @@ describe('scrape single URL', () => {
             markdown: '# Example Domain\n\nThis domain is for use in illustrative examples in documents.',
             text: 'Example Domain\n\nThis domain is for use in illustrative examples in documents.',
         };
-        const mockDatasetPublicUrl = {
-            data: {
-                consoleUrl: `https://console.apify.com/storage/datasets/${mockRun.defaultDatasetId}`,
-                itemsPublicUrl: `https://api.apify.com/v2/datasets/${mockRun.defaultDatasetId}/items`,
-                generalAccess: 'FOLLOW_USER_SETTING',
-                urlSigningSecretKey: 'RzPjuWxnQp4LNBkHANZ7tq36B15GgO',
-            },
-        }
 
         const scope = nock('https://api.apify.com');
         scope.post(`/v2/acts/${mockRun.actId}/runs`, {
@@ -85,7 +77,7 @@ describe('scrape single URL', () => {
             .query({ limit: 1, clean: true })
             .reply(200, [mockDatasetItem]);
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
-            .reply(200, mockDatasetPublicUrl);
+            .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         scope.get(`/v2/actor-runs/${mockRun.id}`)
             .query({ waitForFinish: 60 })
             .reply(200, { data: mockRun });
@@ -180,9 +172,12 @@ describe('scrape single URL', () => {
             scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 1, clean: true })
                 .reply(200, []);
+            
             scope.get(`/v2/actor-runs/${SCRAPE_SINGLE_URL_RUN_SAMPLE.id}`)
                 .query(true)
                 .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });
+            scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId));
         }
 
         await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/page content is missing/);

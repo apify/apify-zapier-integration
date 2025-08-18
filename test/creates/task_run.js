@@ -3,7 +3,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask, randomString, getMockRun } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask, randomString, getMockRun, mockDatasetPublicUrl } = require('../helpers');
 const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -74,6 +74,8 @@ describe('create task run', () => {
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ url: urlToScrape }]);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
@@ -113,6 +115,8 @@ describe('create task run', () => {
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, []);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
@@ -150,6 +154,8 @@ describe('create task run', () => {
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ url: 'http://example.com' }]);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
@@ -185,6 +191,8 @@ describe('create task run', () => {
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ testedField: 'testValue' }]);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);

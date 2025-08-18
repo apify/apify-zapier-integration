@@ -2,7 +2,7 @@
 const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset} = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset, mockDatasetPublicUrl} = require('../helpers');
 const { DATASET_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -64,6 +64,8 @@ describe('fetch dataset items', () => {
             scope.get(`/v2/datasets/${testDatasetId}/items`)
                 .query({ limit: null, offset: null, clean: true })
                 .reply(200, randomItems);
+            scope.get(`/v2/datasets/${testDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(testDatasetId));
         }
 
         const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);

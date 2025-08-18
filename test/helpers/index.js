@@ -162,6 +162,18 @@ const createAndBuildActor = async () => {
     return actor;
 };
 
+const mockDatasetPublicUrl = (id) => {
+    return {
+        data: {
+            consoleUrl: `https://console.apify.com/storage/datasets/${id}`,
+            itemsPublicUrl: `https://api.apify.com/v2/datasets/${id}/items`,
+            generalAccess: 'FOLLOW_USER_SETTING',
+            urlSigningSecretKey: 'RzPjuWxnQp4LNBkHANZ7tq36B15GgO',
+        },
+    }
+} 
+        
+
 const getMockRun = (overrides) => {
     return {
         id: randomString(),
@@ -358,4 +370,5 @@ module.exports = {
     getMockActorBuild,
     getMockDataset,
     getMockKVStore,
+    mockDatasetPublicUrl,
 };
