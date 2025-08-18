@@ -25,13 +25,6 @@ const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
     return datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
 };
 
-const getKvsPublicUrl = async (token, kvsIdOrName, options) => {
-    const apifyClient = new ApifyClient({ token });
-    const kvsClient = apifyClient.keyValueStore(kvsIdOrName);
-
-    return kvsClient.createKeysPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
-};
-
 const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {
     const publicUrl = await getDatasetPublicUrl(token, datasetId, options);
 
