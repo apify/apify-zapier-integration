@@ -15,7 +15,7 @@ const getLastActorRun = async (z, bundle) => {
     try {
         lastActorRunResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs/last`,
-            params: status ? { status } : {},
+            params: status ? { status: status.toUpperCase() } : {},
         });
     } catch (err) {
         if (err.message.includes('not found')) return [];
