@@ -4,7 +4,6 @@ const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
-    SIGNED_URL_EXPIRATION_SECONDS,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -22,7 +21,7 @@ const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
     const apifyClient = new ApifyClient({ token });
     const datasetClient = apifyClient.dataset(datasetIdOrName);
 
-    return datasetClient.createItemsPublicUrl(options, { expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS });
+    return datasetClient.createItemsPublicUrl(options);
 };
 
 const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {

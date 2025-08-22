@@ -26,8 +26,6 @@ const APIFY_API_ENDPOINTS = {
     webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
 };
 
-const SIGNED_URL_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
-
 const ACTOR_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -343,5 +341,4 @@ module.exports = {
     RECENTLY_USED_ACTORS_KEY,
     STORE_ACTORS_KEY,
     ACTOR_SEARCH_SOURCES,
-    SIGNED_URL_EXPIRATION_SECONDS,
 };
