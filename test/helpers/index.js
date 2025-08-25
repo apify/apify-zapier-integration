@@ -170,9 +170,8 @@ const mockDatasetPublicUrl = (id) => {
             generalAccess: 'FOLLOW_USER_SETTING',
             urlSigningSecretKey: 'RzPjuWxnQp4LNBkHANZ7tq36B15GgO',
         },
-    }
-} 
-        
+    };
+};
 
 const getMockRun = (overrides) => {
     return {
