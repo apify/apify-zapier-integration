@@ -34,7 +34,7 @@ const getItems = async (z, bundle) => {
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
     dataset.id = dataset.id || dataset._id;
 
-    const datasetItems = await getDatasetItems(z, dataset.id, { limit, offset }, dataset.actId);
+    const datasetItems = await getDatasetItems(z, dataset.id, bundle.authData.access_token, { limit, offset }, dataset.actId);
 
     // Pick some fields to Zapier UI, other fields are useless for Zapier users.
     const cleanDataset = _.pick(dataset, DATASET_PUBLISH_FIELDS);
@@ -49,7 +49,7 @@ const getAdditionalDatasetItemsOutputFields = async (z, bundle) => {
     const { datasetIdOrName } = bundle.inputData;
     const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
 
-    return getDatasetItemsOutputFields(z, dataset.id, dataset.actId, 'items[]');
+    return getDatasetItemsOutputFields(z, dataset.id, dataset.actId, bundle.authData.access_token, 'items[]');
 };
 
 module.exports = {

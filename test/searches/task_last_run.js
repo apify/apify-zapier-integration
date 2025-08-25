@@ -3,7 +3,7 @@ const zapier = require('zapier-platform-core');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { expect } = require('chai');
 const nock = require('nock');
-const { apifyClient, createWebScraperTask, TEST_USER_TOKEN, getMockTaskRun } = require('../helpers');
+const { apifyClient, createWebScraperTask, TEST_USER_TOKEN, getMockTaskRun, mockDatasetPublicUrl } = require('../helpers');
 
 const App = require('../../index');
 const { KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
@@ -91,6 +91,8 @@ describe('search task last run', () => {
             scope.get(`/v2/datasets/${taskRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
+            scope.get(`/v2/datasets/${taskRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(taskRun.defaultDatasetId));
         } else {
             taskRun = await apifyClient.task(testTaskId).call({
                 waitSecs: 120,

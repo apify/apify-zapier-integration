@@ -25,7 +25,7 @@ const getLastTaskRun = async (z, bundle) => {
 
     if (!lastTaskRunResponse.data) return [];
 
-    const enrichRun = await enrichActorRun(z, lastTaskRunResponse.data);
+    const enrichRun = await enrichActorRun(z, bundle.authData.access_token, lastTaskRunResponse.data);
     return [enrichRun];
 };
 

@@ -10,7 +10,7 @@ const nock = require('nock');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const { ActorListSortBy } = require('apify-client');
-const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun } = require('../helpers');
+const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun, mockDatasetPublicUrl } = require('../helpers');
 const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC} = require('../../src/consts');
 
 const App = require('../../index');
@@ -464,6 +464,8 @@ describe('create actor run', () => {
             scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 10, clean: true })
                 .reply(200, items);
+            scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(items.defaultDatasetId));
         }
 
         const fields = await appTester(App.triggers.getActorDatasetOutputFieldsTest.operation.perform, bundle);
@@ -523,6 +525,8 @@ describe('create actor run', () => {
             scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
+            scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
@@ -585,6 +589,8 @@ describe('create actor run', () => {
             scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
+            scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
@@ -638,6 +644,8 @@ describe('create actor run', () => {
             scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, []);
+            scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(ACTOR_RUN_SAMPLE.defaultDatasetId));
         }
 
         const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);

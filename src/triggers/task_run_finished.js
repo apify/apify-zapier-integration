@@ -28,7 +28,7 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
             const runResponse = await wrapRequestWithRetries(z.request, {
                 url: `${APIFY_API_ENDPOINTS.actors}/${taskDetailResponse.data.actId}/runs/${id}`,
             });
-            return enrichActorRun(z, runResponse.data);
+            return enrichActorRun(z, bundle.authData.access_token, runResponse.data);
         }),
     );
 };

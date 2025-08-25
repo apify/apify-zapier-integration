@@ -8,6 +8,7 @@ const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
     randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
+    mockDatasetPublicUrl,
 } = require('../helpers');
 
 const App = require('../../index');
@@ -200,6 +201,8 @@ describe('task run finished trigger', () => {
                 scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                     .query({ limit: 100, clean: true })
                     .reply(200, [{ foo: 'bar' }]);
+                scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+                    .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
             });
         }
 

@@ -51,7 +51,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     run.detailsPageUrl = `https://console.apify.com/actors/${run.actId}/runs/${run.id}`;
 
     if (defaultDatasetId) {
-        const datasetItems = await getDatasetItems(z, defaultDatasetId, { limit: 1 }, run.actId, true);
+        const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
             throw new Error('The data for the page content is missing. The scraper cannot scrape the page '
                 + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
