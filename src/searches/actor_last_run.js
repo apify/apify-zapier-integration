@@ -23,7 +23,7 @@ const getLastActorRun = async (z, bundle) => {
         throw err;
     }
 
-    const enrichRun = await enrichActorRun(z, lastActorRunResponse.data);
+    const enrichRun = await enrichActorRun(z, bundle.authData.access_token, lastActorRunResponse.data);
     return [enrichRun];
 };
 

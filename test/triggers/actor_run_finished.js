@@ -6,7 +6,7 @@ const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_TERMINAL_STATUSES } = require('@api
 
 const _ = require('lodash');
 const { ActorListSortBy } = require('apify-client');
-const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMockRun, getMockWebhookResponse } = require('../helpers');
+const { createAndBuildActor, apifyClient, TEST_USER_TOKEN, randomString, getMockRun, getMockWebhookResponse, mockDatasetPublicUrl } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -186,6 +186,9 @@ describe('actor run finished trigger', () => {
                 scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                     .query({ limit: 100, clean: true })
                     .reply(200, [{ foo: 'bar' }]);
+                
+                scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+                    .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
             });
         }
 

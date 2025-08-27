@@ -1,3 +1,6 @@
+## 4.4.1 / 2025-08-25
+* Added signed URLs for shared dataset links, enabling secure access to datasets
+
 ## 4.4.0 / 2025-08-14
 * Improved publishing workflow for smoother updates.
 * Fixed a security vulnerability.
