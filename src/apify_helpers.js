@@ -10,19 +10,15 @@ const { wrapRequestWithRetries } = require('./request_helpers');
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 
-const getDatasetPublicUrl = async (token, datasetIdOrName, options) => {
-    // Legacy crawler uses simplified instead of clean
-    // This causes the Apify Client to throw errors while generating url
-    delete options.simplified;
-
+const getDatasetPublicUrl = async (token, datasetIdOrName) => {
     const apifyClient = new ApifyClient({ token });
     const datasetClient = apifyClient.dataset(datasetIdOrName);
 
-    return datasetClient.createItemsPublicUrl(options);
+    return datasetClient.createItemsPublicUrl();
 };
 
-const createDatasetUrls = async (datasetId, token, options, cleanParamName) => {
-    const publicUrl = await getDatasetPublicUrl(token, datasetId, options);
+const createDatasetUrls = async (datasetId, token, cleanParamName) => {
+    const publicUrl = await getDatasetPublicUrl(token, datasetId);
 
     const createDatasetUrl = (format) => {
         const url = new URL(publicUrl);
@@ -77,7 +73,7 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
 
     return {
         items,
-        itemsFileUrls: await createDatasetUrls(datasetId, token, params, cleanParamName),
+        itemsFileUrls: await createDatasetUrls(datasetId, token, cleanParamName),
     };
 };
 
