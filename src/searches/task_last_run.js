@@ -15,7 +15,7 @@ const getLastTaskRun = async (z, bundle) => {
     try {
         lastTaskRunResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`,
-            params: status ? { status } : {},
+            params: status ? { status: status.toUpperCase() } : {},
         });
     } catch (err) {
         if (err.message.includes('not found')) return [];
