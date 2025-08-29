@@ -1,3 +1,8 @@
+## 4.4.2 / 2025-08-29
+* remove limit and offset in the public signed url
+* fix vulnerability
+* bug fix for default values of Run Status field
+
 ## 4.4.1 / 2025-08-25
 * Added signed URLs for shared dataset links, enabling secure access to datasets
 
