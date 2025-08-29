@@ -15,7 +15,9 @@ const getLastActorRun = async (z, bundle) => {
     try {
         lastActorRunResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs/last`,
-            params: status ? { status } : {},
+            // Using upper case to fix Zapier UI default value issues
+            // More info on Ticket: #98
+            params: status ? { status: status.toUpperCase() } : {},
         });
     } catch (err) {
         if (err.message.includes('not found')) return [];
