@@ -7,6 +7,7 @@ const {
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const getLastTaskRun = async (z, bundle) => {
     const { taskId, status } = bundle.inputData;
@@ -15,9 +16,7 @@ const getLastTaskRun = async (z, bundle) => {
     try {
         lastTaskRunResponse = await wrapRequestWithRetries(z.request, {
             url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`,
-            // Using upper case to fix Zapier UI default value issues
-            // More info on Ticket: #98
-            params: status ? { status: status.toUpperCase() } : {},
+            params: status ? { status } : {},
         });
     } catch (err) {
         if (err.message.includes('not found')) return [];
@@ -53,7 +52,7 @@ module.exports = {
                 key: 'status',
                 required: false,
                 // Zapier selection dropdown expects individual options to be passed in { value: label } form
-                default: ACTOR_RUN_STATUSES.SUCCEEDED,
+                default: ACTOR_JOB_STATUSES.SUCCEEDED,
                 choices: ACTOR_RUN_STATUSES,
             },
         ],
