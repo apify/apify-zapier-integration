@@ -1,3 +1,4 @@
+const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS,
@@ -7,7 +8,6 @@ const {
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
-const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const getLastActorRun = async (z, bundle) => {
     const { actorId, status } = bundle.inputData;
