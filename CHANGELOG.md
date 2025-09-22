@@ -1,3 +1,7 @@
+## 4.4.3 / 2025-09-22
+- Vulnerability fix
+- Status dropdown default value fix
+
 ## 4.4.2 / 2025-08-29
 * remove limit and offset in the public signed url
 * fix vulnerability
