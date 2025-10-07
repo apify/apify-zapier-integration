@@ -15,6 +15,41 @@ const {
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
+const processInputField = (key, value, inputSchema) => {
+    const inputSchemaProp = inputSchema.properties[key];
+    const { editor, title } = inputSchemaProp;
+
+    switch (editor) {
+        case 'datepicker':
+            return dayjs(value).format('YYYY-MM-DD');
+        case 'requestListSources':
+            return value.map((url) => ({ url: url.trim() }));
+        case 'pseudoUrls':
+            return value.map((purl) => ({ purl: purl.trim() }));
+        case 'globs':
+            return value.map((glob) => ({ glob: glob.trim() }));
+        case 'proxy':
+        case 'json':
+        case 'keyValue':
+            try {
+                return JSON.parse(value);
+            } catch (err) {
+                throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
+            }
+        case 'schemaBased':
+            // eslint-disable-next-line no-case-declarations
+            const result = {};
+            // eslint-disable-next-line no-restricted-syntax
+            for (const [propKey, propValue] of Object.entries(value[0])) {
+                const realPropKey = propKey.split('.')[1]; // propKey is like "input-my-object.key1
+                result[realPropKey] = processInputField(realPropKey, propValue, inputSchemaProp);
+            }
+            return result;
+        default:
+            return value;
+    }
+};
+
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
@@ -54,31 +89,7 @@ const runActor = async (z, bundle) => {
                 const fieldKey = prefixInputFieldKey(key);
                 const value = bundle.inputData[fieldKey];
                 if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
-                    const { editor, title } = inputSchema.properties[key];
-                    if (editor === 'datepicker') {
-                        const date = dayjs(value);
-                        input[key] = date.format('YYYY-MM-DD');
-                    } else if (editor === 'requestListSources') {
-                        input[key] = value.map((url) => {
-                            return { url: url.trim() };
-                        });
-                    } else if (editor === 'pseudoUrls') {
-                        input[key] = value.map((purl) => {
-                            return { purl: purl.trim() };
-                        });
-                    } else if (editor === 'globs') {
-                        input[key] = value.map((glob) => {
-                            return { glob: glob.trim() };
-                        });
-                    } else if (editor === 'proxy' || editor === 'json' || editor === 'keyValue') {
-                        try {
-                            input[key] = JSON.parse(value);
-                        } catch (err) {
-                            throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
-                        }
-                    } else {
-                        input[key] = value;
-                    }
+                    input[key] = processInputField(key, value, inputSchema);
                 }
             });
             requestOpts.body = JSON.stringify(input);

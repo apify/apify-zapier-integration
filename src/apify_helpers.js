@@ -269,6 +269,155 @@ const parseInputFieldKey = (fieldKey) => {
 };
 
 /**
+ * Converts single property from Apify input schema to Zapier input fields.
+ * NOTE: It can return more than one field, in case of sectionCaption or object with schemaBased editor.
+ * @param required - List of required properties
+ * @param propertyKey
+ * @param definition
+ * @returns {*[]}
+ */
+const convertyPropertyToInputFields = (propertyKey, definition, required) => {
+    const fields = [];
+
+    if (definition.editor === 'hidden') return [];
+    // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
+    if (definition.sectionCaption && definition.sectionCaption.length) {
+        const helpText = definition.sectionDescription
+            ? `${definition.sectionCaption} - ${definition.sectionDescription}`
+            : definition.sectionCaption;
+        fields.push({
+            label: definition.sectionCaption,
+            key: prefixInputFieldKey(`sectionCaption-${propertyKey}`),
+            type: 'copy',
+            helpText,
+        });
+    }
+    const field = {
+        label: definition.title,
+        helpText: definition.description,
+        key: prefixInputFieldKey(propertyKey),
+        required: required && required.includes(propertyKey),
+        // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
+        // It is what prefill is in Apify input schema.
+        default: definition.prefill,
+        // NOTE: From Zapier docs: An example value that is not saved.
+        // It is what default is in Apify input schema.
+        placeholder: definition.default,
+    };
+    switch (definition.type) {
+        case 'string': {
+            // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
+            // These options will not cover UI validation and we need to handle it in code.
+            field.type = 'string'; // editor = textfield, datepicker
+            if (['javascript', 'python'].includes(definition.editor)) {
+                field.type = 'code';
+            } else if (definition.editor === 'textarea') {
+                field.type = 'text';
+            } else if (definition.editor === 'datepicker') {
+                field.type = 'datetime';
+            } else if (definition.editor === 'select' || definition.enum) { // NOTE: Editor is not required, enum is enough.
+                field.choices = {};
+                definition.enum.forEach((key, i) => {
+                    field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
+                });
+            }
+            if (definition.isSecret) {
+                field.type = 'password';
+            }
+            break;
+        }
+        case 'integer': {
+            // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
+            field.type = 'integer';
+            break;
+        }
+        case 'boolean':
+            // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
+            field.type = 'boolean';
+            break;
+        case 'array': {
+            const parsedPrefillValue = definition.prefill;
+            const parsedDefaultValue = definition.default;
+            // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
+            // patternValue, maxItems, minItems, uniqueItems, nullable
+            if (definition.editor === 'json' || definition.editor === 'keyValue') {
+                field.type = 'text';
+                if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
+                else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
+            } else if (['requestListSources', 'pseudoUrls', 'globs', 'stringList'].includes(definition.editor)) {
+                // NOTE: These options are not supported in Zapier and Apify UI specific.
+                // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
+                field.type = 'string';
+                field.list = true;
+                // NOTE: List can have just one default value, so pick just first one.
+                if (parsedPrefillValue && Array.isArray(parsedPrefillValue) && parsedPrefillValue[0]) {
+                    const firstItem = parsedPrefillValue[0];
+                    if (typeof firstItem === 'string') field.default = firstItem;
+                    else if (typeof firstItem === 'object') field.default = firstItem.url || firstItem.purl || firstItem.glob;
+                    else field.default = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
+                    field.placeholder = undefined;
+                } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue) && parsedDefaultValue[0]) {
+                    const firstItem = parsedDefaultValue[0];
+                    if (typeof firstItem === 'string') field.placeholder = firstItem;
+                    else if (typeof firstItem === 'object') field.placeholder = firstItem.url || firstItem.purl || firstItem.glob;
+                    else field.placeholder = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
+                    field.default = undefined;
+                } else {
+                    field.default = undefined;
+                    field.placeholder = undefined;
+                }
+            }
+            break;
+        }
+        case 'object': {
+            if (definition.editor === 'json') {
+                field.type = 'text';
+            } else if (definition.editor === 'proxy') {
+                // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
+                fields.push({
+                    label: 'Proxy',
+                    key: prefixInputFieldKey('proxyWarning'),
+                    type: 'copy',
+                    helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
+                        + 'We suggest setting this value in the Apify console',
+                });
+                field.type = 'text';
+            } else if (definition.editor === 'schemaBased') {
+                field.children = [];
+                const requiredSubKeys = definition.required?.map((key) => `${propertyKey}.${key}`);
+                // eslint-disable-next-line no-restricted-syntax
+                for (const [subKey, subDefinition] of Object.entries(definition.properties || {})) {
+                    if (definition.default && definition.default[subKey]) {
+                        subDefinition.default = definition.default[subKey];
+                    }
+
+                    if (definition.prefill && definition.prefill[subKey]) {
+                        subDefinition.prefill = definition.prefill[subKey];
+                    }
+
+                    const newFields = convertyPropertyToInputFields(`${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
+                    field.children.push(...newFields);
+                }
+            }
+            if (definition.prefill) {
+                field.default = JSON.stringify(definition.prefill, null, 2);
+            } else if (field.default) {
+                field.placeholder = JSON.stringify(definition.default, null, 2);
+            }
+            break;
+        }
+        default: {
+            // This should not happen.
+            console.log(`Unknown input schema type: ${definition.type}`, definition);
+            return [];
+        }
+    }
+
+    fields.push(field);
+    return fields;
+};
+
+/**
  * Converts Apify input schema to Zapier input fields.
  * Input schema spec.
  * https://docs.apify.com/platform/actors/development/actor-definition/input-schema Fields schema
@@ -290,126 +439,8 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
     ];
     // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
-        // eslint-disable-next-line no-continue
-        if (definition.editor === 'hidden') continue;
-        // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
-        if (definition.sectionCaption && definition.sectionCaption.length) {
-            const helpText = definition.sectionDescription
-                ? `${definition.sectionCaption} - ${definition.sectionDescription}`
-                : definition.sectionCaption;
-            fields.push({
-                label: definition.sectionCaption,
-                key: prefixInputFieldKey(`sectionCaption-${propertyKey}`),
-                type: 'copy',
-                helpText,
-            });
-        }
-        const field = {
-            label: definition.title,
-            helpText: definition.description,
-            key: prefixInputFieldKey(propertyKey),
-            required: required && required.includes(propertyKey),
-            // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
-            // It is what what prefill is in Apify input schema.
-            default: definition.prefill,
-            // NOTE: From Zapier docs: An example value that is not saved.
-            // It is what what default is in Apify input schema.
-            placeholder: definition.default,
-        };
-        switch (definition.type) {
-            case 'string': {
-                // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
-                // These options will not cover UI validation and we need to handle it in code.
-                field.type = 'string'; // editor = textfield, datepicker
-                if (['javascript', 'python'].includes(definition.editor)) {
-                    field.type = 'code';
-                } else if (definition.editor === 'textarea') {
-                    field.type = 'text';
-                } else if (definition.editor === 'datepicker') {
-                    field.type = 'datetime';
-                } else if (definition.editor === 'select' || definition.enum) { // NOTE: Editor is not required, enum is enough.
-                    field.choices = {};
-                    definition.enum.forEach((key, i) => {
-                        field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
-                    });
-                }
-                if (definition.isSecret) {
-                    field.type = 'password';
-                }
-                break;
-            }
-            case 'integer': {
-                // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
-                field.type = 'integer';
-                break;
-            }
-            case 'boolean':
-                // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
-                field.type = 'boolean';
-                break;
-            case 'array': {
-                const parsedPrefillValue = definition.prefill;
-                const parsedDefaultValue = definition.default;
-                // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
-                // patternValue, maxItems, minItems, uniqueItems, nullable
-                if (definition.editor === 'json' || definition.editor === 'keyValue') {
-                    field.type = 'text';
-                    if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
-                    else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
-                } else if (['requestListSources', 'pseudoUrls', 'globs', 'stringList'].includes(definition.editor)) {
-                    // NOTE: These options are not supported in Zapier and Apify UI specific.
-                    // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
-                    field.type = 'string';
-                    field.list = true;
-                    // NOTE: List can have just one default value, so pick just first one.
-                    if (parsedPrefillValue && Array.isArray(parsedPrefillValue) && parsedPrefillValue[0]) {
-                        const firstItem = parsedPrefillValue[0];
-                        if (typeof firstItem === 'string') field.default = firstItem;
-                        else if (typeof firstItem === 'object') field.default = firstItem.url || firstItem.purl || firstItem.glob;
-                        else field.default = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
-                        field.placeholder = undefined;
-                    } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue) && parsedDefaultValue[0]) {
-                        const firstItem = parsedDefaultValue[0];
-                        if (typeof firstItem === 'string') field.placeholder = firstItem;
-                        else if (typeof firstItem === 'object') field.placeholder = firstItem.url || firstItem.purl || firstItem.glob;
-                        else field.placeholder = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
-                        field.default = undefined;
-                    } else {
-                        field.default = undefined;
-                        field.placeholder = undefined;
-                    }
-                }
-                break;
-            }
-            case 'object': {
-                if (definition.editor === 'json') {
-                    field.type = 'text';
-                } else if (definition.editor === 'proxy') {
-                    // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
-                    fields.push({
-                        label: 'Proxy',
-                        key: prefixInputFieldKey('proxyWarning'),
-                        type: 'copy',
-                        helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
-                            + 'We suggest setting this value in the Apify console',
-                    });
-                    field.type = 'text';
-                }
-                if (definition.prefill) {
-                    field.default = JSON.stringify(definition.prefill, null, 2);
-                } else if (field.default) {
-                    field.placeholder = JSON.stringify(definition.default, null, 2);
-                }
-                break;
-            }
-            default: {
-                // This should not happen.
-                console.log(`Unknown input schema type: ${definition.type}`, definition);
-                // eslint-disable-next-line no-continue
-                continue;
-            }
-        }
-        fields.push(field);
+        const newFields = convertyPropertyToInputFields(propertyKey, definition, required);
+        fields.push(...newFields);
     }
     return fields;
 };
