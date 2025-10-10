@@ -269,6 +269,21 @@ const parseInputFieldKey = (fieldKey) => {
 };
 
 /**
+ * Slugify text to be used in input field key.
+ * @param text
+ * @returns {string}
+ */
+const slugifyText = (text) => {
+    return text
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[^a-z0-9 -]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+};
+
+/**
  * Converts single property from Apify input schema to Zapier input fields.
  * NOTE: It can return more than one field, in case of sectionCaption or object with schemaBased editor.
  * @param required - List of required properties
@@ -340,7 +355,7 @@ const convertyPropertyToInputFields = (propertyKey, definition, required) => {
             const parsedDefaultValue = definition.default;
             // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
             // patternValue, maxItems, minItems, uniqueItems, nullable
-            if (definition.editor === 'json' || definition.editor === 'keyValue') {
+            if (definition.editor === 'json' || definition.editor === 'keyValue' || definition.editor === 'schemaBased') {
                 field.type = 'text';
                 if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
                 else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
@@ -383,7 +398,9 @@ const convertyPropertyToInputFields = (propertyKey, definition, required) => {
                 });
                 field.type = 'text';
             } else if (definition.editor === 'schemaBased') {
+                field.key = `input-${slugifyText(definition.title)}`;
                 field.children = [];
+                delete field.type;
                 const requiredSubKeys = definition.required?.map((key) => `${propertyKey}.${key}`);
                 // eslint-disable-next-line no-restricted-syntax
                 for (const [subKey, subDefinition] of Object.entries(definition.properties || {})) {
@@ -612,4 +629,5 @@ module.exports = {
     parseInputFieldKey,
     prefixInputFieldKey,
     getActorStatusesFromBundle,
+    slugifyText,
 };

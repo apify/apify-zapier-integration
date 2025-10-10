@@ -10,14 +10,14 @@ const {
     enrichActorRun,
     getActorAdditionalFields,
     maybeGetInputSchemaFromActor,
-    prefixInputFieldKey,
+    prefixInputFieldKey, slugifyText,
 } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
     const inputSchemaProp = inputSchema.properties[key];
-    const { editor, title } = inputSchemaProp;
+    const { editor, title, type } = inputSchemaProp;
 
     switch (editor) {
         case 'datepicker':
@@ -37,6 +37,10 @@ const processInputField = (key, value, inputSchema) => {
                 throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
             }
         case 'schemaBased':
+            if (type === 'array') {
+                return JSON.parse(value);
+            }
+
             // eslint-disable-next-line no-case-declarations
             const result = {};
             // eslint-disable-next-line no-restricted-syntax
@@ -87,7 +91,9 @@ const runActor = async (z, bundle) => {
             const inputSchemaKeys = Object.keys(inputSchema.properties);
             inputSchemaKeys.forEach((key) => {
                 const fieldKey = prefixInputFieldKey(key);
-                const value = bundle.inputData[fieldKey];
+                const fieldTitle = prefixInputFieldKey(slugifyText(inputSchema.properties[key].title));
+
+                const value = bundle.inputData[fieldKey] ?? bundle.inputData[fieldTitle];
                 if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
                     input[key] = processInputField(key, value, inputSchema);
                 }
