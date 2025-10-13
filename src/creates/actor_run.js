@@ -10,7 +10,8 @@ const {
     enrichActorRun,
     getActorAdditionalFields,
     maybeGetInputSchemaFromActor,
-    prefixInputFieldKey, slugifyText,
+    prefixInputFieldKey,
+    slugifyText,
 } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
@@ -93,6 +94,8 @@ const runActor = async (z, bundle) => {
                 const fieldKey = prefixInputFieldKey(key);
                 const fieldTitle = prefixInputFieldKey(slugifyText(inputSchema.properties[key].title));
 
+                // NOTE: Due to this bug: https://github.com/zapier/zapier-platform/issues/1178 we're using title property
+                // from the input schema as a key for some of the input fields.
                 const value = bundle.inputData[fieldKey] ?? bundle.inputData[fieldTitle];
                 if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
                     input[key] = processInputField(key, value, inputSchema);

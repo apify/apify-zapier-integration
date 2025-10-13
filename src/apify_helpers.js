@@ -398,6 +398,8 @@ const convertyPropertyToInputFields = (propertyKey, definition, required) => {
                 });
                 field.type = 'text';
             } else if (definition.editor === 'schemaBased') {
+                // NOTE: This is a hack to have nested input fields at least somewhat reasonable label due to this bug:
+                // https://github.com/zapier/zapier-platform/issues/1178
                 field.key = `input-${slugifyText(definition.title)}`;
                 field.children = [];
                 delete field.type;
