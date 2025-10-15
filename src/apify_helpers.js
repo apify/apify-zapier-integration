@@ -355,7 +355,7 @@ const convertyPropertyToInputFields = (propertyKey, definition, required) => {
             const parsedDefaultValue = definition.default;
             // NOTE: Cannot provide alternative in fields schema for options placeholderKey, placeholderValue, patternKey,
             // patternValue, maxItems, minItems, uniqueItems, nullable
-            if (definition.editor === 'json' || definition.editor === 'keyValue' || definition.editor === 'schemaBased') {
+            if (definition.editor === 'json' || definition.editor === 'keyValue') {
                 field.type = 'text';
                 if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
                 else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
@@ -380,6 +380,17 @@ const convertyPropertyToInputFields = (propertyKey, definition, required) => {
                 } else {
                     field.default = undefined;
                     field.placeholder = undefined;
+                }
+            } else if (definition.editor === 'schemaBased') {
+                const itemsType = definition.items.type;
+
+                if (itemsType === 'object') {
+                    field.type = 'text';
+                    if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
+                    else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
+                } else {
+                    field.type = itemsType;
+                    field.list = true;
                 }
             }
             break;

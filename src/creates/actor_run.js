@@ -18,6 +18,8 @@ const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
     const inputSchemaProp = inputSchema.properties[key];
+    if (!inputSchemaProp) return value; // This should never happen
+
     const { editor, title, type } = inputSchemaProp;
 
     switch (editor) {
@@ -39,6 +41,11 @@ const processInputField = (key, value, inputSchema) => {
             }
         case 'schemaBased':
             if (type === 'array') {
+                const itemsType = inputSchemaProp.items.type;
+                if (['string', 'number', 'boolean', 'integer'].includes(itemsType)) {
+                    return value;
+                }
+
                 return JSON.parse(value);
             }
 
@@ -46,7 +53,7 @@ const processInputField = (key, value, inputSchema) => {
             const result = {};
             // eslint-disable-next-line no-restricted-syntax
             for (const [propKey, propValue] of Object.entries(value[0])) {
-                const realPropKey = propKey.split('.')[1]; // propKey is like "input-my-object.key1
+                const realPropKey = propKey.substring(propKey.indexOf('.') + 1); // propKey is like "input-my-object.key1 but can have more dots
                 result[realPropKey] = processInputField(realPropKey, propValue, inputSchemaProp);
             }
             return result;
