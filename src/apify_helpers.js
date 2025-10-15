@@ -378,6 +378,14 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
                         field.default = undefined;
                         field.placeholder = undefined;
                     }
+                } else if (definition.editor === 'select') {
+                    field.type = 'string';
+                    field.list = true;
+                    field.choices = {};
+
+                    definition.items.enum.forEach((key, i) => {
+                        field.choices[key] = definition.items.enumTitles ? definition.items.enumTitles[i] : key;
+                    });
                 }
                 break;
             }
