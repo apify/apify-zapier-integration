@@ -1,3 +1,6 @@
+## 4.4.4 / 2025-10-17
+- Multi-select dropdown fix
+
 ## 4.4.3 / 2025-09-22
 - Vulnerability fix
 - Status dropdown default value fix
