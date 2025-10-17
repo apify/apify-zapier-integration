@@ -65,8 +65,8 @@ module.exports = {
             {
                 label: 'Dataset',
                 helpText: 'Please enter the name or ID of the dataset. '
-                    + 'You can find dataset ID under each a task or an actor run detail. '
-                    + 'The usual way is to use default dataset ID from the task or the actor run trigger.',
+                    + 'You can find dataset ID under each a task or an Actor run detail. '
+                    + 'The usual way is to use default dataset ID from the task or the Actor run trigger.',
                 key: 'datasetIdOrName',
                 required: true,
             },

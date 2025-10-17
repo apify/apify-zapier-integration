@@ -102,7 +102,7 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs a selected actor.',
+        description: 'Runs a selected Actor.',
     },
 
     operation: {
@@ -119,7 +119,7 @@ module.exports = {
             },
             {
                 label: 'Actor',
-                helpText: 'Please select the actor to run.',
+                helpText: 'Please select the Actor to run.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actorsWithStore.id.name',
@@ -127,7 +127,7 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the actor run is finished. '
+                helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
                     + 'Beware that the hard timeout for the run is 30 seconds.',
                 key: 'runSync',
                 required: true,

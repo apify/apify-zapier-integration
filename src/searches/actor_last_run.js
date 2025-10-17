@@ -30,17 +30,17 @@ const getLastActorRun = async (z, bundle) => {
 
 module.exports = {
     key: 'searchActorRun',
-    noun: 'Last actor run',
+    noun: 'Last Actor run',
     display: {
         label: 'Find Last Actor Run',
-        description: 'Finds the most recent actor run with a specific status.',
+        description: 'Finds the most recent Actor run with a specific status.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select the actor, whose last run you want to get.',
+                helpText: 'Please select the Actor, whose last run you want to get.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
