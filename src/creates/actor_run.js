@@ -11,9 +11,56 @@ const {
     getActorAdditionalFields,
     maybeGetInputSchemaFromActor,
     prefixInputFieldKey,
+    slugifyText,
 } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
+
+const processInputField = (key, value, inputSchema) => {
+    const inputSchemaProp = inputSchema.properties[key];
+    if (!inputSchemaProp) return value; // This should never happen
+
+    const { editor, title, type } = inputSchemaProp;
+
+    switch (editor) {
+        case 'datepicker':
+            return dayjs(value).format('YYYY-MM-DD');
+        case 'requestListSources':
+            return value.map((url) => ({ url: url.trim() }));
+        case 'pseudoUrls':
+            return value.map((purl) => ({ purl: purl.trim() }));
+        case 'globs':
+            return value.map((glob) => ({ glob: glob.trim() }));
+        case 'proxy':
+        case 'json':
+        case 'keyValue':
+            try {
+                return JSON.parse(value);
+            } catch (err) {
+                throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
+            }
+        case 'schemaBased':
+            if (type === 'array') {
+                const itemsType = inputSchemaProp.items.type;
+                if (['string', 'number', 'boolean', 'integer'].includes(itemsType)) {
+                    return value;
+                }
+
+                return JSON.parse(value);
+            }
+
+            // eslint-disable-next-line no-case-declarations
+            const result = {};
+            // eslint-disable-next-line no-restricted-syntax
+            for (const [propKey, propValue] of Object.entries(value[0])) {
+                const realPropKey = propKey.substring(propKey.indexOf('.') + 1); // propKey is like "input-my-object.key1 but can have more dots
+                result[realPropKey] = processInputField(realPropKey, propValue, inputSchemaProp);
+            }
+            return result;
+        default:
+            return value;
+    }
+};
 
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
@@ -52,33 +99,13 @@ const runActor = async (z, bundle) => {
             const inputSchemaKeys = Object.keys(inputSchema.properties);
             inputSchemaKeys.forEach((key) => {
                 const fieldKey = prefixInputFieldKey(key);
-                const value = bundle.inputData[fieldKey];
+                const fieldTitle = prefixInputFieldKey(slugifyText(inputSchema.properties[key].title));
+
+                // NOTE: Due to this bug: https://github.com/zapier/zapier-platform/issues/1178 we're using title property
+                // from the input schema as a key for some of the input fields.
+                const value = bundle.inputData[fieldKey] ?? bundle.inputData[fieldTitle];
                 if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
-                    const { editor, title } = inputSchema.properties[key];
-                    if (editor === 'datepicker') {
-                        const date = dayjs(value);
-                        input[key] = date.format('YYYY-MM-DD');
-                    } else if (editor === 'requestListSources') {
-                        input[key] = value.map((url) => {
-                            return { url: url.trim() };
-                        });
-                    } else if (editor === 'pseudoUrls') {
-                        input[key] = value.map((purl) => {
-                            return { purl: purl.trim() };
-                        });
-                    } else if (editor === 'globs') {
-                        input[key] = value.map((glob) => {
-                            return { glob: glob.trim() };
-                        });
-                    } else if (editor === 'proxy' || editor === 'json' || editor === 'keyValue') {
-                        try {
-                            input[key] = JSON.parse(value);
-                        } catch (err) {
-                            throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
-                        }
-                    } else {
-                        input[key] = value;
-                    }
+                    input[key] = processInputField(key, value, inputSchema);
                 }
             });
             requestOpts.body = JSON.stringify(input);

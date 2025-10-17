@@ -355,6 +355,85 @@ const getMockKVStore = (overrides) => ({
     ...overrides,
 });
 
+const getMockInputSchema = () => ({
+    title: 'Test input schema',
+    type: 'object',
+    schemaVersion: 1,
+    properties: {
+        subschemaObject: {
+            title: 'Object with sub-schema',
+            description: 'Object with sub-schema description',
+            type: 'object',
+            editor: 'schemaBased',
+            properties: {
+                key1: {
+                    title: 'Key 1',
+                    type: 'string',
+                    description: 'This is key 1',
+                    editor: 'textField',
+                },
+                key2: {
+                    title: 'Key 2',
+                    type: 'string',
+                    description: 'This is key 2',
+                    editor: 'textField',
+                },
+            },
+            prefill: { key1: 'test1', key2: 'test2' },
+        },
+        stringArray: {
+            title: 'String array',
+            description: 'String array description',
+            type: 'array',
+            editor: 'schemaBased',
+            items: {
+                type: 'string',
+            },
+        },
+        numberArray: {
+            title: 'Number array',
+            description: 'Number array description',
+            type: 'array',
+            editor: 'schemaBased',
+            items: {
+                type: 'integer',
+            },
+        },
+        boolArray: {
+            title: 'Boolean array',
+            description: 'Boolean array description',
+            type: 'array',
+            editor: 'schemaBased',
+            items: {
+                type: 'boolean',
+            },
+        },
+        objectArray: {
+            title: 'Object array',
+            description: 'Object array description',
+            type: 'array',
+            editor: 'schemaBased',
+            items: {
+                type: 'object',
+                properties: {
+                    keyA: {
+                        title: 'Key A',
+                        description: 'This is key A',
+                        type: 'string',
+                        editor: 'textField',
+                    },
+                    keyB: {
+                        title: 'Key B',
+                        description: 'This is key B',
+                        type: 'integer',
+                        editor: 'number',
+                    },
+                },
+            },
+        },
+    },
+});
+
 module.exports = {
     TEST_USER_TOKEN,
     randomString,
@@ -370,4 +449,5 @@ module.exports = {
     getMockDataset,
     getMockKVStore,
     mockDatasetPublicUrl,
+    getMockInputSchema,
 };

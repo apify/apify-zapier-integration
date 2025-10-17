@@ -10,10 +10,14 @@ const nock = require('nock');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const { ActorListSortBy } = require('apify-client');
-const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun, mockDatasetPublicUrl } = require('../helpers');
-const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC} = require('../../src/consts');
+const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun, mockDatasetPublicUrl,
+    getMockActorBuild,
+    getMockInputSchema,
+} = require('../helpers');
+const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC } = require('../../src/consts');
 
 const App = require('../../index');
+const { slugifyText } = require('../../src/apify_helpers');
 
 const appTester = zapier.createAppTester(App);
 
@@ -36,9 +40,7 @@ describe('create actor run', () => {
     });
 
     afterEach(async () => {
-        if (!TEST_USER_TOKEN) {
-            nock.cleanAll();
-        }
+        nock.cleanAll();
     });
 
     it('load correctly recently used Actors without input in bundle', async () => {
@@ -218,7 +220,7 @@ describe('create actor run', () => {
             const getRealData = async () => {
                 EventEmitter.setMaxListeners(100);
 
-                const {items} = await apifyClient.store().list({
+                const { items } = await apifyClient.store().list({
                     limit: DEFAULT_PAGINATION_LIMIT,
                     sortBy: 'popularity',
                 });
@@ -254,7 +256,7 @@ describe('create actor run', () => {
                         sortBy: 'popularity',
                     })
                     .reply(200, {
-                        data: {items: testData},
+                        data: { items: testData },
                     });
             }
 
@@ -275,7 +277,7 @@ describe('create actor run', () => {
             const getRealData = async () => {
                 EventEmitter.setMaxListeners(100);
 
-                const {items} = await apifyClient.store().list({
+                const { items } = await apifyClient.store().list({
                     limit: DEFAULT_PAGINATION_LIMIT,
                     offset: DEFAULT_PAGINATION_LIMIT,
                     sortBy: 'popularity',
@@ -314,7 +316,7 @@ describe('create actor run', () => {
                         sortBy: 'popularity',
                     })
                     .reply(200, {
-                        data: {items: testData},
+                        data: { items: testData },
                     });
             }
 
@@ -379,8 +381,87 @@ describe('create actor run', () => {
         scope?.done();
     }).timeout(120_000);
 
+    it('loading of dynamic fields from inputSchema work - mock', async () => {
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                actorId: testActorId,
+            },
+        };
+
+        const mockActor = getMockActorDetails({ id: testActorId });
+        const mockInputSchema = getMockInputSchema();
+        const mockBuild = getMockActorBuild({
+            id: mockActor.taggedBuilds.latest.buildId,
+            actId: testActorId,
+            inputSchema: JSON.stringify(mockInputSchema),
+        });
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/acts/${testActorId}`)
+            .reply(200, mockActor);
+        scope.get(`/v2/acts/${testActorId}/builds/${mockBuild.id}`)
+            .reply(200, mockBuild);
+
+        const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, bundle);
+
+        const fieldKeys = fields.map(({ key }) => key);
+        Object.entries(mockInputSchema.properties).forEach(([propKey, prop]) => {
+            // Make sure all top level properties are present in the fields
+            expect(fieldKeys.includes(`input-${propKey}`) || fieldKeys.includes(`input-${slugifyText(prop.title)}`)).to.be.equal(true);
+        });
+
+        const subschemaField = fields.find(({ key }) => key === 'input-object-with-sub-schema');
+        const subschemaProperty = mockInputSchema.properties.subschemaObject;
+        expect(subschemaField.label).to.be.equal(subschemaProperty.title);
+        expect(subschemaField.helpText).to.be.equal(subschemaProperty.description);
+        const firstKeyField = subschemaField.children.find(({ key }) => key === 'input-subschemaObject.key1');
+        const firstKeyProperty = subschemaProperty.properties.key1;
+        expect(firstKeyField.label).to.be.equal(firstKeyProperty.title);
+        expect(firstKeyField.helpText).to.be.equal(firstKeyProperty.description);
+        expect(firstKeyField.type).to.be.equal('string');
+        expect(firstKeyField.default).to.be.equal(subschemaProperty.prefill.key1);
+        const secondKeyField = subschemaField.children.find(({ key }) => key === 'input-subschemaObject.key2');
+        const secondKeyProperty = subschemaProperty.properties.key2;
+        expect(secondKeyField.label).to.be.equal(secondKeyProperty.title);
+        expect(secondKeyField.helpText).to.be.equal(secondKeyProperty.description);
+        expect(secondKeyField.type).to.be.equal('string');
+        expect(secondKeyField.default).to.be.equal(subschemaProperty.prefill.key2);
+
+        const stringArrayField = fields.find(({ key }) => key === 'input-stringArray');
+        const stringArrayProperty = mockInputSchema.properties.stringArray;
+        expect(stringArrayField.label).to.be.equal(stringArrayProperty.title);
+        expect(stringArrayField.helpText).to.be.equal(stringArrayProperty.description);
+        expect(stringArrayField.type).to.be.equal('string');
+        expect(stringArrayField.list).to.be.equal(true);
+
+        const numberArrayField = fields.find(({ key }) => key === 'input-numberArray');
+        const numberArrayProperty = mockInputSchema.properties.numberArray;
+        expect(numberArrayField.label).to.be.equal(numberArrayProperty.title);
+        expect(numberArrayField.helpText).to.be.equal(numberArrayProperty.description);
+        expect(numberArrayField.type).to.be.equal('integer');
+        expect(numberArrayField.list).to.be.equal(true);
+
+        const boolArrayField = fields.find(({ key }) => key === 'input-boolArray');
+        const boolArrayProperty = mockInputSchema.properties.boolArray;
+        expect(boolArrayField.label).to.be.equal(boolArrayProperty.title);
+        expect(boolArrayField.helpText).to.be.equal(boolArrayProperty.description);
+        expect(boolArrayField.type).to.be.equal('boolean');
+        expect(boolArrayField.list).to.be.equal(true);
+
+        const objectArrayField = fields.find(({ key }) => key === 'input-objectArray');
+        const objectArrayProperty = mockInputSchema.properties.objectArray;
+        expect(objectArrayField.label).to.be.equal(objectArrayProperty.title);
+        expect(objectArrayField.helpText).to.be.equal(objectArrayProperty.description);
+        expect(objectArrayField.type).to.be.equal('text');
+
+        scope.done();
+    });
+
     if (TEST_USER_TOKEN) {
-        it('loading of dynamic fields from inputSchema work', async () => {
+        it('loading of dynamic fields from inputSchema work - real', async () => {
             // Actor with input schema
             const actorId = 'apify~web-scraper';
             const bundle = {
@@ -484,6 +565,75 @@ describe('create actor run', () => {
 
         scope?.done();
     }).timeout(120000);
+
+    it('runAsync work - mock', async () => {
+        const mockActor = getMockActorDetails({ id: testActorId });
+        const mockInputSchema = getMockInputSchema();
+        const mockBuild = getMockActorBuild({
+            id: mockActor.taggedBuilds.latest.buildId,
+            actId: testActorId,
+            inputSchema: JSON.stringify(mockInputSchema),
+        });
+        const mockRun = getMockRun({ actId: testActorId });
+
+        const runOptions = {
+            build: 'latest',
+            timeoutSecs: 120,
+            memoryMbytes: 256,
+        };
+
+        const actorInput = {
+            'input-object-with-sub-schema': [{
+                'input-object-with-sub-schema.key1': 'test-key-1',
+                'input-object-with-sub-schema.key2': 'test-key-2',
+            }],
+            'input-stringArray': ['str1', 'str2'],
+            'input-numberArray': [1, 2, 3],
+            'input-boolArray': [true, false],
+            'input-objectArray': JSON.stringify([
+                { keyA: 'valueA', keyB: 'valueB' },
+            ]),
+        };
+
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: false,
+                ...runOptions,
+                ...actorInput,
+            },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/acts/${testActorId}`)
+            .reply(200, mockActor);
+        scope.get(`/v2/acts/${testActorId}/builds/${mockBuild.id}`)
+            .reply(200, mockBuild);
+        scope.post(`/v2/acts/${testActorId}/runs`, (body) => {
+            expect(body.subschemaObject).to.deep.equal({ key1: 'test-key-1', key2: 'test-key-2' });
+            expect(body.stringArray).to.deep.equal(['str1', 'str2']);
+            expect(body.numberArray).to.deep.equal([1, 2, 3]);
+            expect(body.boolArray).to.deep.equal([true, false]);
+            expect(body.objectArray).to.deep.equal([{ keyA: 'valueA', keyB: 'valueB' }]);
+            return true;
+        })
+            .query({ build: runOptions.build, timeout: runOptions.timeoutSecs, memory: runOptions.memoryMbytes })
+            .reply(201, { data: mockRun });
+        scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(200, { foo: 'bar' });
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
+
+        await appTester(App.creates.createActorRun.operation.perform, bundle);
+
+        scope.done();
+    });
 
     it('runSync work', async () => {
         const runOptions = {
