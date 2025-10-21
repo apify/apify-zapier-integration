@@ -1,3 +1,6 @@
+## 4.5.0 / 2025-10-21
+- Add support for new schemaBased editor in input schema
+
 ## 4.4.4 / 2025-10-17
 - Multi-select dropdown fix
 
