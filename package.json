@@ -18,9 +18,9 @@
   "dependencies": {
     "@apify/consts": "^2.40.0",
     "@apify/utilities": "^2.15.4",
+    "apify-client": "2.15.0",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "apify-client": "2.15.0",
     "zapier-platform-core": "17.5.0"
   },
   "devDependencies": {
@@ -30,7 +30,7 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-promise": "^7.2.1",
-    "mocha": "^11.1.0",
+    "mocha": "^11.0.0",
     "nock": "^14.0.4",
     "zapier-platform-schema": "16.5.0"
   }
