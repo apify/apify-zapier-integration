@@ -1,3 +1,6 @@
+## 4.5.1 / 2025-11-19
+- Vulnerability fixed
+
 ## 4.5.0 / 2025-10-21
 - Add support for new schemaBased editor in input schema
 
