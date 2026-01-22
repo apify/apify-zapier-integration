@@ -291,35 +291,36 @@ const slugifyText = (text) => {
  * @param definition
  * @returns {*[]}
  */
-const convertPropertyToInputFields = (propertyKey, definition, required) => {
-    const fields = [];
+const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
+    try {
+        const fields = [];
 
-    if (definition.editor === 'hidden') return [];
-    // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
-    if (definition.sectionCaption && definition.sectionCaption.length) {
-        const helpText = definition.sectionDescription
-            ? `${definition.sectionCaption} - ${definition.sectionDescription}`
-            : definition.sectionCaption;
-        fields.push({
-            label: definition.sectionCaption,
-            key: prefixInputFieldKey(`sectionCaption-${propertyKey}`),
-            type: 'copy',
-            helpText,
-        });
-    }
-    const field = {
-        label: definition.title,
-        helpText: definition.description,
-        key: prefixInputFieldKey(propertyKey),
-        required: required && required.includes(propertyKey),
-        // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
-        // It is what prefill is in Apify input schema.
-        default: definition.prefill,
-        // NOTE: From Zapier docs: An example value that is not saved.
-        // It is what default is in Apify input schema.
-        placeholder: definition.default,
-    };
-    switch (definition.type) {
+        if (definition.editor === 'hidden') return [];
+        // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
+        if (definition.sectionCaption && definition.sectionCaption.length) {
+            const helpText = definition.sectionDescription
+                ? `${definition.sectionCaption} - ${definition.sectionDescription}`
+                : definition.sectionCaption;
+            fields.push({
+                label: definition.sectionCaption,
+                key: prefixInputFieldKey(`sectionCaption-${propertyKey}`),
+                type: 'copy',
+                helpText,
+            });
+        }
+        const field = {
+            label: definition.title,
+            helpText: definition.description,
+            key: prefixInputFieldKey(propertyKey),
+            required: required && required.includes(propertyKey),
+            // NOTE: From Zapier docs: A default value that is saved the first time a Zap is created.
+            // It is what prefill is in Apify input schema.
+            default: definition.prefill,
+            // NOTE: From Zapier docs: An example value that is not saved.
+            // It is what default is in Apify input schema.
+            placeholder: definition.default,
+        };
+        switch (definition.type) {
         case 'string': {
             // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
             // These options will not cover UI validation and we need to handle it in code.
@@ -434,7 +435,7 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
                         subDefinition.prefill = definition.prefill[subKey];
                     }
 
-                    const newFields = convertPropertyToInputFields(`${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
+                    const newFields = convertPropertyToInputFields(z, `${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
                     field.children.push(...newFields);
                 }
             }
@@ -452,8 +453,13 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
         }
     }
 
-    fields.push(field);
-    return fields;
+        fields.push(field);
+        return fields;
+    } catch (err) {
+        z.console.log(`Failed to convert field "${propertyKey}" to input field. Error: ${err.message}`);
+        z.console.log(`Field definition: ${JSON.stringify(definition)}`);
+        return [];
+    }
 };
 
 /**
@@ -464,7 +470,7 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
  * @param inputSchema
  * @param actor
  */
-const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
+const createFieldsFromInputSchemaV1 = (z, inputSchema, actor) => {
     const { properties, required, description } = inputSchema;
     const fields = [
         // The first field is info box with input schema description or actor title, same as on Apify platform.
@@ -478,7 +484,7 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
     ];
     // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
-        const newFields = convertPropertyToInputFields(propertyKey, definition, required);
+        const newFields = convertPropertyToInputFields(z, propertyKey, definition, required);
         fields.push(...newFields);
     }
     return fields;
@@ -570,7 +576,7 @@ const getActorAdditionalFields = async (z, bundle) => {
     ];
 
     if (inputSchema && (inputSchema.schemaVersion === 1 || !inputSchema.schemaVersion)) {
-        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(inputSchema, actor);
+        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(z, inputSchema, actor);
         return [
             ...fieldsFromInputSchema,
             {

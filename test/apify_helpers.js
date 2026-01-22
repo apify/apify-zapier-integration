@@ -40,9 +40,10 @@ describe('apify utils', () => {
 
     describe('createFieldsFromInputSchemaV1() works', () => {
         const validator = makeValidator(FieldSchema);
+        const mockZ = { console: { log: () => {} } };
 
         it('for Web Scraper', () => {
-            const fields = createFieldsFromInputSchemaV1(webScraperInputSchemaJson, { title: 'Web Scraper' });
+            const fields = createFieldsFromInputSchemaV1(mockZ, webScraperInputSchemaJson, { title: 'Web Scraper' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
@@ -50,7 +51,7 @@ describe('apify utils', () => {
         });
 
         it('for Website Content Scraper', () => {
-            const fields = createFieldsFromInputSchemaV1(websiteContentCrawlerInputSchema, { title: 'Website Content Scraper' });
+            const fields = createFieldsFromInputSchemaV1(mockZ, websiteContentCrawlerInputSchema, { title: 'Website Content Scraper' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
@@ -58,7 +59,7 @@ describe('apify utils', () => {
         });
 
         it('for Input Schema generated using GPT', () => {
-            const fields = createFieldsFromInputSchemaV1(generatedInputSchema, { title: 'Generated Input Schema' });
+            const fields = createFieldsFromInputSchemaV1(mockZ, generatedInputSchema, { title: 'Generated Input Schema' });
             fields.forEach((field) => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
