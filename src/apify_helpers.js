@@ -331,11 +331,15 @@ const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
                 field.type = 'text';
             } else if (definition.editor === 'datepicker') {
                 field.type = 'datetime';
-            } else if (definition.editor === 'select' || definition.enum) { // NOTE: Editor is not required, enum is enough.
-                field.choices = {};
-                definition.enum.forEach((key, i) => {
-                    field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
-                });
+            } else if (definition.editor === 'select' || definition.enum || definition.enumSuggestedValues) {
+                // NOTE: Editor is not required, enum is enough. Also support enumSuggestedValues as fallback.
+                const enumValues = definition.enum || definition.enumSuggestedValues;
+                if (enumValues) {
+                    field.choices = {};
+                    enumValues.forEach((key, i) => {
+                        field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
+                    });
+                }
             }
             if (definition.isSecret) {
                 field.type = 'password';
