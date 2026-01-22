@@ -17,7 +17,7 @@ const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, 
 const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC } = require('../../src/consts');
 
 const App = require('../../index');
-const { slugifyText } = require('../../src/apify_helpers');
+const { slugifyText, createFieldsFromInputSchemaV1 } = require('../../src/apify_helpers');
 
 const appTester = zapier.createAppTester(App);
 
@@ -804,4 +804,261 @@ describe('create actor run', () => {
 
         scope?.done();
     }).timeout(50000);
+});
+
+/**
+ * Test input schema conversion for various input schema patterns.
+ * These tests verify that the conversion function handles different input schema patterns
+ * without throwing errors, including edge cases like enumSuggestedValues, schemaBased editors,
+ * and nested properties.
+ */
+describe('input schema conversion', () => {
+    const mockActor = { id: 'test-actor', title: 'Test Actor', name: 'test-actor', username: 'test' };
+
+    it('should handle enumSuggestedValues in select editor (Website Content Crawler pattern)', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                saveContentTypes: {
+                    title: 'Save linked files with Content-Type',
+                    description: 'The crawler downloads files linked from the web pages',
+                    type: 'string',
+                    editor: 'select',
+                    enumSuggestedValues: ['image/*', 'application/*, text/csv'],
+                    enumTitles: ['Images: image/*', 'Documents: application/*, text/csv'],
+                },
+            },
+        };
+
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+        expect(fields).to.be.an('array');
+        expect(fields.length).to.be.greaterThan(0);
+
+        const saveContentTypesField = fields.find((f) => f.key === 'input-saveContentTypes');
+        expect(saveContentTypesField).to.not.be.undefined;
+        expect(saveContentTypesField.choices).to.deep.equal({
+            'image/*': 'Images: image/*',
+            'application/*, text/csv': 'Documents: application/*, text/csv',
+        });
+    });
+
+    it('should handle schemaBased editor with nested properties (Google Maps Scraper pattern)', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                scrapeSocialMediaProfiles: {
+                    title: 'Social media profile enrichment',
+                    type: 'object',
+                    description: 'Enable enrichment for social media profiles',
+                    editor: 'schemaBased',
+                    default: {
+                        facebooks: false,
+                        instagrams: false,
+                    },
+                    prefill: {
+                        facebooks: false,
+                        instagrams: false,
+                    },
+                    properties: {
+                        facebooks: {
+                            title: 'Enable Facebook profile scraping',
+                            type: 'boolean',
+                            description: 'Enable scraping detailed Facebook profile information',
+                        },
+                        instagrams: {
+                            title: 'Enable Instagram profile scraping',
+                            type: 'boolean',
+                            description: 'Enable scraping detailed Instagram profile information',
+                        },
+                    },
+                },
+            },
+        };
+
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+        expect(fields).to.be.an('array');
+        expect(fields.length).to.be.greaterThan(0);
+
+        const schemaBasedField = fields.find((f) => f.key === 'input-social-media-profile-enrichment');
+        expect(schemaBasedField).to.not.be.undefined;
+        expect(schemaBasedField.children).to.be.an('array');
+        expect(schemaBasedField.children.length).to.equal(2);
+    });
+
+    it('should handle enum with enumTitles (standard select)', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                language: {
+                    title: 'Language',
+                    description: 'Results details will show in this language',
+                    enum: ['en', 'de', 'fr'],
+                    enumTitles: ['English', 'German', 'French'],
+                    type: 'string',
+                    editor: 'select',
+                    default: 'en',
+                },
+            },
+        };
+
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+        expect(fields).to.be.an('array');
+
+        const languageField = fields.find((f) => f.key === 'input-language');
+        expect(languageField).to.not.be.undefined;
+        expect(languageField.choices).to.deep.equal({
+            en: 'English',
+            de: 'German',
+            fr: 'French',
+        });
+    });
+
+    it('should handle array with select editor and items.enum', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                categories: {
+                    title: 'Categories',
+                    type: 'array',
+                    description: 'Select categories to filter',
+                    editor: 'select',
+                    items: {
+                        type: 'string',
+                        enum: ['restaurant', 'hotel', 'cafe'],
+                        enumTitles: ['Restaurant', 'Hotel', 'Cafe'],
+                    },
+                },
+            },
+        };
+
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+        expect(fields).to.be.an('array');
+
+        const categoriesField = fields.find((f) => f.key === 'input-categories');
+        expect(categoriesField).to.not.be.undefined;
+        expect(categoriesField.list).to.be.true;
+        expect(categoriesField.choices).to.deep.equal({
+            restaurant: 'Restaurant',
+            hotel: 'Hotel',
+            cafe: 'Cafe',
+        });
+    });
+
+    it('should gracefully handle malformed input schema fields', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                validField: {
+                    title: 'Valid Field',
+                    type: 'string',
+                    description: 'A valid field',
+                },
+                // This field has editor='select' but no enum or enumSuggestedValues
+                // It should be handled gracefully without throwing
+                incompleteSelectField: {
+                    title: 'Incomplete Select',
+                    type: 'string',
+                    editor: 'select',
+                    // missing enum and enumSuggestedValues
+                },
+            },
+        };
+
+        // Should not throw
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+        expect(fields).to.be.an('array');
+
+        // Valid field should be present
+        const validField = fields.find((f) => f.key === 'input-validField');
+        expect(validField).to.not.be.undefined;
+    });
+
+    it('should handle hidden editor fields by excluding them', () => {
+        const inputSchema = {
+            title: 'Test Schema',
+            type: 'object',
+            schemaVersion: 1,
+            properties: {
+                visibleField: {
+                    title: 'Visible Field',
+                    type: 'string',
+                    description: 'A visible field',
+                },
+                hiddenField: {
+                    title: 'Hidden Field',
+                    type: 'string',
+                    editor: 'hidden',
+                },
+            },
+        };
+
+        const fields = createFieldsFromInputSchemaV1(inputSchema, mockActor);
+
+        const visibleField = fields.find((f) => f.key === 'input-visibleField');
+        expect(visibleField).to.not.be.undefined;
+
+        const hiddenField = fields.find((f) => f.key === 'input-hiddenField');
+        expect(hiddenField).to.be.undefined;
+    });
+
+    // Integration tests with real actors (only run when TEST_USER_TOKEN is available)
+    const TEST_ACTOR_IDS = [
+        'nwua9Gu5YrADL7ZDj', // Google Maps Scraper
+        'aYG0l9s7dbB7j3gbS', // Website Content Crawler
+        'GdWCkxBtKWOsKjdch',
+        '2APbAvDfNDOWXbkWf',
+        'h7sDV53CddomktSi5',
+        'shu8hvrXbJbY3Eb9W',
+        'KoJrdxJCTtpon81KY',
+        '61RPP7dywgiy0JPD0',
+    ];
+
+    if (TEST_USER_TOKEN) {
+        TEST_ACTOR_IDS.forEach((actorId) => {
+            it(`should convert input schema for real actor ${actorId} without errors`, async () => {
+                const actor = await apifyClient.actor(actorId).get();
+                expect(actor).to.not.be.undefined;
+
+                // Get the latest build to fetch input schema
+                const builds = await apifyClient.actor(actorId).builds().list({ limit: 1, desc: true });
+                if (!builds.items.length) {
+                    console.log(`  Skipping actor ${actorId}: No builds found`);
+                    return;
+                }
+
+                const build = await apifyClient.actor(actorId).build(builds.items[0].id).get();
+                if (!build.inputSchema) {
+                    console.log(`  Skipping actor ${actorId}: No input schema found`);
+                    return;
+                }
+
+                const inputSchema = JSON.parse(build.inputSchema);
+                expect(inputSchema).to.have.property('properties');
+
+                // This should not throw - if it does, the test fails
+                const fields = createFieldsFromInputSchemaV1(inputSchema, actor);
+
+                expect(fields).to.be.an('array');
+                expect(fields.length).to.be.greaterThan(0);
+
+                // Verify that fields have required properties
+                fields.forEach((field) => {
+                    expect(field).to.have.property('key');
+                    expect(field).to.have.property('label');
+                });
+
+                console.log(`  Actor ${actorId} (${actor.title || actor.name}): ${fields.length} fields generated`);
+            }).timeout(30000);
+        });
+    }
 });

@@ -294,7 +294,8 @@ const slugifyText = (text) => {
 const convertPropertyToInputFields = (propertyKey, definition, required) => {
     const fields = [];
 
-    if (definition.editor === 'hidden') return [];
+    try {
+        if (definition.editor === 'hidden') return [];
     // NOTE: Handle sectionCaption with info box with helpText. It is not possible to do stackable fields in Zapier.
     if (definition.sectionCaption && definition.sectionCaption.length) {
         const helpText = definition.sectionDescription
@@ -456,10 +457,15 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
             console.log(`Unknown input schema type: ${definition.type}`, definition);
             return [];
         }
-    }
+        }
 
-    fields.push(field);
-    return fields;
+        fields.push(field);
+        return fields;
+    } catch (error) {
+        // Log the error but don't throw - skip this field and continue with others
+        console.log(`Error converting input field "${propertyKey}": ${error.message}`, { propertyKey, definition, error });
+        return [];
+    }
 };
 
 /**
