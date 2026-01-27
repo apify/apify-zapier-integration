@@ -437,10 +437,10 @@ const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
                     if (definition.prefill && definition.prefill[subKey]) {
                         subDefinition.prefill = definition.prefill[subKey];
                     }
-                    try{
+                    try {
                         const newFields = convertPropertyToInputFields(z, `${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
                         field.children.push(...newFields);
-                    } catch(err){
+                    } catch (err) {
                         z.console.log(`Failed to convert field "${propertyKey}.${subKey}" to input field. Error: ${err.message}`);
                         z.console.log(`Field definition: ${JSON.stringify(subDefinition)}`);
                     }
@@ -486,10 +486,10 @@ const createFieldsFromInputSchemaV1 = (z, inputSchema, actor) => {
     ];
     // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
-        try{
+        try {
             const newFields = convertPropertyToInputFields(z, propertyKey, definition, required);
             fields.push(...newFields);
-        }catch{
+        } catch (err) {
             // If there is an error while creating the property, log it so we can fix it later
             z.console.log(`Failed to convert field "${propertyKey}" to input field. Error: ${err.message}`);
             z.console.log(`Field definition: ${JSON.stringify(definition)}`);
