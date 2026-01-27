@@ -1,3 +1,6 @@
+## 4.5.2 / 2026-01-27
+- Actor UI fields generation bug fix
+
 ## 4.5.1 / 2025-11-19
 - Vulnerability fixed
 
