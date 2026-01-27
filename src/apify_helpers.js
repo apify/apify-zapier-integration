@@ -291,7 +291,7 @@ const slugifyText = (text) => {
  * @param definition
  * @returns {*[]}
  */
-const convertPropertyToInputFields = (propertyKey, definition, required) => {
+const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
     const fields = [];
 
     if (definition.editor === 'hidden') return [];
@@ -321,8 +321,8 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
     };
     switch (definition.type) {
         case 'string': {
-            // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
-            // These options will not cover UI validation and we need to handle it in code.
+        // NOTE: Cannot provide alternative in fields schema for options pattern, minLength, maxLength, nullable
+        // These options will not cover UI validation and we need to handle it in code.
             field.type = 'string'; // editor = textfield, datepicker
             if (['javascript', 'python'].includes(definition.editor)) {
                 field.type = 'code';
@@ -330,11 +330,15 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
                 field.type = 'text';
             } else if (definition.editor === 'datepicker') {
                 field.type = 'datetime';
-            } else if (definition.editor === 'select' || definition.enum) { // NOTE: Editor is not required, enum is enough.
-                field.choices = {};
-                definition.enum.forEach((key, i) => {
-                    field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
-                });
+            } else if (definition.editor === 'select' || definition.enum || definition.enumSuggestedValues) {
+            // NOTE: Editor is not required, enum is enough. Also support enumSuggestedValues as fallback.
+                const enumValues = definition.enum || definition.enumSuggestedValues;
+                if (enumValues) {
+                    field.choices = {};
+                    enumValues.forEach((key, i) => {
+                        field.choices[key] = definition.enumTitles ? definition.enumTitles[i] : key;
+                    });
+                }
             }
             if (definition.isSecret) {
                 field.type = 'password';
@@ -342,12 +346,12 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
             break;
         }
         case 'integer': {
-            // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
+        // NOTE: Cannot provide alternative in fields schema for options maximum, minimum, unit, nullable
             field.type = 'integer';
             break;
         }
         case 'boolean':
-            // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
+        // NOTE: Cannot provide alternative in fields schema for options groupCaption, groupDescription, nullable
             field.type = 'boolean';
             break;
         case 'array': {
@@ -360,8 +364,8 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
                 if (parsedPrefillValue) field.default = JSON.stringify(parsedPrefillValue, null, 2);
                 else if (parsedDefaultValue) field.placeholder = JSON.stringify(parsedDefaultValue, null, 2);
             } else if (['requestListSources', 'pseudoUrls', 'globs', 'stringList'].includes(definition.editor)) {
-                // NOTE: These options are not supported in Zapier and Apify UI specific.
-                // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
+            // NOTE: These options are not supported in Zapier and Apify UI specific.
+            // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
                 field.type = 'string';
                 field.list = true;
                 // NOTE: List can have just one default value, so pick just first one.
@@ -408,18 +412,18 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
             if (definition.editor === 'json') {
                 field.type = 'text';
             } else if (definition.editor === 'proxy') {
-                // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
+            // This field is Apify specific, we do not support nice UI for it. Let's print note about it into UI.
                 fields.push({
                     label: 'Proxy',
                     key: prefixInputFieldKey('proxyWarning'),
                     type: 'copy',
                     helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
-                            + 'We suggest setting this value in the Apify console',
+                        + 'We suggest setting this value in the Apify console',
                 });
                 field.type = 'text';
             } else if (definition.editor === 'schemaBased') {
-                // NOTE: This is a hack to have nested input fields at least somewhat reasonable label due to this bug:
-                // https://github.com/zapier/zapier-platform/issues/1178
+            // NOTE: This is a hack to have nested input fields at least somewhat reasonable label due to this bug:
+            // https://github.com/zapier/zapier-platform/issues/1178
                 field.key = `input-${slugifyText(definition.title)}`;
                 field.children = [];
                 delete field.type;
@@ -433,9 +437,13 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
                     if (definition.prefill && definition.prefill[subKey]) {
                         subDefinition.prefill = definition.prefill[subKey];
                     }
-
-                    const newFields = convertPropertyToInputFields(`${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
-                    field.children.push(...newFields);
+                    try {
+                        const newFields = convertPropertyToInputFields(z, `${propertyKey}.${subKey}`, subDefinition, requiredSubKeys);
+                        field.children.push(...newFields);
+                    } catch (err) {
+                        z.console.log(`Failed to convert field "${propertyKey}.${subKey}" to input field. Error: ${err.message}`);
+                        z.console.log(`Field definition: ${JSON.stringify(subDefinition)}`);
+                    }
                 }
             }
             if (definition.prefill) {
@@ -446,7 +454,7 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
             break;
         }
         default: {
-            // This should not happen.
+        // This should not happen.
             console.log(`Unknown input schema type: ${definition.type}`, definition);
             return [];
         }
@@ -464,7 +472,7 @@ const convertPropertyToInputFields = (propertyKey, definition, required) => {
  * @param inputSchema
  * @param actor
  */
-const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
+const createFieldsFromInputSchemaV1 = (z, inputSchema, actor) => {
     const { properties, required, description } = inputSchema;
     const fields = [
         // The first field is info box with input schema description or actor title, same as on Apify platform.
@@ -478,8 +486,14 @@ const createFieldsFromInputSchemaV1 = (inputSchema, actor) => {
     ];
     // eslint-disable-next-line no-restricted-syntax
     for (const [propertyKey, definition] of Object.entries(properties)) {
-        const newFields = convertPropertyToInputFields(propertyKey, definition, required);
-        fields.push(...newFields);
+        try {
+            const newFields = convertPropertyToInputFields(z, propertyKey, definition, required);
+            fields.push(...newFields);
+        } catch (err) {
+            // If there is an error while creating the property, log it so we can fix it later
+            z.console.log(`Failed to convert field "${propertyKey}" to input field. Error: ${err.message}`);
+            z.console.log(`Field definition: ${JSON.stringify(definition)}`);
+        }
     }
     return fields;
 };
@@ -570,7 +584,7 @@ const getActorAdditionalFields = async (z, bundle) => {
     ];
 
     if (inputSchema && (inputSchema.schemaVersion === 1 || !inputSchema.schemaVersion)) {
-        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(inputSchema, actor);
+        const fieldsFromInputSchema = createFieldsFromInputSchemaV1(z, inputSchema, actor);
         return [
             ...fieldsFromInputSchema,
             {
