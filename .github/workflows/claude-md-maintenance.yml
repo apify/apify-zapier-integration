@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - master
 
 jobs:
   maintain-claude-md:
