@@ -1,0 +1,18 @@
+# This file is distributed to each target repository by create-workflow-prs.sh from apify/integrations-team.
+# It calls the reusable workflow defined in apify/workflows.
+
+name: Claude MD Maintenance
+
+on:
+  # Allow manual runs from the Actions tab
+  workflow_dispatch:
+  # Also run on every push to main
+  push:
+    branches:
+      - main
+
+jobs:
+  maintain-claude-md:
+    uses: apify/workflows/.github/workflows/claude-md-maintenance.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY }}
