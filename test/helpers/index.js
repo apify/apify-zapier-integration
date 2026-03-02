@@ -219,6 +219,11 @@ const getMockRun = (overrides) => {
         consoleUrl: 'https://console.apify.com/v2/actor/runs/1',
         integrationTracking: { platform: 'zapier', appId: null },
         generalAccess: false,
+        storageIds: {
+            keyValueStoreId: randomString(),
+            datasetId: randomString(),
+            requestQueueId: randomString(),
+        },
         usageTotalUsd: 0.2654,
         usage: {},
         usageUsd: {

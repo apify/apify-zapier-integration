@@ -49,6 +49,11 @@ const ACTOR_RUN_SAMPLE = {
         xlsx: 'https://api.apify.com/v2/datasets/3ZojQDdFTsyE7Moy4/items?format=xlsx&clean=true&attachment=true',
     },
     generalAccess: {},
+    storageIds: {
+        keyValueStoreId: 'sfAjeR4QmeJCQzTfe',
+        datasetId: '3ZojQDdFTsyE7Moy4',
+        requestQueueId: 'so93g2shcDzK3pA85',
+    },
     containerUrl: 'https://rsklyfvj7pxp.runs.apify.net',
     detailsPageUrl: 'https://console.apify.com/actors/h3J7Uk3kMAmLCLRAh/runs/HG7ML7M8z78YcAPEB',
     usage: {
@@ -106,6 +111,11 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     platformUsageBillingModel: 'USER',
     integrationTracking: { platform: 'zapier', appId: null },
     generalAccess: {},
+    storageIds: {
+        keyValueStoreId: 'sfAjeR4QmeJCQzTfe',
+        datasetId: '3ZojQDdFTsyE7Moy4',
+        requestQueueId: 'so93g2shcDzK3pA85',
+    },
     usage: {
         ACTOR_COMPUTE_UNITS: 0.0005676388888888888,
         DATASET_READS: 0,
@@ -267,7 +277,7 @@ const DEFAULT_PAGINATION_LIMIT = 500;
 const LEGACY_PHANTOM_JS_CRAWLER_ID = 'YPh5JENjSSR6vBf2E';
 
 // Field to omit from actor run, these are useless in Zapier
-const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId', 'output', 'storageIds'];
+const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId', 'output'];
 
 // Field to pick from dataset detail
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
