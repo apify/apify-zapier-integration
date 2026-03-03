@@ -31,6 +31,64 @@ describe('fetch dataset items', () => {
         }
     });
 
+    it('passes fields param to API when fields option is set', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const fields = 'name, url';
+        const filteredItems = [{ name: 'test', url: 'https://example.com' }];
+
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: {
+                datasetIdOrName: testDatasetId,
+                fields,
+            },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, { data: getMockDataset({ id: testDatasetId }) });
+        scope.get(`/v2/datasets/${testDatasetId}/items`)
+            .query({ limit: null, offset: null, clean: true, fields: 'name,url' })
+            .reply(200, filteredItems);
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(testDatasetId));
+
+        const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
+
+        expect(testResult[0].items).to.eql(filteredItems);
+        scope.done();
+    });
+
+    it('passes omit param to API when omit option is set', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const omit = '_id, _debugInfo';
+        const filteredItems = [{ name: 'test', url: 'https://example.com' }];
+
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: {
+                datasetIdOrName: testDatasetId,
+                omit,
+            },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, { data: getMockDataset({ id: testDatasetId }) });
+        scope.get(`/v2/datasets/${testDatasetId}/items`)
+            .query({ limit: null, offset: null, clean: true, omit: '_id,_debugInfo' })
+            .reply(200, filteredItems);
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(testDatasetId));
+
+        const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
+
+        expect(testResult[0].items).to.eql(filteredItems);
+        scope.done();
+    });
+
     it('work', async () => {
         const randomItems = [];
         for (let i = 0; i < 1000; i++) {
