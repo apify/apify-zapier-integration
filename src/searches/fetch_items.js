@@ -28,13 +28,19 @@ const findDatasetByNameOrId = async (z, datasetIdOrName) => {
 };
 
 const getItems = async (z, bundle) => {
-    const { datasetIdOrName, limit, offset } = bundle.inputData;
+    const { datasetIdOrName, limit, offset, fields, omit } = bundle.inputData;
     const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
 
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
     dataset.id = dataset.id || dataset._id;
 
-    const datasetItems = await getDatasetItems(z, dataset.id, bundle.authData.access_token, { limit, offset }, dataset.actId);
+    const trimFields = (value) => value.split(',').map((f) => f.trim()).join(',');
+
+    const params = { limit, offset };
+    if (fields && fields.length) params.fields = trimFields(fields);
+    if (omit && omit.length) params.omit = trimFields(omit);
+
+    const datasetItems = await getDatasetItems(z, dataset.id, bundle.authData.access_token, params, dataset.actId);
 
     // Pick some fields to Zapier UI, other fields are useless for Zapier users.
     const cleanDataset = _.pick(dataset, DATASET_PUBLISH_FIELDS);
@@ -61,6 +67,10 @@ module.exports = {
     },
 
     operation: {
+        inputFieldGroups: [
+            { key: 'basic', label: 'Basic Options', emphasize: true },
+            { key: 'advanced', label: 'Advanced Options', emphasize: false },
+        ],
         inputFields: [
             {
                 label: 'Dataset',
@@ -69,6 +79,7 @@ module.exports = {
                     + 'The usual way is to use default dataset ID from the task or the Actor run trigger.',
                 key: 'datasetIdOrName',
                 required: true,
+                group: 'basic',
             },
             {
                 label: 'Limit',
@@ -76,6 +87,7 @@ module.exports = {
                 key: 'limit',
                 required: false,
                 type: 'integer',
+                group: 'basic',
             },
             {
                 label: 'Offset',
@@ -83,6 +95,27 @@ module.exports = {
                 key: 'offset',
                 required: false,
                 type: 'integer',
+                group: 'basic',
+            },
+            {
+                label: 'Fields',
+                helpText: 'Only return these fields in each item, as a comma-separated list (e.g. `title,url,price`). '
+                    + 'All other fields will be dropped from the result. Leave empty to return all fields. '
+                    + 'Takes priority over **Omit** when both are set.',
+                key: 'fields',
+                required: false,
+                type: 'string',
+                group: 'advanced',
+            },
+            {
+                label: 'Omit',
+                helpText: 'Remove these fields from each item, as a comma-separated list (e.g. `_id,createdAt`). '
+                    + 'All other fields will be kept. Leave empty to return all fields. '
+                    + 'Ignored for any field that is also listed in **Fields**.',
+                key: 'omit',
+                required: false,
+                type: 'string',
+                group: 'advanced',
             },
         ],
 
