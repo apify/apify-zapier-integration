@@ -1,3 +1,6 @@
+## 4.5.4 / 2026-03-09
+- Added fields and omit options to get dataset for users to manage large results
+
 ## 4.5.3 / 2026-03-03
 - Vulnerability fixes
 
