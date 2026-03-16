@@ -488,13 +488,13 @@ describe('create actor run', () => {
             const startUrlsFieldSchema = properties.startUrls;
             expect(startUrlsField.label).to.be.equal(startUrlsFieldSchema.title);
             expect(startUrlsField.helpText).to.be.equal(startUrlsFieldSchema.description);
-            expect(startUrlsField.default).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
+            expect(startUrlsField.placeholder).to.be.deep.equal(startUrlsFieldSchema.prefill.map(({ url }) => url)[0]);
 
             const pseudoUrlsField = fields.find(({ key }) => key === 'input-pseudoUrls');
             const pseudoUrlsFieldSchema = properties.pseudoUrls;
             expect(pseudoUrlsField.label).to.be.equal(pseudoUrlsFieldSchema.title);
             expect(pseudoUrlsField.helpText).to.be.equal(pseudoUrlsFieldSchema.description);
-            expect(pseudoUrlsField.default).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
+            expect(pseudoUrlsField.placeholder).to.be.deep.equal(pseudoUrlsFieldSchema.prefill.map(({ purl }) => purl)[0]);
 
             const proxyConfigurationField = fields.find(({ key }) => key === 'input-proxyConfiguration');
             const proxyConfigurationFieldSchema = properties.proxyConfiguration;

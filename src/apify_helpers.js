@@ -368,13 +368,15 @@ const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
             // We will use stringList type instead for simplicity. We will covert them into spec. format before run.
                 field.type = 'string';
                 field.list = true;
-                // NOTE: List can have just one default value, so pick just first one.
+                // NOTE: Use placeholder (not default) for prefill values. Setting default on a list field causes Zapier
+                // to pre-populate a non-removable first item, which duplicates entries and prevents users from
+                // controlling which values are sent.
                 if (parsedPrefillValue && Array.isArray(parsedPrefillValue) && parsedPrefillValue[0]) {
                     const firstItem = parsedPrefillValue[0];
-                    if (typeof firstItem === 'string') field.default = firstItem;
-                    else if (typeof firstItem === 'object') field.default = firstItem.url || firstItem.purl || firstItem.glob;
-                    else field.default = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
-                    field.placeholder = undefined;
+                    if (typeof firstItem === 'string') field.placeholder = firstItem;
+                    else if (typeof firstItem === 'object') field.placeholder = firstItem.url || firstItem.purl || firstItem.glob;
+                    else field.placeholder = firstItem; // NOTE: We do not know what it is, let's print it as it is, but it should not happen.
+                    field.default = undefined;
                 } else if (parsedDefaultValue && Array.isArray(parsedDefaultValue) && parsedDefaultValue[0]) {
                     const firstItem = parsedDefaultValue[0];
                     if (typeof firstItem === 'string') field.placeholder = firstItem;
