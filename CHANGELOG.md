@@ -1,3 +1,6 @@
+## 4.5.5 / 2026-03-20
+* Fix issue when list items used default values and cannot be removed for input of Actor run
+
 ## 4.5.4 / 2026-03-09
 - Added fields and omit options to get dataset for users to manage large results
 
