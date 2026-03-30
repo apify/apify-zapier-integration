@@ -1,3 +1,6 @@
+## 4.5.6 / 2026-03-30
+Vulnerability fix
+
 ## 4.5.5 / 2026-03-20
 * Fix issue when list items used default values and cannot be removed for input of Actor run
 
