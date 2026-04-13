@@ -625,6 +625,9 @@ describe('create actor run', () => {
         scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
             .reply(200, { foo: 'bar' });
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
             .query({ limit: 100, clean: true })
             .reply(200, [{ foo: 'bar' }]);
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
@@ -672,6 +675,9 @@ describe('create actor run', () => {
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { foo: 'bar' });
+            scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ foo: 'bar' }]);
             scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
@@ -737,6 +743,9 @@ describe('create actor run', () => {
                     contentType: 'text/plain; charset=utf-8',
                 });
             scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ foo: 'bar' }]);
+            scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
             scope.get(`/v2/datasets/${run.defaultDatasetId}`)
@@ -791,6 +800,9 @@ describe('create actor run', () => {
                 .reply(200, { data: mockActorRun });
             scope.get(`/v2/key-value-stores/${mockActorRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, {});
+            scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, []);
             scope.get(`/v2/datasets/${ACTOR_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, []);

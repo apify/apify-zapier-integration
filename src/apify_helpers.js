@@ -84,10 +84,10 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
         const tooLarge = await isTooLargeToDownload(z, datasetId, params);
         if (tooLarge) {
             const limitMB = DATASET_ITEMS_INLINE_MAX_BYTES / (1024 * 1024);
-            const limitWarning = `Dataset items are too large to download inline
-                (first item is ~${tooLarge.singleItemMB} MB, limit is ${limitMB} MB for ${tooLarge.downloadItems} items total).
-                Use field selection options to limit which fields are downloaded,
-                or use the dataset file URL fields to download your data instead.`;
+            const limitWarning = 'Dataset items are too large to download inline '
+                + `(first item is ~${tooLarge.singleItemMB} MB, limit is ${limitMB} MB for ${tooLarge.downloadItems} items total). `
+                + 'Use field selection options to limit which fields are downloaded, '
+                + 'or use the dataset file URL fields to download your data instead.';
 
             return {
                 items: [

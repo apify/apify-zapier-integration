@@ -8,7 +8,7 @@ const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
     randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
-    getMockDataset, mockDatasetPublicUrl,
+    mockDatasetPublicUrl,
 } = require('../helpers');
 
 const App = require('../../index');
@@ -153,7 +153,7 @@ describe('task run finished trigger', () => {
             runs.push(getMockTaskRun());
             runs.push(getMockTaskRun());
 
-            runs.forEach((run) => { delete run.integrationTracking; })
+            runs.forEach((run) => { delete run.integrationTracking; });
         }
 
         const bundle = {
@@ -198,8 +198,9 @@ describe('task run finished trigger', () => {
                 scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                     .reply(200, { foo: 'bar' });
 
-                scope.get(`/v2/datasets/${run.defaultDatasetId}`)
-                    .reply(200, { data: getMockDataset({ id: run.defaultDatasetId }) });
+                scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+                    .query({ limit: 1, clean: true })
+                    .reply(200, [{ foo: 'bar' }]);
 
                 scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                     .query({ limit: 100, clean: true })
