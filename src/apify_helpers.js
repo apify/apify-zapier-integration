@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
-    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_COUNT,
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
     ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
 } = require('./consts');
@@ -41,6 +41,32 @@ const createDatasetUrls = async (datasetId, token, cleanParamName) => {
 };
 
 /**
+ * Estimates whether a dataset is too large to download inline.
+ * Returns null if the size is acceptable, or { estimatedMB, downloadItems } if the limit is exceeded.
+ */
+const isTooLargeToDownload = async (z, datasetId, limit = undefined) => {
+    const datasetInfoResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}`,
+    });
+
+    const { itemCount, cleanItemCount, stats } = datasetInfoResponse.data;
+    const storageBytes = stats?.storageBytes;
+    const totalItems = itemCount || 0;
+
+    if (!storageBytes || totalItems === 0) return null;
+
+    const downloadItems = Math.min(limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT, cleanItemCount ?? totalItems);
+    const estimatedBytes = Math.round((storageBytes * downloadItems) / totalItems);
+
+    if (estimatedBytes <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
+
+    return {
+        estimatedMB: (estimatedBytes / (1024 * 1024)).toFixed(1),
+        downloadItems,
+    };
+};
+
+/**
  * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
@@ -56,15 +82,15 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
     }
     params[cleanParamName] = true;
 
+    datasetId = 'v1mTcgT587jgswg6j';
+
     if (runFromTrigger) {
-        const datasetInfoResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}`,
-        });
-        const { itemCount } = datasetInfoResponse.data;
-        if (itemCount > DATASET_ITEMS_INLINE_MAX_COUNT) {
+        const tooLarge = await isTooLargeToDownload(z, datasetId, params?.limit);
+        if (tooLarge) {
+            const limitMB = DATASET_ITEMS_INLINE_MAX_BYTES / (1024 * 1024);
             throw new Error(
-                `Dataset has ${itemCount} items and is too large to fetch inline (limit: ${DATASET_ITEMS_INLINE_MAX_COUNT}). `
-                + 'Use the dataset file URL fields to download your data instead.',
+                `Dataset items are too large to download inline (~${tooLarge.estimatedMB} MB estimated for ${tooLarge.downloadItems} items,
+                limit: ${limitMB} MB).`,
             );
         }
     }

@@ -283,8 +283,8 @@ const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId', 'output'];
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
 
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
-// Maximum dataset item count for inline fetching in triggers/actions. Larger datasets must be downloaded via file URLs.
-const DATASET_ITEMS_INLINE_MAX_COUNT = 1000;
+// Maximum estimated response size for inline dataset item fetching in triggers. Larger datasets must be downloaded via file URLs.
+const DATASET_ITEMS_INLINE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // List of allowed memory for actor run 128, 256, 512 ..
 const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
@@ -339,7 +339,7 @@ module.exports = {
     OMIT_ACTOR_RUN_FIELDS,
     DATASET_PUBLISH_FIELDS,
     FETCH_DATASET_ITEMS_ITEMS_LIMIT,
-    DATASET_ITEMS_INLINE_MAX_COUNT,
+    DATASET_ITEMS_INLINE_MAX_BYTES,
     ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
     DEFAULT_ACTOR_MEMORY_MBYTES,
