@@ -41,27 +41,25 @@ const createDatasetUrls = async (datasetId, token, cleanParamName) => {
 };
 
 /**
- * Estimates whether a dataset is too large to download inline.
- * Returns null if the size is acceptable, or { estimatedMB, downloadItems } if the limit is exceeded.
+ * Checks whether a dataset is too large to download inline by fetching a single item
+ * and checking if that item alone would push the full download over the limit.
+ * Returns null if the size is acceptable, or { singleItemMB, downloadItems } if the limit is exceeded.
  */
-const isTooLargeToDownload = async (z, datasetId, limit = undefined) => {
-    const datasetInfoResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}`,
+const isTooLargeToDownload = async (z, datasetId, params) => {
+    const sampleResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        params: { ...params, limit: 1 },
     });
 
-    const { itemCount, cleanItemCount, stats } = datasetInfoResponse.data;
-    const storageBytes = stats?.storageBytes;
-    const totalItems = itemCount || 0;
+    const singleItemBytes = Buffer.byteLength(sampleResponse.content);
+    if (singleItemBytes <= 2) return null; // empty array "[]" — nothing to download
 
-    if (!storageBytes || totalItems === 0) return null;
+    const downloadItems = params.limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
 
-    const downloadItems = Math.min(limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT, cleanItemCount ?? totalItems);
-    const estimatedBytes = Math.round((storageBytes * downloadItems) / totalItems);
-
-    if (estimatedBytes <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
+    if (singleItemBytes * downloadItems <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
 
     return {
-        estimatedMB: (estimatedBytes / (1024 * 1024)).toFixed(1),
+        singleItemMB: (singleItemBytes / (1024 * 1024)).toFixed(1),
         downloadItems,
     };
 };
@@ -82,16 +80,21 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
     }
     params[cleanParamName] = true;
 
-    datasetId = 'v1mTcgT587jgswg6j';
-
     if (runFromTrigger) {
-        const tooLarge = await isTooLargeToDownload(z, datasetId, params?.limit);
+        const tooLarge = await isTooLargeToDownload(z, datasetId, params);
         if (tooLarge) {
             const limitMB = DATASET_ITEMS_INLINE_MAX_BYTES / (1024 * 1024);
-            throw new Error(
-                `Dataset items are too large to download inline (~${tooLarge.estimatedMB} MB estimated for ${tooLarge.downloadItems} items,
-                limit: ${limitMB} MB).`,
-            );
+            const limitWarning = `Dataset items are too large to download inline
+                (first item is ~${tooLarge.singleItemMB} MB, limit is ${limitMB} MB for ${tooLarge.downloadItems} items total).
+                Use field selection options to limit which fields are downloaded,
+                or use the dataset file URL fields to download your data instead.`;
+
+            return {
+                items: [
+                    { warning: limitWarning },
+                ],
+                itemsFileUrls: await createDatasetUrls(datasetId, token, cleanParamName),
+            };
         }
     }
 
