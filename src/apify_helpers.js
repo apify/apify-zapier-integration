@@ -2,8 +2,9 @@ const _ = require('lodash');
 const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
-    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_COUNT,
+    ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
+    ACTOR_RUN_TERMINAL_EVENT_TYPES,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -54,6 +55,19 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
         cleanParamName = 'simplified';
     }
     params[cleanParamName] = true;
+
+    if (runFromTrigger) {
+        const datasetInfoResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}`,
+        });
+        const { itemCount } = datasetInfoResponse.data;
+        if (itemCount > DATASET_ITEMS_INLINE_MAX_COUNT) {
+            throw new Error(
+                `Dataset has ${itemCount} items and is too large to fetch inline (limit: ${DATASET_ITEMS_INLINE_MAX_COUNT}). `
+                + 'Use the dataset file URL fields to download your data instead.',
+            );
+        }
+    }
 
     const itemsResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
