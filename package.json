@@ -35,10 +35,11 @@
     "zapier-platform-schema": "16.5.0"
   },
   "overrides": {
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
+    "diff": "^8.0.3",
     "flatted": "^3.4.2",
     "lodash": "$lodash",
     "picomatch": "^2.3.2",
-    "serialize-javascript": "^7.0.3"
+    "serialize-javascript": "^7.0.5"
   }
 }
