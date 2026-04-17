@@ -1,3 +1,6 @@
+## 4.5.7 / 2026-04-17
+Vulnerability fix
+
 ## 4.5.6 / 2026-03-30
 Vulnerability fix
 
