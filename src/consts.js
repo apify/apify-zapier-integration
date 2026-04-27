@@ -285,6 +285,7 @@ const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCo
 const FETCH_DATASET_ITEMS_ITEMS_LIMIT = 100;
 // Maximum estimated response size for inline dataset item fetching in triggers. Larger datasets must be downloaded via file URLs.
 const DATASET_ITEMS_INLINE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const DATASET_MAX_SIZE_MARGIN = 1.2; // 20% safety margin for the dataset size
 
 // List of allowed memory for actor run 128, 256, 512 ..
 const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
@@ -340,6 +341,7 @@ module.exports = {
     DATASET_PUBLISH_FIELDS,
     FETCH_DATASET_ITEMS_ITEMS_LIMIT,
     DATASET_ITEMS_INLINE_MAX_BYTES,
+    DATASET_MAX_SIZE_MARGIN,
     ALLOWED_MEMORY_MBYTES_LIST,
     DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
     DEFAULT_ACTOR_MEMORY_MBYTES,

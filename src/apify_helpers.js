@@ -5,6 +5,7 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
     ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
+    DATASET_MAX_SIZE_MARGIN,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -56,7 +57,7 @@ const isTooLargeToDownload = async (z, datasetId, params) => {
 
     const downloadItems = params.limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
 
-    if (singleItemBytes * downloadItems <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
+    if (singleItemBytes * downloadItems * DATASET_MAX_SIZE_MARGIN <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
 
     return {
         singleItemMB: (singleItemBytes / (1024 * 1024)).toFixed(1),
