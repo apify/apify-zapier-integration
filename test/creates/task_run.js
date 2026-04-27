@@ -3,7 +3,14 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, createWebScraperTask, createLegacyCrawlerTask, randomString, getMockRun, mockDatasetPublicUrl } = require('../helpers');
+const { TEST_USER_TOKEN,
+    apifyClient,
+    createWebScraperTask,
+    createLegacyCrawlerTask,
+    randomString,
+    getMockRun,
+    mockDatasetPublicUrl,
+} = require('../helpers');
 const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -72,6 +79,9 @@ describe('create task run', () => {
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ url: urlToScrape }]);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ url: urlToScrape }]);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
@@ -113,6 +123,9 @@ describe('create task run', () => {
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { ...KEY_VALUE_STORE_SAMPLE, error: 'No output' });
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, []);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, []);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
@@ -152,6 +165,9 @@ describe('create task run', () => {
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ url: 'http://example.com' }]);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ url: 'http://example.com' }]);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
@@ -188,6 +204,9 @@ describe('create task run', () => {
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
+            scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ testedField: 'testValue' }]);
             scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ testedField: 'testValue' }]);

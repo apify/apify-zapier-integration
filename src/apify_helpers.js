@@ -2,8 +2,10 @@ const _ = require('lodash');
 const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
-    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES, ACTOR_RUN_TERMINAL_EVENT_TYPES,
+    OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
+    ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
+    ACTOR_RUN_TERMINAL_EVENT_TYPES,
+    DATASET_MAX_SIZE_MARGIN,
 } = require('./consts');
 const { wrapRequestWithRetries } = require('./request_helpers');
 
@@ -40,6 +42,30 @@ const createDatasetUrls = async (datasetId, token, cleanParamName) => {
 };
 
 /**
+ * Checks whether a dataset is too large to download inline by fetching a single item
+ * and checking if that item alone would push the full download over the limit.
+ * Returns null if the size is acceptable, or { singleItemMB, downloadItems } if the limit is exceeded.
+ */
+const isTooLargeToDownload = async (z, datasetId, params) => {
+    const sampleResponse = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        params: { ...params, limit: 1 },
+    });
+
+    const singleItemBytes = Buffer.byteLength(sampleResponse.content);
+    if (singleItemBytes <= 2) return null; // empty array "[]" — nothing to download
+
+    const downloadItems = params.limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
+
+    if (singleItemBytes * downloadItems * DATASET_MAX_SIZE_MARGIN <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
+
+    return {
+        singleItemMB: (singleItemBytes / (1024 * 1024)).toFixed(1),
+        downloadItems,
+    };
+};
+
+/**
  * Get items from dataset and urls to file attachments. If there are more than limit items,
  * it will attach item with info about reaching limit.
  */
@@ -54,6 +80,24 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
         cleanParamName = 'simplified';
     }
     params[cleanParamName] = true;
+
+    if (runFromTrigger) {
+        const tooLarge = await isTooLargeToDownload(z, datasetId, params);
+        if (tooLarge) {
+            const limitMB = DATASET_ITEMS_INLINE_MAX_BYTES / (1024 * 1024);
+            const limitWarning = 'Dataset items are too large to download inline '
+                + `(first item is ~${tooLarge.singleItemMB} MB, limit is ${limitMB} MB for ${tooLarge.downloadItems} items total). `
+                + 'Use field selection options to limit which fields are downloaded, '
+                + 'or use the dataset file URL fields to download your data instead.';
+
+            return {
+                items: [
+                    { warning: limitWarning },
+                ],
+                itemsFileUrls: await createDatasetUrls(datasetId, token, cleanParamName),
+            };
+        }
+    }
 
     const itemsResponse = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,

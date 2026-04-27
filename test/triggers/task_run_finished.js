@@ -153,7 +153,7 @@ describe('task run finished trigger', () => {
             runs.push(getMockTaskRun());
             runs.push(getMockTaskRun());
 
-            runs.forEach((run) => { delete run.integrationTracking; })
+            runs.forEach((run) => { delete run.integrationTracking; });
         }
 
         const bundle = {
@@ -199,8 +199,13 @@ describe('task run finished trigger', () => {
                     .reply(200, { foo: 'bar' });
 
                 scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+                    .query({ limit: 1, clean: true })
+                    .reply(200, [{ foo: 'bar' }]);
+
+                scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
                     .query({ limit: 100, clean: true })
                     .reply(200, [{ foo: 'bar' }]);
+
                 scope.get(`/v2/datasets/${run.defaultDatasetId}`)
                     .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
             });

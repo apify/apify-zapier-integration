@@ -7,7 +7,6 @@ const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
-const { waitForRunToFinish } = require('../../src/request_helpers');
 
 const appTester = zapier.createAppTester(App);
 
@@ -73,6 +72,9 @@ describe('scrape single URL', () => {
                 memory: 1024,
             })
             .reply(200, { data: mockRun });
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [mockDatasetItem]);
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
             .query({ limit: 1, clean: true })
             .reply(200, [mockDatasetItem]);
@@ -172,7 +174,10 @@ describe('scrape single URL', () => {
             scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 1, clean: true })
                 .reply(200, []);
-            
+            scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, []);
+
             scope.get(`/v2/actor-runs/${SCRAPE_SINGLE_URL_RUN_SAMPLE.id}`)
                 .query(true)
                 .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });

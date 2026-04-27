@@ -334,6 +334,7 @@ const getMockDataset = (overrides) => {
         actId: null,
         actRunId: null,
         fields: [],
+        stats: { storageBytes: 1024 },
         consoleUrl: `https://console.apify.com/storage/datasets/${randomString()}`,
         ...overrides,
     };
