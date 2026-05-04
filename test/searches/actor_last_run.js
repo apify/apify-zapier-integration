@@ -91,6 +91,9 @@ describe('search actor last run', () => {
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
 
             scope.get(`/v2/datasets/${actorRun.defaultDatasetId}/items`)
+                .query({ limit: 1, clean: true })
+                .reply(200, [{ foo: 'bar' }]);
+            scope.get(`/v2/datasets/${actorRun.defaultDatasetId}/items`)
                 .query({ limit: 100, clean: true })
                 .reply(200, [{ foo: 'bar' }]);
             scope.get(`/v2/datasets/${actorRun.defaultDatasetId}`)
