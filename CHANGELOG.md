@@ -1,3 +1,6 @@
+## 4.5.8 / 2026-05-11
+- timeout bug
+
 ## 4.5.7 / 2026-04-17
 Vulnerability fix
 
