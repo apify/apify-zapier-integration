@@ -75,3 +75,4 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - The `publish.yml` workflow updates `package.json` version and `CHANGELOG.md` automatically — do not manually edit these for releases.
 - The `claude-md-maintenance.yml` workflow calls a reusable workflow from `apify/workflows` and runs on every push to `master`/`main`. It requires the `CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY` repository secret.
 - Zapier app ID is `15018`; the `.zapierapprc` also includes `axios` dist files in the build bundle.
+- **Trigger dataset size guard:** `getDatasetItems` in `apify_helpers.js` checks estimated response size before downloading items inline when called from a trigger (`runFromTrigger=true`). If a single item × item count × 1.2 margin exceeds 10 MB (`DATASET_ITEMS_INLINE_MAX_BYTES`), it returns `{ items: [{ warning: "..." }], itemsFileUrls }` instead of the actual items. Do not bypass this check when editing trigger or dataset-fetch code.
