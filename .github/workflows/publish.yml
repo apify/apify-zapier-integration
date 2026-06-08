@@ -31,7 +31,7 @@ jobs:
               run: npm install --no-audit
 
             - name: Validate Zapier app
-              run: zapier validate --without-style
+              run: zapier-platform validate --without-style
 
             - name: Run lint
               run: npm run lint
@@ -102,7 +102,7 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
 
             - name: Push Zapier app
-              run: zapier push
+              run: zapier-platform push
 
             - name: Promote new version
-              run: zapier promote --yes ${{ env.VERSION }}
+              run: zapier-platform promote --yes ${{ env.VERSION }}

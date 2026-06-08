@@ -17,7 +17,7 @@ jobs:
                   node-version-file: '.nvmrc'
             - run: npm install -g zapier-platform-cli
             - run: npm install
-            - run: zapier validate --without-style
+            - run: zapier-platform validate --without-style
             - run: npm run lint
             - run: npm run test
 
@@ -31,7 +31,7 @@ jobs:
                     node-version-file: '.nvmrc'
             -   run: npm install -g zapier-platform-cli
             -   run: npm install
-            -   run: zapier validate --without-style
+            -   run: zapier-platform validate --without-style
             -   run: npm run lint
             -   run: npm run test
                 env:

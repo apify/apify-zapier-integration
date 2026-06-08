@@ -35,7 +35,7 @@
     "zapier-platform-schema": "16.5.0"
   },
   "overrides": {
-    "axios": "^1.15.0",
+    "axios": "^1.17.0",
     "diff": "^8.0.3",
     "flatted": "^3.4.2",
     "lodash": "$lodash",
