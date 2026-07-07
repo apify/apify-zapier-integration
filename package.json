@@ -16,10 +16,10 @@
     "npm": ">=5.6.0"
   },
   "dependencies": {
-    "@apify/consts": "^2.40.0",
-    "@apify/utilities": "^2.15.4",
+    "@apify/consts": "^2.53.3",
+    "@apify/utilities": "^2.34.1",
     "apify-client": "2.15.0",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.21",
     "lodash": "^4.17.21",
     "zapier-platform-core": "17.5.0"
   },
@@ -29,9 +29,9 @@
     "eslint": "^8.42.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-promise": "^7.2.1",
-    "mocha": "^11.0.0",
-    "nock": "^14.0.4",
+    "eslint-plugin-promise": "^7.3.0",
+    "mocha": "^11.7.6",
+    "nock": "^14.0.16",
     "zapier-platform-schema": "16.5.0"
   },
   "overrides": {
