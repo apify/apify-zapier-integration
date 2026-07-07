@@ -18,7 +18,7 @@
   "dependencies": {
     "@apify/consts": "^2.53.3",
     "@apify/utilities": "^2.34.1",
-    "apify-client": "2.15.0",
+    "apify-client": "2.19.0",
     "dayjs": "^1.11.21",
     "lodash": "^4.17.21",
     "zapier-platform-core": "17.5.0"
