@@ -66,7 +66,7 @@ describe('search get actor run by ID', () => {
         scope?.done();
     });
 
-    it('work', async () => {
+    it('returns enriched run for a valid run ID', async () => {
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
@@ -105,6 +105,43 @@ describe('search get actor run by ID', () => {
 
         expect(testResult.length).to.be.eql(1);
         expect(testResult[0].id).to.be.eql(actorRun.id);
+
+        scope?.done();
+    }).timeout(240000);
+
+    it('derives dynamic dataset output fields from the run ID', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                runId: testRunId,
+            },
+        };
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            const actorRun = getMockRun({ id: testRunId, status: ACTOR_JOB_STATUSES.SUCCEEDED });
+            scope = nock('https://api.apify.com');
+            // The output-fields function resolves the run first to find its default dataset.
+            scope.get(`/v2/actor-runs/${testRunId}`)
+                .reply(200, {
+                    data: actorRun,
+                });
+            scope.get(`/v2/datasets/${actorRun.defaultDatasetId}/items`)
+                .query({ limit: 10, clean: true })
+                .reply(200, [{ myField: 'value' }]);
+            scope.get(`/v2/datasets/${actorRun.defaultDatasetId}`)
+                .reply(200, mockDatasetPublicUrl(actorRun.defaultDatasetId));
+        }
+
+        // The dynamic output fields function is the last entry in the outputFields array.
+        const { outputFields } = App.searches.getActorRunById.operation;
+        const getDynamicOutputFields = outputFields[outputFields.length - 1];
+        const fields = await appTester(getDynamicOutputFields, bundle);
+
+        expect(fields).to.be.an('array');
+        expect(fields.some((field) => field.key.startsWith('datasetItems[]'))).to.be.eql(true);
 
         scope?.done();
     }).timeout(240000);

@@ -52,6 +52,35 @@ const getActorDatasetOutputFields = async (z, bundle) => {
     return getDatasetItemsOutputFields(z, run.defaultDatasetId, actorId);
 };
 
+/**
+ * Loads dynamic dataset output fields for a search/action that is identified by a run ID
+ * (e.g. "Get Actor Run by ID"), where the Actor ID is not part of the input. It fetches the
+ * run itself to resolve its default dataset and derives the fields from that dataset's items.
+ */
+const getRunDatasetOutputFields = async (z, bundle) => {
+    const { runId } = bundle.inputData;
+    if (!runId) return [];
+
+    let runResponse;
+    try {
+        runResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        });
+    } catch (err) {
+        // 404 status = The run was not found.
+        if (err.status !== 404) {
+            z.console.error('Error while fetching run for output fields', err);
+        }
+        // Return default output fields, if the run does not exist or any other error.
+        return [];
+    }
+
+    const { data: run } = runResponse;
+    if (!run || !run.defaultDatasetId) return [];
+
+    return getDatasetItemsOutputFields(z, run.defaultDatasetId, run.actId);
+};
+
 const getTaskDatasetOutputFields = async (z, bundle) => {
     const { taskId } = bundle.inputData;
     let lastSuccessDatasetItems;
@@ -77,5 +106,6 @@ const getTaskDatasetOutputFields = async (z, bundle) => {
 module.exports = {
     getDatasetItemsOutputFields,
     getActorDatasetOutputFields,
+    getRunDatasetOutputFields,
     getTaskDatasetOutputFields,
 };

@@ -5,7 +5,7 @@ const {
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
-const { getActorDatasetOutputFields } = require('../output_fields');
+const { getRunDatasetOutputFields } = require('../output_fields');
 
 const getActorRunById = async (z, bundle) => {
     const { runId } = bundle.inputData;
@@ -52,7 +52,7 @@ module.exports = {
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [
             ...ACTOR_RUN_OUTPUT_FIELDS,
-            getActorDatasetOutputFields,
+            getRunDatasetOutputFields,
         ],
     },
 };
