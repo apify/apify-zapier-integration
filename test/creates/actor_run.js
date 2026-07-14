@@ -816,4 +816,77 @@ describe('create actor run', () => {
 
         scope?.done();
     }).timeout(50000);
+
+    it('throws a descriptive error with Actor ID when the Actor is not found', async () => {
+        const missingActorId = 'this-actor~does-not-exist';
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                actorId: missingActorId,
+                inputBody: '',
+                runSync: false,
+                build: 'latest',
+                timeoutSecs: 120,
+                memoryMbytes: 1024,
+            },
+        };
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.post(`/v2/acts/${missingActorId}/runs`)
+                .query(true)
+                .reply(404, { error: { type: 'record-not-found', message: 'Actor was not found' } });
+        }
+
+        await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
+            .to.be.rejectedWith(new RegExp(`Actor "${missingActorId}" was not found`));
+        scope?.done();
+    }).timeout(30000);
+
+    it('throws a descriptive error with the parser detail for invalid JSON input body', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                actorId: testActorId,
+                inputBody: '{ "invalid": ',
+                inputContentType: 'application/json; charset=utf-8',
+                runSync: false,
+            },
+        };
+
+        // No request is made - the JSON is validated before the run is started, so this holds in both test modes.
+        await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
+            .to.be.rejectedWith(/Input body is not valid JSON:/);
+    });
+
+    it('passes a non-Actor not-found error (e.g. build not found) through unchanged', async () => {
+        if (TEST_USER_TOKEN) return; // Cannot reliably reproduce a build-not-found against the real API.
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                actorId: testActorId,
+                inputBody: '',
+                runSync: false,
+                build: 'does-not-exist',
+                timeoutSecs: 120,
+                memoryMbytes: 1024,
+            },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${testActorId}/runs`)
+            .query(true)
+            .reply(404, { error: { type: 'record-not-found', message: 'Build was not found' } });
+
+        await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
+            .to.be.rejectedWith(/Build was not found/);
+        scope.done();
+    }).timeout(30000);
 });

@@ -1,11 +1,15 @@
 /* eslint-env mocha */
 const zapier = require('zapier-platform-core');
-const { expect } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset, mockDatasetPublicUrl} = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset, mockDatasetPublicUrl } = require('../helpers');
 const { DATASET_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
+
+chai.use(chaiAsPromised);
+const { expect } = chai;
 
 const appTester = zapier.createAppTester(App);
 
@@ -134,4 +138,50 @@ describe('fetch dataset items', () => {
 
         scope?.done();
     }).timeout(120000);
+
+    it('throws when an ID-shaped dataset is not found instead of creating one', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks - a bad ID against the real API is what we simulate here.
+
+        const missingDatasetId = 'aBcDeFgHiJkLmNoPq'; // 17-char, ID-shaped
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: missingDatasetId },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${missingDatasetId}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Dataset was not found' } });
+
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+        scope.done();
+    });
+
+    it('creates a dataset when a name (not an ID) is not found', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const datasetName = 'my-zapier-dataset';
+        const createdId = randomString();
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: datasetName },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${datasetName}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Dataset was not found' } });
+        scope.post('/v2/datasets')
+            .query({ name: datasetName })
+            .reply(201, { data: getMockDataset({ id: createdId }) });
+        scope.get(`/v2/datasets/${createdId}/items`)
+            .query(true)
+            .reply(200, []);
+        scope.get(`/v2/datasets/${createdId}`)
+            .reply(200, mockDatasetPublicUrl(createdId));
+
+        const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
+
+        expect(testResult[0].items).to.eql([]);
+        scope.done();
+    });
 });

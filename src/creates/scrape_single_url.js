@@ -53,8 +53,17 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     if (defaultDatasetId) {
         const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
-            throw new Error('The data for the page content is missing. The scraper cannot scrape the page '
-                + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
+            const statusInfo = run.statusMessage
+                ? `Run status: ${run.status} (${run.statusMessage}).`
+                : `Run status: ${run.status}.`;
+            const jsRenderingCause = crawlerType === 'cheerio'
+                ? 'needs JavaScript rendering (try a headless browser crawler type instead of the Raw HTTP client)'
+                : 'needs JavaScript rendering';
+            throw new Error(
+                `No content was scraped from ${url}. ${statusInfo} `
+                + `Common causes: the page is protected by anti-bot measures, ${jsRenderingCause}, or requires login. `
+                + `See the run log for details: ${run.detailsPageUrl}#log`,
+            );
         }
         run.pageUrl = datasetItems.items[0].url;
         run.pageMetadata = datasetItems.items[0].metadata;

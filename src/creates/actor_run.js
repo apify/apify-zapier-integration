@@ -62,6 +62,26 @@ const processInputField = (key, value, inputSchema) => {
     }
 };
 
+/**
+ * Wraps an Actor-related request so a generic "not found" API error is rethrown with actionable context:
+ * which Actor was missing and where to check it. Other errors are rethrown unchanged.
+ */
+const requestActorOrThrowNotFound = async (z, options, actorId) => {
+    try {
+        return await wrapRequestWithRetries(z.request, options);
+    } catch (err) {
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('not found') && message.includes('actor')) {
+            throw new Error(
+                `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
+                + 'and that your Apify account has access to it: '
+                + `https://console.apify.com/actors/${actorId}`,
+            );
+        }
+        throw err;
+    }
+};
+
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
@@ -85,14 +105,14 @@ const runActor = async (z, bundle) => {
             try {
                 JSON.parse(inputBody);
             } catch (err) {
-                throw new Error('Please check that your input body is a valid JSON.');
+                throw new Error(`The Input body is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
             }
         }
         requestOpts.body = inputBody;
     } else {
-        const actorResponse = await wrapRequestWithRetries(z.request, {
+        const actorResponse = await requestActorOrThrowNotFound(z, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
-        });
+        }, actorId);
         const inputSchema = await maybeGetInputSchemaFromActor(z, actorResponse.data, build);
         if (inputSchema) {
             const input = {};
@@ -118,8 +138,8 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+    let { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
 
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
