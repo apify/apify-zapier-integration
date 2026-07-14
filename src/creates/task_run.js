@@ -62,7 +62,9 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Runs a selected Actor task.',
+        description: 'Runs a saved Actor task — an Actor pre-configured with fixed input and settings in Apify Console. '
+            + 'Use this when the configuration already exists; for ad-hoc runs with custom input, use Run Actor instead. '
+            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items.',
     },
 
     operation: {

@@ -129,7 +129,10 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs a selected Actor.',
+        description: 'Runs an Apify Actor — a cloud program for web scraping, data extraction, or automation — with custom input parameters. '
+            + 'Use this for ad-hoc runs; if you already have a saved configuration in Apify Console, use Run Task instead. '
+            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items, '
+            + 'or look up the run later with Find Last Actor Run.',
     },
 
     operation: {
@@ -146,7 +149,7 @@ module.exports = {
             },
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor to run.',
+                helpText: 'Please select the Actor to run, or pass an Actor ID or slug directly (for example `apify~web-scraper`).',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actorsWithStore.id.name',
@@ -155,7 +158,8 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                    + 'Beware that the hard timeout for the run is 30 seconds. '
+                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

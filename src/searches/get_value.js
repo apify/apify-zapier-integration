@@ -79,7 +79,8 @@ module.exports = {
         noun: 'Key-value Store Value',
         display: {
             label: 'Get Key-Value Store Record',
-            description: 'Gets a record from a key-value store.',
+            description: 'Gets a record from a key-value store. '
+                + 'Can be used as agent memory — retrieve a value saved earlier with Set Key-Value Store Record.',
         },
         operation: {
             inputFields: [

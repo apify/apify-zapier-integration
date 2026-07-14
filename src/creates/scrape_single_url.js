@@ -75,7 +75,8 @@ module.exports = {
     display: {
         label: 'Scrape Single URL',
         description: 'Runs a scraper for the website and returns its content as text, markdown and HTML. '
-            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows.',
+            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows. '
+            + 'It is ideal when an agent needs to read live web page content as context for a decision or research task.',
     },
     operation: {
         inputFields: [
