@@ -34,7 +34,7 @@ module.exports = {
     display: {
         label: 'Find Last Actor Run',
         description: 'Finds the most recent Actor run with a specific status (defaults to Succeeded). '
-            + 'It returns the latest run only — it cannot look up a specific run by ID.',
+            + 'It returns the latest run only; it cannot look up a specific run by ID.',
     },
 
     operation: {

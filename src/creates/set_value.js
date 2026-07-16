@@ -32,7 +32,7 @@ module.exports = {
     display: {
         label: 'Set Key-Value Store Record',
         description: 'Creates a new or updates an existing record in a key-value store. '
-            + 'Can be used as agent memory — save intermediate data here and retrieve it later with Get Key-Value Store Record.',
+            + 'Can be used as agent memory - save intermediate data here and retrieve it later with Get Key-Value Store Record.',
     },
 
     operation: {

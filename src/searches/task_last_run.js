@@ -36,7 +36,7 @@ module.exports = {
     display: {
         label: 'Find Last Task Run',
         description: 'Finds the most recent task run with a specific status (defaults to Succeeded). '
-            + 'This returns the latest run only — it cannot look up a specific run by ID.',
+            + 'This returns the latest run only; it cannot look up a specific run by ID.',
     },
 
     operation: {
