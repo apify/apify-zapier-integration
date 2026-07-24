@@ -140,7 +140,7 @@ describe('fetch dataset items', () => {
     }).timeout(120000);
 
     it('throws when an ID-shaped dataset is not found instead of creating one', async () => {
-        if (TEST_USER_TOKEN) return; // Only run with nock mocks - a bad ID against the real API is what we simulate here.
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
 
         const missingDatasetId = 'aBcDeFgHiJkLmNoPq'; // 17-char, ID-shaped
         const bundle = {

@@ -19,8 +19,7 @@ const findDatasetByNameOrId = async (z, datasetIdOrName) => {
         return datasetResponse.data;
     } catch (err) {
         if (!err.message.includes('not found')) throw err;
-        // An ID-shaped input that is not found cannot be a name to create, so distinguish "dataset does not
-        // exist" here. For names we fall through and create the dataset, so an empty result then means "exists but empty".
+        // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
         if (looksLikeApifyId(datasetIdOrName)) {
             throw new Error(
                 `Dataset "${datasetIdOrName}" does not exist or your Apify account cannot access it. `

@@ -859,13 +859,13 @@ describe('create actor run', () => {
             },
         };
 
-        // No request is made - the JSON is validated before the run is started, so this holds in both test modes.
+        // JSON validated before any request, so no nock scope needed.
         await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
             .to.be.rejectedWith(/Input body is not valid JSON:/);
     });
 
     it('passes a non-Actor not-found error (e.g. build not found) through unchanged', async () => {
-        if (TEST_USER_TOKEN) return; // Cannot reliably reproduce a build-not-found against the real API.
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,

@@ -232,7 +232,7 @@ describe('create task run', () => {
             },
         };
 
-        // No request is made - the JSON is validated before the run is started, so this holds in both test modes.
+        // JSON validated before any request, so no nock scope needed.
         await expect(appTester(App.creates.createTaskRun.operation.perform, bundle))
             .to.be.rejectedWith(/Input JSON overrides" field is not valid JSON:/);
     });

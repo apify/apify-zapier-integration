@@ -115,12 +115,12 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false
     }
 
     const asyncSuffix = asyncHint
-        ? ' — or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
+        ? ', or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
         : '.';
     throw new Error(
         `Run did not finish within the ${timeoutSecs}s synchronous timeout. `
         + `The run is still active (run ID: ${runId}) and keeps running in the background. `
-        + `Check its status and results in Apify Console: https://console.apify.com/view/runs/${runId}${asyncSuffix}`,
+        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId})${asyncSuffix}`,
     );
 };
 

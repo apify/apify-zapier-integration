@@ -62,10 +62,7 @@ const processInputField = (key, value, inputSchema) => {
     }
 };
 
-/**
- * Wraps an Actor-related request so a generic "not found" API error is rethrown with actionable context:
- * which Actor was missing and where to check it. Other errors are rethrown unchanged.
- */
+/** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
 const requestActorOrThrowNotFound = async (z, options, actorId) => {
     try {
         return await wrapRequestWithRetries(z.request, options);
