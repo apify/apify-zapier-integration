@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 const { getDatasetItemsOutputFields } = require('../output_fields');
 
@@ -14,7 +14,7 @@ const findDatasetByNameOrId = async (z, datasetIdOrName) => {
         });
         return datasetResponse.data;
     } catch (err) {
-        if (!err.message.includes('not found')) throw err;
+        if (!isNotFoundError(err)) throw err;
     }
     // The second creates dataset with name, in case datasetId not found.
     const storeResponse = await wrapRequestWithRetries(z.request, {

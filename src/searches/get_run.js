@@ -4,7 +4,7 @@ const {
     APIFY_API_ENDPOINTS,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
 const { getRunDatasetOutputFields } = require('../output_fields');
 
 const getActorRunById = async (z, bundle) => {
@@ -16,7 +16,7 @@ const getActorRunById = async (z, bundle) => {
             url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
         });
     } catch (err) {
-        if (err.message.includes('not found')) return [];
+        if (isNotFoundError(err)) return [];
 
         throw err;
     }

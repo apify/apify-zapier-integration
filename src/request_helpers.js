@@ -117,7 +117,15 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
     throw new Error(`Timeout of ${timeoutSecs} seconds reached for run ${runId}`);
 };
 
+/**
+ * Checks whether an error represents a "not found" API response.
+ * @param {Error} err
+ * @returns {boolean}
+ */
+const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
+
 module.exports = {
+    isNotFoundError,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,

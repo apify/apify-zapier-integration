@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { getDatasetItems } = require('./apify_helpers');
-const { wrapRequestWithRetries } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 const { APIFY_API_ENDPOINTS } = require('./consts');
 const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
 
@@ -41,12 +41,9 @@ const getActorDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // A "not found" error means there is no successful run yet; a normal case, so do not log it.
-        const message = err?.message ?? '';
-        if (!message.includes('not found')) {
+        if (!isNotFoundError(err)) {
             z.console.error('Error while fetching dataset items', err);
         }
-        // Return default output fields, if there is no successful run yet or any other error.
         return [];
     }
     const { data: run } = lastSuccessDatasetItems;
@@ -68,12 +65,9 @@ const getRunDatasetOutputFields = async (z, bundle) => {
             url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
         });
     } catch (err) {
-        // Ignore "not found" errors; run may not exist yet.
-        const message = err?.message ?? '';
-        if (!message.includes('not found')) {
+        if (!isNotFoundError(err)) {
             z.console.error('Error while fetching run for output fields', err);
         }
-        // Return default output fields, if the run does not exist or any other error.
         return [];
     }
 
@@ -94,12 +88,9 @@ const getTaskDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // A "not found" error means there is no successful run yet; a normal case, so do not log it.
-        const message = err?.message ?? '';
-        if (!message.includes('not found')) {
+        if (!isNotFoundError(err)) {
             z.console.error('Error while fetching dataset items', err);
         }
-        // Return default output fields, if there is no successful run yet or any other error.
         return [];
     }
     const { data: run } = lastSuccessDatasetItems;
