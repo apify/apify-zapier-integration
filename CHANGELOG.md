@@ -1,3 +1,11 @@
+## 4.5.9 / 2026-07-23
+## What's Changed
+* fix: vulnerabilities by @protoss70
+* fix: form-data vulnerability fix by @JanHranicky
+
+
+**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.5.8...v4.5.9
+
 ## 4.5.8 / 2026-05-11
 - timeout bug
 
