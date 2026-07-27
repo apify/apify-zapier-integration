@@ -41,8 +41,9 @@ const getActorDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // 404 status = There is not successful run yet.
-        if (err.status !== 404) {
+        // A "not found" error means there is no successful run yet; a normal case, so do not log it.
+        const message = err?.message ?? '';
+        if (!message.includes('not found')) {
             z.console.error('Error while fetching dataset items', err);
         }
         // Return default output fields, if there is no successful run yet or any other error.
@@ -67,8 +68,9 @@ const getRunDatasetOutputFields = async (z, bundle) => {
             url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
         });
     } catch (err) {
-        // 404 status = The run was not found.
-        if (err.status !== 404) {
+        // Ignore "not found" errors; run may not exist yet.
+        const message = err?.message ?? '';
+        if (!message.includes('not found')) {
             z.console.error('Error while fetching run for output fields', err);
         }
         // Return default output fields, if the run does not exist or any other error.
@@ -92,8 +94,9 @@ const getTaskDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // 404 status = There is not successful run yet.
-        if (err.status !== 404) {
+        // A "not found" error means there is no successful run yet; a normal case, so do not log it.
+        const message = err?.message ?? '';
+        if (!message.includes('not found')) {
             z.console.error('Error while fetching dataset items', err);
         }
         // Return default output fields, if there is no successful run yet or any other error.

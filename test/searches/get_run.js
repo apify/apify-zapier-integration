@@ -145,4 +145,36 @@ describe('search get actor run by ID', () => {
 
         scope?.done();
     }).timeout(240000);
+
+    it('returns empty dynamic output fields when the run is not found', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                runId: 'non-existing-run-id',
+            },
+        };
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com')
+                .get('/v2/actor-runs/non-existing-run-id')
+                .reply(404, {
+                    error: {
+                        type: 'record-not-found',
+                        message: 'Run was not found',
+                    },
+                });
+        }
+
+        const { outputFields } = App.searches.getActorRunById.operation;
+        const getDynamicOutputFields = outputFields[outputFields.length - 1];
+        const fields = await appTester(getDynamicOutputFields, bundle);
+
+        expect(fields).to.be.an('array');
+        expect(fields.length).to.be.eql(0);
+
+        scope?.done();
+    });
 });
