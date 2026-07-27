@@ -45,7 +45,7 @@ describe('search get actor details', () => {
         scope?.done();
     });
 
-    it('returns curated actor when found by ID', async () => {
+    it('returns curated actor when found', async () => {
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,

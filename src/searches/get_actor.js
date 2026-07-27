@@ -23,7 +23,8 @@ const getActorDetails = async (z, bundle) => {
 
     // The REST path expects the `<username>~<actorName>` form, so a `username/name` slug
     // (e.g. `apify/web-scraper`) must have its `/` replaced with `~`. Plain Actor IDs pass through.
-    const normalizedActorId = actorId.replace('/', '~');
+    // Trim and replace all slashes so stray whitespace or a trailing `/` can't malform the path.
+    const normalizedActorId = actorId.trim().replaceAll('/', '~');
 
     let actorResponse;
     try {
