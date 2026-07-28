@@ -12,16 +12,16 @@
     "lint:fix": "./node_modules/.bin/eslint ./src --ext .js --fix"
   },
   "engines": {
-    "node": "18",
+    "node": "22",
     "npm": ">=5.6.0"
   },
   "dependencies": {
-    "@apify/consts": "^2.40.0",
-    "@apify/utilities": "^2.15.4",
-    "apify-client": "2.15.0",
-    "dayjs": "^1.11.13",
+    "@apify/consts": "^2.53.3",
+    "@apify/utilities": "^2.34.1",
+    "apify-client": "2.19.0",
+    "dayjs": "^1.11.21",
     "lodash": "^4.17.21",
-    "zapier-platform-core": "17.5.0"
+    "zapier-platform-core": "19.0.0"
   },
   "devDependencies": {
     "chai": "^4.5.0",
@@ -29,16 +29,17 @@
     "eslint": "^8.42.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-promise": "^7.2.1",
-    "mocha": "^11.0.0",
-    "nock": "^14.0.4",
-    "zapier-platform-schema": "16.5.0"
+    "eslint-plugin-promise": "^7.3.0",
+    "mocha": "^11.7.6",
+    "nock": "^14.0.16",
+    "zapier-platform-schema": "19.0.0"
   },
   "overrides": {
     "axios": "^1.17.0",
     "diff": "^8.0.3",
     "flatted": "^3.4.2",
     "form-data": "^4.0.6",
+    "js-yaml": "^4.3.0",
     "lodash": "$lodash",
     "picomatch": "^2.3.2",
     "serialize-javascript": "^7.0.5"
