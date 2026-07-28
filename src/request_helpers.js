@@ -119,8 +119,6 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
 
 /**
  * Checks whether an error represents a "not found" API response.
- * @param {Error} err
- * @returns {boolean}
  */
 const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
 
