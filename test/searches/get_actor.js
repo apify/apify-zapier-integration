@@ -60,8 +60,17 @@ describe('search get actor details', () => {
             scope = nock('https://api.apify.com')
                 .get(`/v2/acts/${ACTOR_SAMPLE.id}`)
                 .reply(200, {
-                    // Extra fields (e.g. versions, userId) that must be dropped by the curation.
-                    data: { ...ACTOR_SAMPLE, userId: 'wRsJZtadYvn4mBZmm', versions: [{ versionNumber: '0.1' }] },
+                    data: {
+                        ...ACTOR_SAMPLE,
+                        // Top-level and nested noise that the curation must drop.
+                        userId: 'wRsJZtadYvn4mBZmm',
+                        versions: [{ versionNumber: '0.1' }],
+                        stats: { ...ACTOR_SAMPLE.stats, bookmarkCount: 1377, totalUsers7Days: 2 },
+                        defaultRunOptions: { ...ACTOR_SAMPLE.defaultRunOptions, restartOnError: true },
+                        taggedBuilds: {
+                            latest: { buildId: 'z2EryhbfhgSyqj6Hn', buildNumber: '0.0.2', finishedAt: '2019-06-10T11:15:49.286Z', buildNumberInt: 2 },
+                        },
+                    },
                 });
         }
 
@@ -71,9 +80,18 @@ describe('search get actor details', () => {
         expect(testResult[0].id).to.be.a('string');
         expect(testResult[0].name).to.be.a('string');
         expect(testResult[0].username).to.be.a('string');
-        // Non-curated fields must not leak through.
+        // Curation must strip API noise (asserted in both mocked and E2E modes: the real
+        // web-scraper response also carries stats.bookmarkCount and defaultRunOptions.restartOnError).
         expect(testResult[0].versions).to.be.eql(undefined);
         expect(testResult[0].userId).to.be.eql(undefined);
+        expect(testResult[0].stats.bookmarkCount).to.be.eql(undefined);
+        expect(testResult[0].defaultRunOptions.restartOnError).to.be.eql(undefined);
+        // Exact curated shape is asserted against the deterministic mock.
+        if (!TEST_USER_TOKEN) {
+            expect(testResult[0].stats).to.have.keys(['totalRuns', 'totalUsers', 'lastRunStartedAt']);
+            expect(testResult[0].defaultRunOptions).to.have.keys(['build', 'timeoutSecs', 'memoryMbytes']);
+            expect(testResult[0].taggedBuilds.latest).to.have.keys(['buildId', 'buildNumber']);
+        }
 
         scope?.done();
     });

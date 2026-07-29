@@ -6,6 +6,10 @@ const {
 } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
+// Deep property paths passed to `_.pick`. Nested objects (`stats`, `defaultRunOptions`) are
+// trimmed to the sub-fields we actually expose, so the output matches the declared output fields
+// instead of leaking noise (review ratings, per-day user counts, `restartOnError`, …).
+// `taggedBuilds` is picked whole because its keys are per-Actor build tags (dynamic, not fixed).
 const CURATED_ACTOR_FIELDS = [
     'id',
     'name',
@@ -14,8 +18,16 @@ const CURATED_ACTOR_FIELDS = [
     'username',
     'isPublic',
     'actorPermissionLevel',
-    'stats',
-    'defaultRunOptions',
+    'createdAt',
+    'modifiedAt',
+    'standbyUrl',
+    'stats.totalRuns',
+    'stats.totalUsers',
+    'stats.lastRunStartedAt',
+    'defaultRunOptions.build',
+    'defaultRunOptions.timeoutSecs',
+    'defaultRunOptions.memoryMbytes',
+    'taggedBuilds',
 ];
 
 const getActorDetails = async (z, bundle) => {
@@ -38,6 +50,13 @@ const getActorDetails = async (z, bundle) => {
     }
 
     const actor = _.pick(actorResponse.data, CURATED_ACTOR_FIELDS);
+
+    // `taggedBuilds` is keyed by dynamic build tags (e.g. `latest`, `version-3`); keep only the
+    // build ID and version per tag and drop the noise (`finishedAt`, `buildNumberInt`).
+    if (actor.taggedBuilds) {
+        actor.taggedBuilds = _.mapValues(actor.taggedBuilds, (build) => _.pick(build, ['buildId', 'buildNumber']));
+    }
+
     return [actor];
 };
 
@@ -47,7 +66,7 @@ module.exports = {
     display: {
         label: 'Get Actor Details',
         description: 'Retrieves metadata and description for a specific Actor, including its title, description, '
-            + 'and whether it is publicly available. Use this to confirm an actor is suitable before running it.',
+            + 'and whether it is publicly available. Use this to confirm an Actor is suitable before running it.',
     },
 
     operation: {

@@ -228,8 +228,10 @@ const ACTOR_SAMPLE = {
     username: 'apify',
     isPublic: true,
     actorPermissionLevel: 'LIMITED_PERMISSIONS',
+    createdAt: '2019-07-08T11:27:57.401Z',
+    modifiedAt: '2019-07-08T14:01:05.546Z',
+    standbyUrl: 'https://web-scraper.apify.actor',
     stats: {
-        totalBuilds: 9,
         totalRuns: 16,
         totalUsers: 6,
         lastRunStartedAt: '2019-07-08T14:01:05.546Z',
@@ -238,6 +240,12 @@ const ACTOR_SAMPLE = {
         build: 'latest',
         timeoutSecs: 3600,
         memoryMbytes: 2048,
+    },
+    taggedBuilds: {
+        latest: {
+            buildId: 'z2EryhbfhgSyqj6Hn',
+            buildNumber: '0.0.2',
+        },
     },
 };
 
@@ -249,6 +257,9 @@ const ACTOR_OUTPUT_FIELDS = [
     { key: 'username', label: 'Username', type: 'string' },
     { key: 'isPublic', label: 'Is public', type: 'boolean' },
     { key: 'actorPermissionLevel', label: 'Actor permission level', type: 'string' },
+    { key: 'createdAt', label: 'Created at' },
+    { key: 'modifiedAt', label: 'Modified at' },
+    { key: 'standbyUrl', label: 'Standby URL', type: 'string' },
     { key: 'stats__totalRuns', label: 'Total runs', type: 'number' },
     { key: 'stats__totalUsers', label: 'Total users', type: 'number' },
     { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
