@@ -11,7 +11,7 @@ const setValue = async (z, bundle) => {
     try {
         valueObject = JSON.parse(value);
     } catch (err) {
-        throw new Error('Please check that your record value is a valid JSON.');
+        throw new Error(`The record value is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
     }
 
     await wrapRequestWithRetries(z.request, {
