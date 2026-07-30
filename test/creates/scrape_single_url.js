@@ -185,7 +185,7 @@ describe('scrape single URL', () => {
                 .reply(200, mockDatasetPublicUrl(SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId));
         }
 
-        await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/page content is missing/);
+        await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/No content was scraped/);
         scope?.done();
     }).timeout(120_000);
 });

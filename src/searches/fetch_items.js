@@ -1,9 +1,13 @@
 const _ = require('lodash');
+const { APIFY_ID_REGEX } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
 const { getDatasetItemsOutputFields } = require('../output_fields');
+
+// A full-string Apify resource ID; anything else is treated as a dataset name.
+const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 const findDatasetByNameOrId = async (z, datasetIdOrName) => {
     // The first try to get dataset by ID.
@@ -15,6 +19,14 @@ const findDatasetByNameOrId = async (z, datasetIdOrName) => {
         return datasetResponse.data;
     } catch (err) {
         if (!err.message.includes('not found')) throw err;
+        // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
+        if (looksLikeApifyId(datasetIdOrName)) {
+            throw new Error(
+                `Dataset "${datasetIdOrName}" does not exist or your Apify account cannot access it. `
+                + 'Check the dataset ID in Apify Console: '
+                + `https://console.apify.com/storage/datasets/${datasetIdOrName}`,
+            );
+        }
     }
     // The second creates dataset with name, in case datasetId not found.
     const storeResponse = await wrapRequestWithRetries(z.request, {
@@ -76,7 +88,8 @@ module.exports = {
                 label: 'Dataset',
                 helpText: 'Please enter the name or ID of the dataset. '
                     + 'You can find dataset ID under each a task or an Actor run detail. '
-                    + 'The usual way is to use default dataset ID from the task or the Actor run trigger.',
+                    + 'The usual way is to use default dataset ID from the task or the Actor run trigger. '
+                    + 'Use the default dataset ID returned by a Run Actor or Run Task step to fetch that run\'s results.',
                 key: 'datasetIdOrName',
                 required: true,
                 group: 'basic',

@@ -18,13 +18,13 @@ const runTask = async (z, bundle) => {
             parsedInput = JSON.parse(rawInput);
             requestOpts.body = parsedInput;
         } catch (err) {
-            throw new Error(`Please check that your ${RAW_INPUT_LABEL} is a valid JSON.`);
+            throw new Error(`The "${RAW_INPUT_LABEL}" field is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
         }
     }
 
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
     if (runSync) {
-        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
     }
 
     return enrichActorRun(z, bundle.authData.access_token, run);
@@ -62,7 +62,9 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Runs a selected Actor task.',
+        description: 'Runs a saved Actor task (an Actor pre-configured with fixed input and settings in Apify Console). '
+            + 'Use this when the configuration already exists; for ad-hoc runs with custom input, use Run Actor instead. '
+            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items.',
     },
 
     operation: {
