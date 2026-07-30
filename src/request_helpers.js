@@ -124,7 +124,13 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false
     );
 };
 
+/**
+ * Checks whether an error represents a "not found" API response.
+ */
+const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
+
 module.exports = {
+    isNotFoundError,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,

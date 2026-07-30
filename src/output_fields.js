@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { getDatasetItems } = require('./apify_helpers');
-const { wrapRequestWithRetries } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 const { APIFY_API_ENDPOINTS } = require('./consts');
 const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
 
@@ -41,15 +41,40 @@ const getActorDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // 404 status = There is not successful run yet.
-        if (err.status !== 404) {
+        if (!isNotFoundError(err)) {
             z.console.error('Error while fetching dataset items', err);
         }
-        // Return default output fields, if there is no successful run yet or any other error.
         return [];
     }
     const { data: run } = lastSuccessDatasetItems;
     return getDatasetItemsOutputFields(z, run.defaultDatasetId, actorId);
+};
+
+/**
+ * Loads dynamic dataset output fields for a search/action that is identified by a run ID
+ * (e.g. "Get Actor Run by ID"), where the Actor ID is not part of the input. It fetches the
+ * run itself to resolve its default dataset and derives the fields from that dataset's items.
+ */
+const getRunDatasetOutputFields = async (z, bundle) => {
+    const { runId } = bundle.inputData;
+    if (!runId) return [];
+
+    let runResponse;
+    try {
+        runResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        });
+    } catch (err) {
+        if (!isNotFoundError(err)) {
+            z.console.error('Error while fetching run for output fields', err);
+        }
+        return [];
+    }
+
+    const { data: run } = runResponse;
+    if (!run || !run.defaultDatasetId) return [];
+
+    return getDatasetItemsOutputFields(z, run.defaultDatasetId, run.actId);
 };
 
 const getTaskDatasetOutputFields = async (z, bundle) => {
@@ -63,11 +88,9 @@ const getTaskDatasetOutputFields = async (z, bundle) => {
             },
         });
     } catch (err) {
-        // 404 status = There is not successful run yet.
-        if (err.status !== 404) {
+        if (!isNotFoundError(err)) {
             z.console.error('Error while fetching dataset items', err);
         }
-        // Return default output fields, if there is no successful run yet or any other error.
         return [];
     }
     const { data: run } = lastSuccessDatasetItems;
@@ -77,5 +100,6 @@ const getTaskDatasetOutputFields = async (z, bundle) => {
 module.exports = {
     getDatasetItemsOutputFields,
     getActorDatasetOutputFields,
+    getRunDatasetOutputFields,
     getTaskDatasetOutputFields,
 };

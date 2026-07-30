@@ -7,7 +7,7 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     DATASET_MAX_SIZE_MARGIN,
 } = require('./consts');
-const { wrapRequestWithRetries } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
@@ -258,7 +258,7 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
         });
         store = storeResponse.data;
     } catch (err) {
-        if (!err.message.includes('not found')) throw err;
+        if (!isNotFoundError(err)) throw err;
     }
 
     // The second creates store with name, in case storeId not found.

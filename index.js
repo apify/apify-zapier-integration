@@ -15,6 +15,7 @@ const scrapeSingleUrlCreate = require('./src/creates/scrape_single_url');
 const setValueCreate = require('./src/creates/set_value');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 const actorLastRunSearch = require('./src/searches/actor_last_run');
+const getRunSearch = require('./src/searches/get_run');
 const getValueSearch = require('./src/searches/get_value');
 const fetchItemsSearch = require('./src/searches/fetch_items');
 
@@ -59,6 +60,7 @@ const App = {
     searches: {
         [taskLastRunSearch.key]: taskLastRunSearch,
         [actorLastRunSearch.key]: actorLastRunSearch,
+        [getRunSearch.key]: getRunSearch,
         [getValueSearch.perform.key]: getValueSearch.perform,
         [fetchItemsSearch.key]: fetchItemsSearch,
     },
