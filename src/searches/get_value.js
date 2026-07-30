@@ -33,7 +33,12 @@ const getValue = async (z, bundle) => {
     });
 
     if (sizeRequest.status === 404) {
-        return [];
+        throw new z.errors.Error(
+            `No record found for key "${key}" in key-value store ${store.id}. `
+            + 'The store exists but has no record under that key. Check the key name, '
+            + 'or list the store keys in Apify Console: '
+            + `https://console.apify.com/storage/key-value-stores/${store.id}`,
+        );
     }
 
     const contentType = sizeRequest.getHeader('content-type');
@@ -79,7 +84,8 @@ module.exports = {
         noun: 'Key-value Store Value',
         display: {
             label: 'Get Key-Value Store Record',
-            description: 'Gets a record from a key-value store.',
+            description: 'Gets a record from a key-value store. '
+                + 'Can be used as agent memory - retrieve a value saved earlier with Set Key-Value Store Record.',
         },
         operation: {
             inputFields: [

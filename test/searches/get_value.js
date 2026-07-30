@@ -125,7 +125,7 @@ describe('get key-value store value', () => {
         scope?.done();
     }).timeout(10000);
 
-    it('work for empty value', async () => {
+    it('throws a descriptive error when the record is missing', async () => {
         const storeKey = randomString();
 
         const bundle = {
@@ -147,9 +147,8 @@ describe('get key-value store value', () => {
                 .reply(404);
         }
 
-        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
-
-        expect(testResult).to.be.eql([]);
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+            .to.be.rejectedWith(/No record found for key/);
         scope?.done();
     }).timeout(10000);
 
