@@ -88,7 +88,6 @@ describe('search apify store', () => {
         expect(actor.id).to.be.a('string');
         expect(actor.name).to.be.a('string');
         expect(actor.username).to.be.a('string');
-        // runCount maps to stats.totalRuns, flattened to stats__totalRuns.
         expect(actor.stats__totalRuns).to.be.a('number');
         // Non-curated fields must not leak through.
         expect(actor.pictureUrl).to.be.eql(undefined);

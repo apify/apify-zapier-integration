@@ -22,7 +22,7 @@ const CURATED_STORE_ACTOR_FIELDS = [
 
 /**
  * Curates a single Apify Store item down to the fields an agent needs to select
- * an Actor and chain it into Run Actor / Get Actor Details.
+ * an Actor and chain it into Run Actor.
  */
 const curateStoreActor = (item) => {
     const actor = _.pick(item, CURATED_STORE_ACTOR_FIELDS);
