@@ -52,8 +52,8 @@ GREP="actor run" npm run test:grep
 npm run lint
 npm run lint:fix
 
-# Validate Zapier app schema
-npx zapier validate
+# Validate Zapier app schema (CLI binary is `zapier-platform`)
+npx zapier-platform validate
 ```
 
 Publishing to Zapier is handled automatically by `publish.yml` on GitHub release and is restricted to Apify team members with the deploy key.
