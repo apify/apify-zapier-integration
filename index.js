@@ -19,6 +19,7 @@ const getRunSearch = require('./src/searches/get_run');
 const getValueSearch = require('./src/searches/get_value');
 const fetchItemsSearch = require('./src/searches/fetch_items');
 const getActorSearch = require('./src/searches/get_actor');
+const searchStoreSearch = require('./src/searches/search_store');
 
 /**
  * Apify APP definition
@@ -65,6 +66,7 @@ const App = {
         [getValueSearch.perform.key]: getValueSearch.perform,
         [fetchItemsSearch.key]: fetchItemsSearch,
         [getActorSearch.key]: getActorSearch,
+        [searchStoreSearch.key]: searchStoreSearch,
     },
 
     // If you want your creates to show up, you better include it here!

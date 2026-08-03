@@ -220,6 +220,35 @@ const TASK_RUN_SAMPLE = {
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
+// Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
+// The `stats.*` popularity/recency signals are flattened to `stats__*` keys (matching the
+// dynamic-field convention used elsewhere) so Zapier renders them as flat output fields.
+const STORE_ACTOR_SAMPLE = {
+    id: 'zdc3Pyhyz3m8vjDeM',
+    name: 'web-scraper',
+    title: 'Web Scraper',
+    description: 'Crawls arbitrary websites using a browser and extracts structured data from web pages.',
+    username: 'apify',
+    url: 'https://apify.com/apify/web-scraper',
+    categories: ['DEVELOPER_TOOLS', 'AUTOMATION'],
+    stats__totalRuns: 3208782,
+    stats__totalUsers: 62598,
+    stats__lastRunStartedAt: '2026-07-10T09:41:39.937Z',
+};
+
+const STORE_ACTOR_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'title', label: 'Title', type: 'string' },
+    { key: 'description', label: 'Description', type: 'string' },
+    { key: 'username', label: 'Username', type: 'string' },
+    { key: 'url', label: 'Store URL', type: 'string' },
+    { key: 'categories', label: 'Categories', type: 'string', list: true },
+    { key: 'stats__totalRuns', label: 'Total runs', type: 'number' },
+    { key: 'stats__totalUsers', label: 'Total users', type: 'number' },
+    { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
+];
+
 const ACTOR_SAMPLE = {
     id: 'zdc3Pyhyz3m8vjDeM',
     name: 'web-scraper',
@@ -325,7 +354,7 @@ const DEFAULT_PAGINATION_LIMIT = 500;
 const LEGACY_PHANTOM_JS_CRAWLER_ID = 'YPh5JENjSSR6vBf2E';
 
 // Field to omit from actor run, these are useless in Zapier
-const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId', 'output'];
+const OMIT_ACTOR_RUN_FIELDS = ['meta', 'stats', 'options', 'userId', 'output', 'standby'];
 
 // Field to pick from dataset detail
 const DATASET_PUBLISH_FIELDS = ['id', 'name', 'createdAt', 'modifiedAt', 'itemCount', 'cleanItemCount', 'actId', 'actRunId'];
@@ -382,6 +411,8 @@ module.exports = {
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
+    STORE_ACTOR_SAMPLE,
+    STORE_ACTOR_OUTPUT_FIELDS,
     ACTOR_SAMPLE,
     ACTOR_OUTPUT_FIELDS,
     DEFAULT_KEY_VALUE_STORE_KEYS,
