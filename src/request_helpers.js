@@ -89,7 +89,7 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
     expBackoffMaxRepeats: 3,
 });
 
-const waitForRunToFinish = async (request, runId, timeoutSecs) => {
+const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false) => {
     const maxWaitingForRequest = 60;
     const pollIntervalMillis = maxWaitingForRequest * 1000;
     const timeoutMillis = timeoutSecs * 1000;
@@ -108,16 +108,29 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
                 return run;
             }
         } catch (error) {
-            throw new Error(`Error while polling for run ${options.url}: ${error}`);
+            throw new Error(`Error while polling for run ${runId} (${options.url}): ${error}`);
         }
 
         await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
     }
 
-    throw new Error(`Timeout of ${timeoutSecs} seconds reached for run ${runId}`);
+    const asyncSuffix = asyncHint
+        ? ', or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
+        : '.';
+    throw new Error(
+        `Run did not finish within the ${timeoutSecs}s synchronous timeout. `
+        + `The run is still active (run ID: ${runId}) and keeps running in the background. `
+        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId})${asyncSuffix}`,
+    );
 };
 
+/**
+ * Checks whether an error represents a "not found" API response.
+ */
+const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
+
 module.exports = {
+    isNotFoundError,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,

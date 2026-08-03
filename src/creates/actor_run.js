@@ -62,6 +62,23 @@ const processInputField = (key, value, inputSchema) => {
     }
 };
 
+/** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
+const requestActorOrThrowNotFound = async (z, options, actorId) => {
+    try {
+        return await wrapRequestWithRetries(z.request, options);
+    } catch (err) {
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('not found') && message.includes('actor')) {
+            throw new Error(
+                `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
+                + 'and that your Apify account has access to it: '
+                + `https://console.apify.com/actors/${actorId}`,
+            );
+        }
+        throw err;
+    }
+};
+
 const runActor = async (z, bundle) => {
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
@@ -85,14 +102,14 @@ const runActor = async (z, bundle) => {
             try {
                 JSON.parse(inputBody);
             } catch (err) {
-                throw new Error('Please check that your input body is a valid JSON.');
+                throw new Error(`The Input body is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
             }
         }
         requestOpts.body = inputBody;
     } else {
-        const actorResponse = await wrapRequestWithRetries(z.request, {
+        const actorResponse = await requestActorOrThrowNotFound(z, {
             url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
-        });
+        }, actorId);
         const inputSchema = await maybeGetInputSchemaFromActor(z, actorResponse.data, build);
         if (inputSchema) {
             const input = {};
@@ -118,8 +135,8 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+    let { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
 
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
@@ -129,7 +146,10 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs a selected Actor.',
+        description: 'Runs an Apify Actor (a cloud program for web scraping, data extraction, or automation) with custom input parameters. '
+            + 'Use this for ad-hoc runs; if you already have a saved configuration in Apify Console, use Run Task instead. '
+            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items, '
+            + 'or look up the run later with Find Last Actor Run.',
     },
 
     operation: {
@@ -146,7 +166,7 @@ module.exports = {
             },
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor to run.',
+                helpText: 'Please select the Actor to run, or pass an Actor ID or slug directly (for example `apify~web-scraper`).',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actorsWithStore.id.name',
@@ -155,7 +175,8 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                    + 'Beware that the hard timeout for the run is 30 seconds. '
+                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

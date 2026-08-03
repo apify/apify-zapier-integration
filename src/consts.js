@@ -249,6 +249,54 @@ const STORE_ACTOR_OUTPUT_FIELDS = [
     { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
 ];
 
+const ACTOR_SAMPLE = {
+    id: 'zdc3Pyhyz3m8vjDeM',
+    name: 'web-scraper',
+    title: 'Web Scraper',
+    description: 'Crawls arbitrary websites using a browser and extracts structured data from web pages.',
+    username: 'apify',
+    isPublic: true,
+    actorPermissionLevel: 'LIMITED_PERMISSIONS',
+    createdAt: '2019-07-08T11:27:57.401Z',
+    modifiedAt: '2019-07-08T14:01:05.546Z',
+    standbyUrl: 'https://web-scraper.apify.actor',
+    stats: {
+        totalRuns: 16,
+        totalUsers: 6,
+        lastRunStartedAt: '2019-07-08T14:01:05.546Z',
+    },
+    defaultRunOptions: {
+        build: 'latest',
+        timeoutSecs: 3600,
+        memoryMbytes: 2048,
+    },
+    taggedBuilds: {
+        latest: {
+            buildId: 'z2EryhbfhgSyqj6Hn',
+            buildNumber: '0.0.2',
+        },
+    },
+};
+
+const ACTOR_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'title', label: 'Title', type: 'string' },
+    { key: 'description', label: 'Description', type: 'string' },
+    { key: 'username', label: 'Username', type: 'string' },
+    { key: 'isPublic', label: 'Is public', type: 'boolean' },
+    { key: 'actorPermissionLevel', label: 'Actor permission level', type: 'string' },
+    { key: 'createdAt', label: 'Created at' },
+    { key: 'modifiedAt', label: 'Modified at' },
+    { key: 'standbyUrl', label: 'Standby URL', type: 'string' },
+    { key: 'stats__totalRuns', label: 'Total runs', type: 'number' },
+    { key: 'stats__totalUsers', label: 'Total users', type: 'number' },
+    { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
+    { key: 'defaultRunOptions__build', label: 'Default build', type: 'string' },
+    { key: 'defaultRunOptions__timeoutSecs', label: 'Default timeout (seconds)', type: 'number' },
+    { key: 'defaultRunOptions__memoryMbytes', label: 'Default memory (MB)', type: 'number' },
+];
+
 const DATASET_SAMPLE = {
     id: 'fYYRaBM5FSoCZ2Tf9',
     name: 'dataset-sample',
@@ -365,6 +413,8 @@ module.exports = {
     TASK_RUN_OUTPUT_FIELDS,
     STORE_ACTOR_SAMPLE,
     STORE_ACTOR_OUTPUT_FIELDS,
+    ACTOR_SAMPLE,
+    ACTOR_OUTPUT_FIELDS,
     DEFAULT_KEY_VALUE_STORE_KEYS,
     DEFAULT_PAGINATION_LIMIT,
     LEGACY_PHANTOM_JS_CRAWLER_ID,

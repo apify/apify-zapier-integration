@@ -219,4 +219,21 @@ describe('create task run', () => {
 
         scope?.done();
     }).timeout(240000);
+
+    it('throws a descriptive error with the parser detail for invalid input JSON overrides', async () => {
+        const bundle = {
+            authData: {
+                access_token: TEST_USER_TOKEN,
+            },
+            inputData: {
+                taskId: randomString(),
+                rawInput: '{ "invalid": ',
+                runSync: false,
+            },
+        };
+
+        // JSON validated before any request, so no nock scope needed.
+        await expect(appTester(App.creates.createTaskRun.operation.perform, bundle))
+            .to.be.rejectedWith(/Input JSON overrides" field is not valid JSON:/);
+    });
 });
