@@ -74,6 +74,22 @@ const validateApiResponse = (response, z) => {
             );
         }
 
+        // Handle full-permission Actors that the user has not approved yet.
+        // Approval is a manual action in Apify Console, so retrying won't help - we surface the
+        // approvalUrl (when present) so the user can approve the permissions and run the Zap again.
+        if (errorInfo && errorInfo.error && errorInfo.error.type === 'full-permission-actor-not-approved') {
+            const approvalUrl = errorInfo.error.data && errorInfo.error.data.approvalUrl;
+            const userMessage = approvalUrl
+                ? `${errorMessage} Approve this Actor's permissions here: ${approvalUrl} — then run the Zap again.`
+                : errorMessage;
+            throw new z.errors.Error(
+                // This message is surfaced to the user
+                userMessage,
+                'ActorApprovalRequired',
+                response.status,
+            );
+        }
+
         throw new Error(errorMessage);
     }
 
