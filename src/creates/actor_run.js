@@ -68,7 +68,7 @@ const requestActorOrThrowNotFound = async (z, options, actorId) => {
         return await wrapRequestWithRetries(z.request, options);
     } catch (err) {
         const message = (err.message || '').toLowerCase();
-        if (message.includes('not found') && message.includes('actor')) {
+        if (message.includes('actor was not found')) {
             throw new Error(
                 `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
                 + 'and that your Apify account has access to it: '
