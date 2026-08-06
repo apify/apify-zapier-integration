@@ -81,7 +81,7 @@ describe('scrape single URL', () => {
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         scope.get(`/v2/actor-runs/${mockRun.id}`)
-            .query({ waitForFinish: 60 })
+            .query({ waitForFinish: 25 })
             .reply(200, { data: mockRun });
 
         const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);

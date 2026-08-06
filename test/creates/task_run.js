@@ -74,7 +74,7 @@ describe('create task run', () => {
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
+                .query({ waitForFinish: 25 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
@@ -118,7 +118,7 @@ describe('create task run', () => {
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
+                .query({ waitForFinish: 25 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { ...KEY_VALUE_STORE_SAMPLE, error: 'No output' });
@@ -200,7 +200,7 @@ describe('create task run', () => {
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
+                .query({ waitForFinish: 25 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);

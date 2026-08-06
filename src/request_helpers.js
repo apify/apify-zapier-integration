@@ -89,9 +89,8 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
     expBackoffMaxRepeats: 3,
 });
 
-const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false) => {
-    const maxWaitingForRequest = 60;
-    const pollIntervalMillis = maxWaitingForRequest * 1000;
+const waitForRunToFinish = async (request, runId, timeoutSecs, hasSyncField = false) => {
+    const maxWaitingForRequest = Math.min(60, timeoutSecs);
     const timeoutMillis = timeoutSecs * 1000;
     const startTime = Date.now();
     const options = {
@@ -110,17 +109,18 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false
         } catch (error) {
             throw new Error(`Error while polling for run ${runId} (${options.url}): ${error}`);
         }
-
-        await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
     }
 
-    const asyncSuffix = asyncHint
-        ? ', or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
-        : '.';
+    // Only Run Actor and Run Task have the "Run synchronously" field, Scrape Single URL always waits.
+    const asyncSuffix = hasSyncField
+        ? 'To handle longer runs, set "Run synchronously" to "no" and process the results in a second Zap '
+            + 'that starts with a finished run trigger.'
+        : 'To handle longer runs, use the Run Actor action with "Run synchronously" set to "no" and process the results '
+            + 'in a second Zap that starts with the Finished Actor Run trigger.';
     throw new Error(
-        `Run did not finish within the ${timeoutSecs}s synchronous timeout. `
+        `Run did not finish within the ${timeoutSecs}s synchronous timeout, after which the step terminates. `
         + `The run is still active (run ID: ${runId}) and keeps running in the background. `
-        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId})${asyncSuffix}`,
+        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId}). ${asyncSuffix}`,
     );
 };
 

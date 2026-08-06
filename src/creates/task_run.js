@@ -79,8 +79,10 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                helpText: 'If you choose `yes`, the Zap will wait up to 25 seconds for the task run to finish, '
+                    + 'after which it will get terminated due to Zapier\'s timeout. '
+                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Task Run or Fetch Dataset Items, '
+                    + 'or in a second Zap that starts with the Finished Task Run trigger.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
