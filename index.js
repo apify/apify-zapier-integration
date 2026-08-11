@@ -13,6 +13,7 @@ const taskRunCreate = require('./src/creates/task_run');
 const actorRunCreate = require('./src/creates/actor_run');
 const scrapeSingleUrlCreate = require('./src/creates/scrape_single_url');
 const setValueCreate = require('./src/creates/set_value');
+const abortActorRunCreate = require('./src/creates/abort_actor_run');
 const taskLastRunSearch = require('./src/searches/task_last_run');
 const actorLastRunSearch = require('./src/searches/actor_last_run');
 const getRunSearch = require('./src/searches/get_run');
@@ -75,6 +76,7 @@ const App = {
         [actorRunCreate.key]: actorRunCreate,
         [setValueCreate.key]: setValueCreate,
         [scrapeSingleUrlCreate.key]: scrapeSingleUrlCreate,
+        [abortActorRunCreate.key]: abortActorRunCreate,
     },
 };
 
