@@ -4,6 +4,23 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
+
+const getSyncTaskRunTimeoutSecs = async (z, taskId) => {
+    const { data: task } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+    });
+
+    let timeoutSecs = task.options?.timeoutSecs;
+    if (!timeoutSecs) {
+        const { data: actor } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
+        });
+        timeoutSecs = actor.defaultRunOptions?.timeoutSecs;
+    }
+
+    return Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
+};
+
 const runTask = async (z, bundle) => {
     const { taskId, runSync, rawInput } = bundle.inputData;
 
@@ -24,13 +41,9 @@ const runTask = async (z, bundle) => {
 
     // NOTE: Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
-        const { data: task } = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
-        });
-
         requestOpts.params = {
             ...requestOpts.params,
-            timeout: task.options?.timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+            timeout: await getSyncTaskRunTimeoutSecs(z, taskId),
             webhooks: buildRunCallbackWebhookParam(z.generateCallbackUrl()),
         };
     }
@@ -44,7 +57,7 @@ const runTask = async (z, bundle) => {
 };
 
 const resumeTaskRun = async (z, bundle) => {
-    const run = await getActorRunOnResume(z, bundle);
+    const run = await getActorRunOnResume(z, bundle, true);
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
