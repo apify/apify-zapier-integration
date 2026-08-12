@@ -824,38 +824,40 @@ describe('create actor run', () => {
         scope?.done();
     }).timeout(50000);
 
-    it('throws a descriptive error with Actor ID when the Actor is not found', async () => {
-        const missingActorId = 'this-actor~does-not-exist';
-        const bundle = {
-            authData: {
-                access_token: TEST_USER_TOKEN,
-            },
-            inputData: {
-                actorId: missingActorId,
-                inputBody: '',
-                runSync: false,
-                build: 'latest',
-                timeoutSecs: 120,
-                memoryMbytes: 1024,
-            },
-        };
+    // All wordings the API uses for a missing Actor, all matched by ACTOR_NOT_FOUND_MESSAGE_REGEX.
+    ['Actor was not found', 'Actor was not found or access denied', 'Actor with this name was not found'].forEach((apiMessage, index) => {
+        it(`throws a descriptive error with Actor ID when the API says "${apiMessage}"`, async function () {
+            // With a token the real API decides the wording, so the E2E path runs only once.
+            if (TEST_USER_TOKEN && index > 0) this.skip();
 
-        // All wordings the API uses for a missing Actor; with a token the real API is called once instead.
-        const apiMessages = TEST_USER_TOKEN
-            ? []
-            : ['Actor was not found', 'Actor was not found or access denied', 'Actor with this name was not found'];
+            const missingActorId = 'this-actor~does-not-exist';
+            const bundle = {
+                authData: {
+                    access_token: TEST_USER_TOKEN || randomString(),
+                },
+                inputData: {
+                    actorId: missingActorId,
+                    inputBody: '',
+                    runSync: false,
+                    build: 'latest',
+                    timeoutSecs: 120,
+                    memoryMbytes: 1024,
+                },
+            };
 
-        apiMessages.forEach(async (apiMessage) => {
-            const scope = nock('https://api.apify.com');
-            scope.post(`/v2/acts/${missingActorId}/runs`)
-                .query(true)
-                .reply(404, { error: { type: 'record-not-found', message: apiMessage } });
+            let scope;
+            if (!TEST_USER_TOKEN) {
+                scope = nock('https://api.apify.com');
+                scope.post(`/v2/acts/${missingActorId}/runs`)
+                    .query(true)
+                    .reply(404, { error: { type: 'record-not-found', message: apiMessage } });
+            }
 
             await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
                 .to.be.rejectedWith(new RegExp(`Actor "${missingActorId}" was not found`));
-            scope.done();
-        });
-    }).timeout(30000);
+            scope?.done();
+        }).timeout(30000);
+    });
 
     it('throws a descriptive error with the parser detail for invalid JSON input body', async () => {
         const bundle = {
