@@ -99,7 +99,7 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
  */
 const getRemainingSyncWaitSecs = (stepStartedAt) => Math.max(
     1,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - Math.ceil((Date.now() - stepStartedAt) / 1000),
+    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - (Date.now() - stepStartedAt) / 1000,
 );
 
 const waitForRunToFinish = async (request, runId, timeoutSecs, hasSyncField = false) => {

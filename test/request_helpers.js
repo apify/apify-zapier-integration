@@ -71,8 +71,8 @@ describe('request helpers', () => {
 
     describe('getRemainingSyncWaitSecs', () => {
         it('shrinks with the time already spent in the step, never below a second', () => {
-            expect(getRemainingSyncWaitSecs(Date.now())).to.be.eql(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
-            expect(getRemainingSyncWaitSecs(Date.now() - 5000)).to.be.eql(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - 5);
+            expect(getRemainingSyncWaitSecs(Date.now())).to.be.closeTo(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, 0.1);
+            expect(getRemainingSyncWaitSecs(Date.now() - 5000)).to.be.closeTo(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - 5, 0.1);
             expect(getRemainingSyncWaitSecs(Date.now() - 600000)).to.be.eql(1);
         });
     });
