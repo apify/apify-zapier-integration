@@ -3,9 +3,12 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
+const { RetryableError } = require('@apify/utilities');
 
-const { DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, ZAPIER_STEP_TIMEOUT_SECONDS } = require('../src/consts');
+const { DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../src/consts');
 const { waitForRunToFinish, getRemainingSyncWaitSecs } = require('../src/request_helpers');
+
+const getWaitForFinishParam = (url) => Number(new URL(url).searchParams.get('waitForFinish'));
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -19,7 +22,7 @@ describe('request helpers', () => {
 
             const promise = waitForRunToFinish(request, runId, 0);
 
-            await expect(promise).to.be.rejectedWith(new RegExp(`did not finish within the ${ZAPIER_STEP_TIMEOUT_SECONDS}s limit`));
+            await expect(promise).to.be.rejectedWith(/did not finish within the synchronous timeout/);
             await expect(promise).to.be.rejectedWith(new RegExp(`run ID: ${runId}`));
             await expect(promise).to.be.rejectedWith(new RegExp(`console.apify.com/view/runs/${runId}`));
         });
@@ -46,8 +49,25 @@ describe('request helpers', () => {
 
             expect(run.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
             expect(requestedUrls).to.have.lengthOf(2);
-            expect(requestedUrls[0]).to.include(`waitForFinish=${DEFAULT_RUN_WAIT_TIME_OUT_SECONDS}`);
-            expect(requestedUrls[1]).to.include('waitForFinish=60');
+            expect(getWaitForFinishParam(requestedUrls[0])).to.be.within(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - 1, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+            expect(getWaitForFinishParam(requestedUrls[1])).to.be.eql(60);
+        });
+
+        it('shrinks waitForFinish on a retry, so retries stay within the budget', async () => {
+            const runId = 'HG7ML7M8z78YcAPEB';
+            const requestedUrls = [];
+            const request = (options) => {
+                requestedUrls.push(options.url);
+                // Apify API can fail after holding the long poll open, which the retry must not repeat in full.
+                if (requestedUrls.length === 1) throw new RetryableError(new Error('Internal server error'));
+                return { data: { id: runId, status: ACTOR_JOB_STATUSES.SUCCEEDED } };
+            };
+
+            const run = await waitForRunToFinish(request, runId, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+
+            expect(run.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
+            expect(requestedUrls).to.have.lengthOf(2);
+            expect(getWaitForFinishParam(requestedUrls[1])).to.be.below(getWaitForFinishParam(requestedUrls[0]));
         });
 
         it('never waits past the deadline, even when the API returns early', async function () {

@@ -4,6 +4,7 @@ const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
     RECENTLY_USED_ACTORS_KEY,
+    ZAPIER_STEP_TIMEOUT_SECONDS,
 } = require('../consts');
 const {
     enrichActorRun,
@@ -174,9 +175,9 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds. '
-                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items, '
+                helpText: 'If you choose "yes", the Zap will wait until the Actor run is finished. '
+                    + `Beware that the hard timeout for the run is ${ZAPIER_STEP_TIMEOUT_SECONDS} seconds. `
+                    + 'For anything non-trivial, choose "no" and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items, '
                     + 'or in a second Zap that starts with the Finished Actor Run trigger.',
                 key: 'runSync',
                 required: true,

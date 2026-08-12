@@ -1,4 +1,4 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, ZAPIER_STEP_TIMEOUT_SECONDS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish, getRemainingSyncWaitSecs } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
@@ -80,9 +80,9 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the task run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds. '
-                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Task Run or Fetch Dataset Items, '
+                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. '
+                    + `Beware that the hard timeout for the run is ${ZAPIER_STEP_TIMEOUT_SECONDS} seconds. `
+                    + 'For anything non-trivial, choose "no" and fetch the results in a later step with Find Last Task Run or Fetch Dataset Items, '
                     + 'or in a second Zap that starts with the Finished Task Run trigger.',
                 key: 'runSync',
                 required: true,

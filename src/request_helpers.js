@@ -3,7 +3,6 @@ const {
     ACTOR_RUN_TERMINAL_STATUSES,
     APIFY_API_ENDPOINTS,
     DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
-    ZAPIER_STEP_TIMEOUT_SECONDS,
 } = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
@@ -86,10 +85,11 @@ const validateApiResponse = (response, z) => {
 };
 
 /**
- * Wrapper for z.request() to use exponential back off calls
+ * Wrapper for z.request() to use exponential back off calls.
+ * Options can be a function, which is called before each attempt, so a retry can use up-to-date options.
  */
 const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
-    func: () => request(options),
+    func: () => request(typeof options === 'function' ? options() : options),
     expBackoffMillis: 200,
     expBackoffMaxRepeats: 3,
 });
@@ -108,13 +108,16 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, hasSyncField = fa
     const startTime = Date.now();
     const options = {};
 
-    while (Date.now() - startTime < timeoutMillis) {
-        // A single long poll must not outlive the remaining budget.
-        const maxWaitingForRequest = Math.min(60, Math.ceil((timeoutMillis - (Date.now() - startTime)) / 1000));
+    // No single long poll, including its retries, must outlive the remaining budget.
+    const getOptions = () => {
+        const maxWaitingForRequest = Math.min(60, Math.max(0, Math.floor((timeoutMillis - (Date.now() - startTime)) / 1000)));
         options.url = `${APIFY_API_ENDPOINTS.actorRuns}/${runId}?waitForFinish=${maxWaitingForRequest}`;
+        return options;
+    };
 
+    while (Date.now() - startTime < timeoutMillis) {
         try {
-            const { data: run } = await wrapRequestWithRetries(request, options);
+            const { data: run } = await wrapRequestWithRetries(request, getOptions);
 
             const runStatus = await run.status;
 
@@ -135,7 +138,7 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, hasSyncField = fa
         : 'To handle longer runs, use the Run Actor action with "Run synchronously" set to "no" and process the results '
             + 'in a second Zap that starts with the Finished Actor Run trigger.';
     throw new Error(
-        `Run did not finish within the ${ZAPIER_STEP_TIMEOUT_SECONDS}s limit of a Zap step, after which it terminates. `
+        'Run did not finish within the synchronous timeout. '
         + `The run is still active (run ID: ${runId}) and keeps running in the background. `
         + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId}). ${asyncSuffix}`,
     );
