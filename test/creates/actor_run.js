@@ -17,7 +17,8 @@ const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, 
     parseRunCallbackWebhookParam,
     performAndResume,
 } = require('../helpers');
-const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC } = require('../../src/consts');
+const { ACTOR_RUN_SAMPLE, RECENTLY_USED_ACTORS_KEY, DEFAULT_PAGINATION_LIMIT, STORE_ACTORS_KEY, ACTOR_RUN_SAMPLE_SYNC,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
 const App = require('../../index');
 const { slugifyText } = require('../../src/apify_helpers');
@@ -781,6 +782,77 @@ describe('create actor run', () => {
 
         scope?.done();
     }).timeout(120000);
+
+    it('runSync caps a zero timeout at the synchronous default', async function () {
+        // Mock only, the assertion is about the query the start request is sent with.
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: true,
+                inputBody: '',
+                build: 'latest',
+                timeoutSecs: 0, // The Actor has no default timeout.
+                memoryMbytes: 1024,
+            },
+        };
+
+        const run = getMockRun({ actId: testActorId });
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${testActorId}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(200, { data: run });
+
+        const startedRun = await appTester(App.creates.createActorRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(run.id);
+
+        scope.done();
+    });
+
+    it('runAsync keeps a zero timeout, so the Actor run has no timeout', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: false,
+                inputBody: '',
+                build: 'latest',
+                timeoutSecs: 0,
+                memoryMbytes: 1024,
+            },
+        };
+
+        const run = getMockRun({ actId: testActorId });
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${testActorId}/runs`)
+            .query((query) => query.timeout === '0' && query.webhooks === undefined)
+            .reply(200, { data: run });
+        scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(200, { foo: 'bar' });
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
+
+        await appTester(App.creates.createActorRun.operation.perform, bundle);
+
+        scope.done();
+    });
 
     it('performResume falls back to the run ID from the webhook payload', async () => {
         const run = getMockRun({ actId: testActorId });

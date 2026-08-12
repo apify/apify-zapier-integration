@@ -6,6 +6,7 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     DATASET_MAX_SIZE_MARGIN,
+    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('./consts');
 const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 
@@ -636,8 +637,9 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Timeout',
-            helpText: 'Timeout for the actor run in seconds. If `0` '
-                + 'there will be no timeout and the actor will run until completion, perhaps forever.',
+            helpText: 'Timeout for the actor run in seconds. If `0` there will be no timeout '
+                + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, a `0` '
+                + `is capped at ${DEFAULT_RUN_WAIT_TIME_OUT_SECONDS} seconds so the Zap cannot wait forever.`,
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,

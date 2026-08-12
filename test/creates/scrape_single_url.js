@@ -8,7 +8,7 @@ const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl, TEST_CALLBACK_URL,
     parseRunCallbackWebhookParam, performAndResume } = require('../helpers');
 const App = require('../../index');
-const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
+const { SCRAPE_SINGLE_URL_RUN_SAMPLE, SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
@@ -73,7 +73,9 @@ describe('scrape single URL', () => {
         })
             .query((query) => {
                 webhooksParam = query.webhooks;
-                return query.memory === '1024' && !!query.webhooks;
+                return query.memory === '1024'
+                    && query.timeout === `${SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS}`
+                    && !!query.webhooks;
             })
             .reply(200, { data: mockRun });
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
@@ -179,7 +181,9 @@ describe('scrape single URL', () => {
                 saveHtml: true,
                 saveMarkdown: true,
             })
-                .query((query) => query.memory === '1024' && !!query.webhooks)
+                .query((query) => query.memory === '1024'
+                    && query.timeout === `${SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS}`
+                    && !!query.webhooks)
                 .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });
             scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 1, clean: true })

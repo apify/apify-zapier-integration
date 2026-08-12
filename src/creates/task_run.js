@@ -1,4 +1,4 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../consts');
 const { enrichActorRun, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
@@ -24,7 +24,15 @@ const runTask = async (z, bundle) => {
 
     // NOTE: Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
-        requestOpts.params = { webhooks: buildRunCallbackWebhookParam(z.generateCallbackUrl()) };
+        const { data: task } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+        });
+
+        requestOpts.params = {
+            ...requestOpts.params,
+            timeout: task.options?.timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+            webhooks: buildRunCallbackWebhookParam(z.generateCallbackUrl()),
+        };
     }
 
     const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
@@ -90,7 +98,8 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, this step waits until the task run finishes and then returns its results. '
-                    + 'The Zap shows the step as waiting in the meantime, and the wait is capped by the run timeout configured for the task. '
+                    + 'The Zap shows the step as waiting in the meantime, and the wait is capped by the timeout configured for the task, '
+                    + 'or by 1 hour if the task has none. '
                     + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
                     + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger.',
                 key: 'runSync',

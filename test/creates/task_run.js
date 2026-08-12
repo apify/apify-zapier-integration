@@ -15,7 +15,7 @@ const { TEST_USER_TOKEN,
     parseRunCallbackWebhookParam,
     performAndResume,
 } = require('../helpers');
-const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
+const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
 const App = require('../../index');
 
@@ -76,10 +76,13 @@ describe('create task run', () => {
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask1Id });
             scope = nock('https://api.apify.com').persist();
+            scope.get(`/v2/actor-tasks/${testTask1Id}`)
+                .reply(200, { data: { id: testTask1Id, options: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
                 .query((query) => {
                     webhooksParam = query.webhooks;
-                    return !!query.webhooks;
+                    // The task's own timeout is what caps the synchronous wait.
+                    return query.timeout === '300' && !!query.webhooks;
                 })
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
@@ -134,8 +137,11 @@ describe('create task run', () => {
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask2Id, status: 'READY' });
             scope = nock('https://api.apify.com').persist();
+            scope.get(`/v2/actor-tasks/${testTask2Id}`)
+                .reply(200, { data: { id: testTask2Id, options: {} } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
-                .query((query) => !!query.webhooks)
+                // A task without its own timeout falls back to the 1 hour synchronous cap.
+                .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
@@ -216,8 +222,10 @@ describe('create task run', () => {
             const mockRun = getMockRun({ actorTaskId: testTask3Id });
 
             scope = nock('https://api.apify.com');
+            scope.get(`/v2/actor-tasks/${testTask3Id}`)
+                .reply(200, { data: { id: testTask3Id, options: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
-                .query((query) => !!query.webhooks)
+                .query((query) => query.timeout === '300' && !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });

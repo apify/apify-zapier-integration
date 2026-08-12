@@ -4,6 +4,7 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
+    SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
 } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { getDatasetItems, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
@@ -35,6 +36,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         method: 'POST',
         params: {
             memory,
+            timeout: SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
         },
         headers: {
             'Content-Type': 'application/json; charset=utf-8',
