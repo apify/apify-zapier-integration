@@ -372,7 +372,7 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
 
 // Zapier hard-kills any perform() after 30s, so the synchronous wait must expire before that to show a proper message.
 // The remaining seconds cover the run start request and the follow-up calls which enrich the run.
-const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = 25;
+const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = 27;
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 

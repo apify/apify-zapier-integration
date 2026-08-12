@@ -6,7 +6,7 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl } = require('../helpers');
 const App = require('../../index');
-const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
+const { SCRAPE_SINGLE_URL_RUN_SAMPLE, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
@@ -81,7 +81,7 @@ describe('scrape single URL', () => {
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         scope.get(`/v2/actor-runs/${mockRun.id}`)
-            .query({ waitForFinish: 25 })
+            .query({ waitForFinish: DEFAULT_RUN_WAIT_TIME_OUT_SECONDS })
             .reply(200, { data: mockRun });
 
         const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
