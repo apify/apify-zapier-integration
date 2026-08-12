@@ -840,17 +840,21 @@ describe('create actor run', () => {
             },
         };
 
-        let scope;
-        if (!TEST_USER_TOKEN) {
-            scope = nock('https://api.apify.com');
+        // All wordings the API uses for a missing Actor; with a token the real API is called once instead.
+        const apiMessages = TEST_USER_TOKEN
+            ? []
+            : ['Actor was not found', 'Actor was not found or access denied', 'Actor with this name was not found'];
+
+        apiMessages.forEach(async (apiMessage) => {
+            const scope = nock('https://api.apify.com');
             scope.post(`/v2/acts/${missingActorId}/runs`)
                 .query(true)
-                .reply(404, { error: { type: 'record-not-found', message: 'Actor was not found' } });
-        }
+                .reply(404, { error: { type: 'record-not-found', message: apiMessage } });
 
-        await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
-            .to.be.rejectedWith(new RegExp(`Actor "${missingActorId}" was not found`));
-        scope?.done();
+            await expect(appTester(App.creates.createActorRun.operation.perform, bundle))
+                .to.be.rejectedWith(new RegExp(`Actor "${missingActorId}" was not found`));
+            scope.done();
+        });
     }).timeout(30000);
 
     it('throws a descriptive error with the parser detail for invalid JSON input body', async () => {

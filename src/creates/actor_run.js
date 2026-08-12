@@ -62,13 +62,18 @@ const processInputField = (key, value, inputSchema) => {
     }
 };
 
+// API wordings: "Actor was not found", "Actor was not found or access denied" (ID form),
+// "Actor with this name was not found" (username~name form). Anchored, because matching just
+// "actor" + "not found" would also swallow missing build and run errors.
+const ACTOR_NOT_FOUND_MESSAGE_REGEX = /^actor (?:with this name )?was not found/;
+
 /** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
 const requestActorOrThrowNotFound = async (z, options, actorId) => {
     try {
         return await wrapRequestWithRetries(z.request, options);
     } catch (err) {
         const message = (err.message || '').toLowerCase();
-        if (message.includes('actor was not found')) {
+        if (ACTOR_NOT_FOUND_MESSAGE_REGEX.test(message)) {
             throw new Error(
                 `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
                 + 'and that your Apify account has access to it: '
