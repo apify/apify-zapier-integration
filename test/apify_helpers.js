@@ -5,12 +5,15 @@ const makeValidator = require('zapier-platform-schema/lib/utils/makeValidator');
 const nock = require('nock');
 const zapier = require('zapier-platform-core');
 
-const { getPrefilledValuesFromInputSchema, createFieldsFromInputSchemaV1, maybeGetInputSchemaFromActor } = require('../src/apify_helpers');
+const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
+
+const { getPrefilledValuesFromInputSchema, createFieldsFromInputSchemaV1, maybeGetInputSchemaFromActor,
+    buildRunCallbackWebhookParam } = require('../src/apify_helpers');
 const { APIFY_API_ENDPOINTS } = require('../src/consts');
 const webScraperInputSchemaJson = require('./helpers/webScraperInputSchema.json');
 const websiteContentCrawlerInputSchema = require('./helpers/websiteContentCrawlerInputSchema.json');
 const generatedInputSchema = require('./helpers/generatedInputSchema.json');
-const { randomString, TEST_USER_TOKEN } = require('./helpers');
+const { randomString, TEST_USER_TOKEN, TEST_CALLBACK_URL, parseRunCallbackWebhookParam } = require('./helpers');
 const App = require('../index');
 
 describe('apify utils', () => {
@@ -65,6 +68,22 @@ describe('apify utils', () => {
                 const test = validator.validate(field);
                 expect(test.errors.length).to.be.eql(0);
             });
+        });
+    });
+
+    describe('buildRunCallbackWebhookParam', () => {
+        it('encodes an ad-hoc webhook for every terminal run status', () => {
+            const webhooks = parseRunCallbackWebhookParam(buildRunCallbackWebhookParam(TEST_CALLBACK_URL));
+
+            expect(webhooks).to.be.eql([{
+                eventTypes: [
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED,
+                ],
+                requestUrl: TEST_CALLBACK_URL,
+            }]);
         });
     });
 

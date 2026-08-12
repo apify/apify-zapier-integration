@@ -3,6 +3,7 @@ const zapier = require('zapier-platform-core');
 const { expect } = require('chai');
 const _ = require('lodash');
 const nock = require('nock');
+const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN,
     apifyClient,
     createWebScraperTask,
@@ -10,6 +11,9 @@ const { TEST_USER_TOKEN,
     randomString,
     getMockRun,
     mockDatasetPublicUrl,
+    TEST_CALLBACK_URL,
+    parseRunCallbackWebhookParam,
+    performAndResume,
 } = require('../helpers');
 const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 
@@ -68,13 +72,17 @@ describe('create task run', () => {
         };
 
         let scope;
+        let webhooksParam;
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask1Id });
             scope = nock('https://api.apify.com').persist();
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
+                .query((query) => {
+                    webhooksParam = query.webhooks;
+                    return !!query.webhooks;
+                })
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
@@ -88,8 +96,19 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
 
+        if (!TEST_USER_TOKEN) {
+            expect(parseRunCallbackWebhookParam(webhooksParam)).to.be.eql([{
+                eventTypes: [
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED,
+                ],
+                requestUrl: TEST_CALLBACK_URL,
+            }]);
+        }
         expect(testResult).to.have.any.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
@@ -116,9 +135,9 @@ describe('create task run', () => {
             const mockRun = getMockRun({ actorTaskId: testTask2Id, status: 'READY' });
             scope = nock('https://api.apify.com').persist();
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
+                .query((query) => !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { ...KEY_VALUE_STORE_SAMPLE, error: 'No output' });
@@ -132,7 +151,7 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
 
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
@@ -198,9 +217,9 @@ describe('create task run', () => {
 
             scope = nock('https://api.apify.com');
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
+                .query((query) => !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
@@ -214,7 +233,7 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
         expect(testResult.datasetItems[0].testedField).be.eql('testValue');
 
         scope?.done();

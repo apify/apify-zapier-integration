@@ -4,10 +4,9 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../consts');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
-const { getDatasetItems } = require('../apify_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
+const { getDatasetItems, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
 
 const WEBSITE_CONTENT_CRAWLER_ACTOR_ID = 'aYG0l9s7dbB7j3gbS';
 
@@ -43,8 +42,16 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         body: JSON.stringify(input),
     };
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+    // Calling z.generateCallbackUrl() pauses the Zap step, performResume then finishes it once the run is done.
+    requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
+
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    return run;
+};
+
+const buildScrapeResult = async (z, bundle, run) => {
+    const { url, crawlerType } = bundle.inputData;
 
     const { defaultDatasetId } = run;
     // Attach Apify app URL to detail of run
@@ -76,6 +83,11 @@ const runWebsiteContentCrawler = async (z, bundle) => {
 
     // Omit fields, which are useless for Zapier users.
     return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
+};
+
+const resumeWebsiteContentCrawler = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle);
+    return buildScrapeResult(z, bundle, run);
 };
 
 module.exports = {
@@ -129,6 +141,7 @@ module.exports = {
         ],
 
         perform: runWebsiteContentCrawler,
+        performResume: resumeWebsiteContentCrawler,
 
         sample: SCRAPE_SINGLE_URL_RUN_SAMPLE,
         outputFields: SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,

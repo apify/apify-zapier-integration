@@ -4,7 +4,6 @@ const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
     RECENTLY_USED_ACTORS_KEY,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../consts');
 const {
     enrichActorRun,
@@ -12,8 +11,10 @@ const {
     maybeGetInputSchemaFromActor,
     prefixInputFieldKey,
     slugifyText,
+    buildRunCallbackWebhookParam,
+    getActorRunOnResume,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
@@ -135,9 +136,21 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+    // NOTE: Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
+    if (runSync) {
+        requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
+    }
 
+    const { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
+
+    // The step is paused here and finished by performResume once the run reaches a terminal status.
+    if (runSync) return run;
+
+    return enrichActorRun(z, bundle.authData.access_token, run);
+};
+
+const resumeActorRun = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle);
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
@@ -174,9 +187,10 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds. '
-                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items.',
+                helpText: 'If you choose `yes`, this step waits until the Actor run finishes and then returns its results. '
+                    + 'The Zap shows the step as waiting in the meantime, and the wait is capped by the run timeout set below. '
+                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
+                    + 'with Find Last Actor Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Actor Run trigger.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
@@ -186,6 +200,7 @@ module.exports = {
         ],
 
         perform: runActor,
+        performResume: resumeActorRun,
 
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [

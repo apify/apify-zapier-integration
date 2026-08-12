@@ -244,6 +244,32 @@ const getActorRun = async (z, bundle) => {
 };
 
 /**
+ * Encodes an ad-hoc webhook for the `webhooks` param of a run start request. Such a webhook rides along with
+ * the run itself, so it fires even if the run finishes before the start request returns.
+ */
+const buildRunCallbackWebhookParam = (callbackUrl) => Buffer.from(JSON.stringify([{
+    eventTypes: Object.values(ACTOR_RUN_TERMINAL_EVENT_TYPES),
+    requestUrl: callbackUrl,
+}]), 'utf8').toString('base64');
+
+/**
+ * Loads the finished run when Zapier resumes a paused step. The run is re-fetched instead of taken from the
+ * webhook payload, so the output matches exactly what the asynchronous path returns.
+ */
+const getActorRunOnResume = async (z, bundle) => {
+    const runId = bundle.outputData?.id || bundle.cleanedRequest?.resource?.id;
+    if (!runId) {
+        throw new Error('The Apify run callback did not contain a run ID, so the run results could not be loaded.');
+    }
+
+    const { data: run } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+    });
+
+    return run;
+};
+
+/**
  * Get store by ID or by name
  * @param z
  * @param storeIdOrName - Key-value store ID or name
@@ -701,6 +727,8 @@ module.exports = {
     subscribeWebhook,
     unsubscribeWebhook,
     getActorRun,
+    buildRunCallbackWebhookParam,
+    getActorRunOnResume,
     getOrCreateKeyValueStore,
     getDatasetItems,
     getActorAdditionalFields,

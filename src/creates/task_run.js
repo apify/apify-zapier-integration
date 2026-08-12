@@ -1,6 +1,6 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
-const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
+const { enrichActorRun, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
@@ -22,11 +22,21 @@ const runTask = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    // NOTE: Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
-        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+        requestOpts.params = { webhooks: buildRunCallbackWebhookParam(z.generateCallbackUrl()) };
     }
 
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    // The step is paused here and finished by performResume once the run reaches a terminal status.
+    if (runSync) return run;
+
+    return enrichActorRun(z, bundle.authData.access_token, run);
+};
+
+const resumeTaskRun = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle);
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
@@ -79,8 +89,10 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                helpText: 'If you choose `yes`, this step waits until the task run finishes and then returns its results. '
+                    + 'The Zap shows the step as waiting in the meantime, and the wait is capped by the run timeout configured for the task. '
+                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
+                    + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
@@ -90,6 +102,7 @@ module.exports = {
         ],
 
         perform: runTask,
+        performResume: resumeTaskRun,
 
         sample: TASK_RUN_SAMPLE,
         outputFields: [

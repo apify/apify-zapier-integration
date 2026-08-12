@@ -4,7 +4,9 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl } = require('../helpers');
+const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
+const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl, TEST_CALLBACK_URL,
+    parseRunCallbackWebhookParam, performAndResume } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE } = require('../../src/consts');
 
@@ -39,6 +41,7 @@ describe('scrape single URL', () => {
         delete mockRun.datasetItemsFileUrls;
         delete mockRun.consoleUrl;
 
+        let webhooksParam;
         const mockDatasetItem = {
             url: 'https://www.example.com',
             metadata: {
@@ -68,8 +71,9 @@ describe('scrape single URL', () => {
             saveHtml: true,
             saveMarkdown: true,
         })
-            .query({
-                memory: 1024,
+            .query((query) => {
+                webhooksParam = query.webhooks;
+                return query.memory === '1024' && !!query.webhooks;
             })
             .reply(200, { data: mockRun });
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
@@ -81,11 +85,19 @@ describe('scrape single URL', () => {
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         scope.get(`/v2/actor-runs/${mockRun.id}`)
-            .query({ waitForFinish: 60 })
             .reply(200, { data: mockRun });
 
-        const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.scrapeSingleUrl, bundle);
 
+        expect(parseRunCallbackWebhookParam(webhooksParam)).to.be.eql([{
+            eventTypes: [
+                WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
+                WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED,
+                WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
+                WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED,
+            ],
+            requestUrl: TEST_CALLBACK_URL,
+        }]);
         expect(testResult).to.have.all.keys(Object.keys(SCRAPE_SINGLE_URL_RUN_SAMPLE));
         expect(testResult.detailsPageUrl).to.eql(`https://console.apify.com/actors/${mockRun.actId}/runs/${mockRun.id}`);
         expect(testResult.pageUrl).to.eql('https://www.example.com');
@@ -111,7 +123,7 @@ describe('scrape single URL', () => {
                 inputData: options,
             };
 
-            const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
+            const testResult = await performAndResume(appTester, App.creates.scrapeSingleUrl, bundle);
             const scrapeSingleUrlRun = await apifyClient.run(testResult.id).get();
             const datasetClient = await apifyClient.dataset(scrapeSingleUrlRun.defaultDatasetId);
             const datasetItems = await datasetClient.listItems({ limit: 1 });
@@ -167,9 +179,7 @@ describe('scrape single URL', () => {
                 saveHtml: true,
                 saveMarkdown: true,
             })
-                .query({
-                    memory: 1024,
-                })
+                .query((query) => query.memory === '1024' && !!query.webhooks)
                 .reply(200, { data: SCRAPE_SINGLE_URL_RUN_SAMPLE });
             scope.get(`/v2/datasets/${SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId}/items`)
                 .query({ limit: 1, clean: true })
@@ -185,7 +195,7 @@ describe('scrape single URL', () => {
                 .reply(200, mockDatasetPublicUrl(SCRAPE_SINGLE_URL_RUN_SAMPLE.defaultDatasetId));
         }
 
-        await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle)).to.be.rejectedWith(/No content was scraped/);
+        await expect(performAndResume(appTester, App.creates.scrapeSingleUrl, bundle)).to.be.rejectedWith(/No content was scraped/);
         scope?.done();
     }).timeout(120_000);
 });

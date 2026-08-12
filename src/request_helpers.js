@@ -1,5 +1,4 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
-const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -89,41 +88,6 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
     expBackoffMaxRepeats: 3,
 });
 
-const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false) => {
-    const maxWaitingForRequest = 60;
-    const pollIntervalMillis = maxWaitingForRequest * 1000;
-    const timeoutMillis = timeoutSecs * 1000;
-    const startTime = Date.now();
-    const options = {
-        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}?waitForFinish=${maxWaitingForRequest}`,
-    };
-
-    while (Date.now() - startTime < timeoutMillis) {
-        try {
-            const { data: run } = await wrapRequestWithRetries(request, options);
-
-            const runStatus = await run.status;
-
-            if (Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(runStatus)) {
-                return run;
-            }
-        } catch (error) {
-            throw new Error(`Error while polling for run ${runId} (${options.url}): ${error}`);
-        }
-
-        await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
-    }
-
-    const asyncSuffix = asyncHint
-        ? ', or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
-        : '.';
-    throw new Error(
-        `Run did not finish within the ${timeoutSecs}s synchronous timeout. `
-        + `The run is still active (run ID: ${runId}) and keeps running in the background. `
-        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId})${asyncSuffix}`,
-    );
-};
-
 /**
  * Checks whether an error represents a "not found" API response.
  */
@@ -135,5 +99,4 @@ module.exports = {
     setApifyRequestHeaders,
     validateApiResponse,
     wrapRequestWithRetries,
-    waitForRunToFinish,
 };
