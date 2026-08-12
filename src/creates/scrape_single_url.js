@@ -4,7 +4,7 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    SCRAPE_SINGLE_URL_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../consts');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getDatasetItems } = require('../apify_helpers');
@@ -44,7 +44,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     };
 
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+    run = await waitForRunToFinish(z.request, run.id, SCRAPE_SINGLE_URL_RUN_WAIT_TIME_OUT_SECONDS);
 
     const { defaultDatasetId } = run;
     // Attach Apify app URL to detail of run

@@ -4,7 +4,6 @@ const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
     RECENTLY_USED_ACTORS_KEY,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../consts');
 const {
     enrichActorRun,
@@ -13,7 +12,7 @@ const {
     prefixInputFieldKey,
     slugifyText,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingSyncWaitSecs } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
@@ -80,6 +79,7 @@ const requestActorOrThrowNotFound = async (z, options, actorId) => {
 };
 
 const runActor = async (z, bundle) => {
+    const stepStartedAt = Date.now();
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
     const requestOpts = {
@@ -136,7 +136,7 @@ const runActor = async (z, bundle) => {
     }
 
     let { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+    if (runSync) run = await waitForRunToFinish(z.request, run.id, getRemainingSyncWaitSecs(stepStartedAt), true);
 
     return enrichActorRun(z, bundle.authData.access_token, run);
 };

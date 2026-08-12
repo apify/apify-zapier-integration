@@ -4,8 +4,8 @@ const chaiAsPromised = require('chai-as-promised');
 
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 
-const { DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../src/consts');
-const { waitForRunToFinish } = require('../src/request_helpers');
+const { DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, ZAPIER_STEP_TIMEOUT_SECONDS } = require('../src/consts');
+const { waitForRunToFinish, getRemainingSyncWaitSecs } = require('../src/request_helpers');
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -19,7 +19,7 @@ describe('request helpers', () => {
 
             const promise = waitForRunToFinish(request, runId, 0);
 
-            await expect(promise).to.be.rejectedWith(/did not finish within the 0s synchronous timeout/);
+            await expect(promise).to.be.rejectedWith(new RegExp(`did not finish within the ${ZAPIER_STEP_TIMEOUT_SECONDS}s limit`));
             await expect(promise).to.be.rejectedWith(new RegExp(`run ID: ${runId}`));
             await expect(promise).to.be.rejectedWith(new RegExp(`console.apify.com/view/runs/${runId}`));
         });
@@ -33,7 +33,7 @@ describe('request helpers', () => {
             await expect(waitForRunToFinish(request, runId, 0, false)).to.be.rejectedWith(/Finished Actor Run trigger/);
         });
 
-        it('caps waitForFinish at the synchronous timeout and stops on a terminal status', async () => {
+        it('caps waitForFinish at the remaining budget and at the API maximum', async () => {
             const runId = 'HG7ML7M8z78YcAPEB';
             const requestedUrls = [];
             const request = (options) => {
@@ -42,31 +42,38 @@ describe('request helpers', () => {
             };
 
             const run = await waitForRunToFinish(request, runId, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+            await waitForRunToFinish(request, runId, 360);
 
             expect(run.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
-            expect(requestedUrls).to.have.lengthOf(1);
+            expect(requestedUrls).to.have.lengthOf(2);
             expect(requestedUrls[0]).to.include(`waitForFinish=${DEFAULT_RUN_WAIT_TIME_OUT_SECONDS}`);
+            expect(requestedUrls[1]).to.include('waitForFinish=60');
         });
 
-        it('never asks the API to wait longer than the synchronous timeout', async function () {
+        it('never waits past the deadline, even when the API returns early', async function () {
             this.timeout(5000);
             const runId = 'HG7ML7M8z78YcAPEB';
-            const requestedUrls = [];
-            // The real API blocks for waitForFinish seconds, the delay here mimics that.
-            const request = async (options) => {
-                requestedUrls.push(options.url);
-                await new Promise((resolve) => { setTimeout(resolve, 300); });
+            const timeoutSecs = 2;
+            let requestCount = 0;
+            // Returning immediately with a non-terminal status is the worst case for the polling loop.
+            const request = () => {
+                requestCount++;
                 return { data: { id: runId, status: ACTOR_JOB_STATUSES.RUNNING } };
             };
 
-            await expect(waitForRunToFinish(request, runId, 1)).to.be.rejectedWith(/did not finish within the 1s synchronous timeout/);
+            const startedAt = Date.now();
+            await expect(waitForRunToFinish(request, runId, timeoutSecs)).to.be.rejectedWith(/did not finish within/);
 
-            expect(requestedUrls.length).to.be.at.least(1);
-            requestedUrls.forEach((url) => {
-                const waitForFinish = Number(url.split('waitForFinish=')[1]);
-                expect(waitForFinish).to.be.at.most(1);
-                expect(waitForFinish).to.be.at.least(1);
-            });
+            expect(Date.now() - startedAt).to.be.at.most(timeoutSecs * 1000 + 500);
+            expect(requestCount).to.be.within(1, timeoutSecs + 1);
+        });
+    });
+
+    describe('getRemainingSyncWaitSecs', () => {
+        it('shrinks with the time already spent in the step, never below a second', () => {
+            expect(getRemainingSyncWaitSecs(Date.now())).to.be.eql(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+            expect(getRemainingSyncWaitSecs(Date.now() - 5000)).to.be.eql(DEFAULT_RUN_WAIT_TIME_OUT_SECONDS - 5);
+            expect(getRemainingSyncWaitSecs(Date.now() - 600000)).to.be.eql(1);
         });
     });
 });

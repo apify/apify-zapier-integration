@@ -13,6 +13,7 @@ const { ActorListSortBy } = require('apify-client');
 const { createAndBuildActor, TEST_USER_TOKEN, apifyClient, getMockActorDetails, randomString, getMockRun, mockDatasetPublicUrl,
     getMockActorBuild,
     getMockInputSchema,
+    isWithinSyncWaitBudget,
 } = require('../helpers');
 const {
     ACTOR_RUN_SAMPLE,
@@ -20,7 +21,6 @@ const {
     DEFAULT_PAGINATION_LIMIT,
     STORE_ACTORS_KEY,
     ACTOR_RUN_SAMPLE_SYNC,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
 } = require('../../src/consts');
 
 const App = require('../../index');
@@ -678,7 +678,7 @@ describe('create actor run', () => {
             scope.get(`/v2/actor-runs/${run.id}`)
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
-                .query({ waitForFinish: DEFAULT_RUN_WAIT_TIME_OUT_SECONDS })
+                .query((q) => isWithinSyncWaitBudget(q.waitForFinish))
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { foo: 'bar' });
@@ -741,7 +741,7 @@ describe('create actor run', () => {
             scope.get(`/v2/actor-runs/${run.id}`)
                 .reply(200, { data: run });
             scope.get(`/v2/actor-runs/${run.id}`)
-                .query({ waitForFinish: DEFAULT_RUN_WAIT_TIME_OUT_SECONDS })
+                .query((q) => isWithinSyncWaitBudget(q.waitForFinish))
                 .reply(200, { data: run });
             scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, {

@@ -1,10 +1,11 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingSyncWaitSecs } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
 const runTask = async (z, bundle) => {
+    const stepStartedAt = Date.now();
     const { taskId, runSync, rawInput } = bundle.inputData;
 
     const requestOpts = {
@@ -24,7 +25,7 @@ const runTask = async (z, bundle) => {
 
     let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
     if (runSync) {
-        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+        run = await waitForRunToFinish(z.request, run.id, getRemainingSyncWaitSecs(stepStartedAt), true);
     }
 
     return enrichActorRun(z, bundle.authData.access_token, run);
@@ -80,7 +81,7 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, the Zap will wait until the task run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.'
+                    + 'Beware that the hard timeout for the run is 30 seconds. '
                     + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Task Run or Fetch Dataset Items, '
                     + 'or in a second Zap that starts with the Finished Task Run trigger.',
                 key: 'runSync',

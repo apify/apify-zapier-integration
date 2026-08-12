@@ -370,9 +370,13 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
     (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i),
 );
 
-// Zapier hard-kills any perform() after 30s, so the synchronous wait must expire before that to show a proper message.
-// The remaining seconds cover the run start request and the follow-up calls which enrich the run.
-const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = 27;
+// Zapier hard-kills any perform() after this limit.
+const ZAPIER_STEP_TIMEOUT_SECONDS = 30;
+
+// The synchronous wait must expire before Zapier's limit to show a proper message.
+const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = ZAPIER_STEP_TIMEOUT_SECONDS - 2;
+
+const SCRAPE_SINGLE_URL_RUN_WAIT_TIME_OUT_SECONDS = 360;
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
@@ -426,7 +430,9 @@ module.exports = {
     DATASET_ITEMS_INLINE_MAX_BYTES,
     DATASET_MAX_SIZE_MARGIN,
     ALLOWED_MEMORY_MBYTES_LIST,
+    ZAPIER_STEP_TIMEOUT_SECONDS,
     DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    SCRAPE_SINGLE_URL_RUN_WAIT_TIME_OUT_SECONDS,
     DEFAULT_ACTOR_MEMORY_MBYTES,
     DATASET_SAMPLE,
     DATASET_OUTPUT_FIELDS,

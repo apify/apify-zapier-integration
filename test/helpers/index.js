@@ -2,6 +2,8 @@ const { ApifyClient } = require('apify-client');
 const zapier = require('zapier-platform-core');
 const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_STATUSES } = require('@apify/consts');
 
+const { DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../../src/consts');
+
 const DEFAULT_PAGE_FUNCTION = `
 async function pageFunction({ request, setValue }) {
     await setValue('OUTPUT', { test: 'foo bar' });
@@ -10,6 +12,9 @@ async function pageFunction({ request, setValue }) {
 `;
 
 const randomString = () => Math.random().toString(32).split('.')[1];
+
+const isWithinSyncWaitBudget = (waitForFinish) => Number(waitForFinish) > 0
+    && Number(waitForFinish) <= DEFAULT_RUN_WAIT_TIME_OUT_SECONDS;
 
 // Injects all secrets from .env file
 // There should be token for running local tests
@@ -456,4 +461,5 @@ module.exports = {
     getMockKVStore,
     mockDatasetPublicUrl,
     getMockInputSchema,
+    isWithinSyncWaitBudget,
 };
