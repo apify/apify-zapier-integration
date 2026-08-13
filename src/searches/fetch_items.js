@@ -54,6 +54,15 @@ const getItems = async (z, bundle) => {
 
     const datasetItems = await getDatasetItems(z, dataset.id, bundle.authData.access_token, params, dataset.actId);
 
+    if (!datasetItems.items || datasetItems.items.length === 0) {
+        throw new Error(
+            `Dataset "${datasetIdOrName}" has no items${offset ? ` from offset ${offset}` : ''}. `
+            + 'Check that the Actor or task run finished successfully and produced results, '
+            + 'and that the dataset name or ID is correct: '
+            + `https://console.apify.com/storage/datasets/${dataset.id}`,
+        );
+    }
+
     // Pick some fields to Zapier UI, other fields are useless for Zapier users.
     const cleanDataset = _.pick(dataset, DATASET_PUBLISH_FIELDS);
 

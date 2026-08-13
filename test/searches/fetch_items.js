@@ -157,7 +157,29 @@ describe('fetch dataset items', () => {
         scope.done();
     });
 
-    it('creates a dataset when a name (not an ID) is not found', async () => {
+    it('throws when the dataset has no items', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: testDatasetId },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, { data: getMockDataset({ id: testDatasetId }) });
+        scope.get(`/v2/datasets/${testDatasetId}/items`)
+            .query(true)
+            .reply(200, []);
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(testDatasetId));
+
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/has no items/);
+        scope.done();
+    });
+
+    it('creates a dataset when a name (not an ID) is not found, then throws because it is empty', async () => {
         if (TEST_USER_TOKEN) return; // Only run with nock mocks
 
         const datasetName = 'my-zapier-dataset';
@@ -179,9 +201,8 @@ describe('fetch dataset items', () => {
         scope.get(`/v2/datasets/${createdId}`)
             .reply(200, mockDatasetPublicUrl(createdId));
 
-        const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
-
-        expect(testResult[0].items).to.eql([]);
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/has no items/);
         scope.done();
     });
 });
