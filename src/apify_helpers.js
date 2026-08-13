@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
+const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES, APIFY_ID_REGEX } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
@@ -11,6 +11,9 @@ const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers')
 
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
+
+// A full-string Apify resource ID; anything else is treated as a resource name.
+const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 const getDatasetPublicUrl = async (token, datasetIdOrName) => {
     const apifyClient = new ApifyClient({ token });
@@ -244,7 +247,7 @@ const getActorRun = async (z, bundle) => {
 };
 
 /**
- * Get store by ID or by name
+ * Get store by ID or by name. A name that does not exist is created, an ID that does not exist throws.
  * @param z
  * @param storeIdOrName - Key-value store ID or name
  */
@@ -259,6 +262,14 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
         store = storeResponse.data;
     } catch (err) {
         if (!isNotFoundError(err)) throw err;
+        // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
+        if (looksLikeApifyId(storeIdOrName)) {
+            throw new Error(
+                `Key-value store "${storeIdOrName}" does not exist or your Apify account cannot access it. `
+                + 'Check the key-value store ID in Apify Console: '
+                + `https://console.apify.com/storage/key-value-stores/${storeIdOrName}`,
+            );
+        }
     }
 
     // The second creates store with name, in case storeId not found.
@@ -703,6 +714,7 @@ module.exports = {
     getActorRun,
     getOrCreateKeyValueStore,
     getDatasetItems,
+    looksLikeApifyId,
     getActorAdditionalFields,
     getPrefilledValuesFromInputSchema,
     createFieldsFromInputSchemaV1,

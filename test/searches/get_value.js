@@ -152,6 +152,50 @@ describe('get key-value store value', () => {
         scope?.done();
     }).timeout(10000);
 
+    it('throws when an ID-shaped store is not found instead of creating one', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const missingStoreId = 'aBcDeFgHiJkLmNoPq'; // 17-char, ID-shaped
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { storeIdOrName: missingStoreId, key: randomString() },
+        };
+
+        // No POST is mocked, so scope.done() proves no store was created.
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/key-value-stores/${missingStoreId}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Key-value store was not found' } });
+
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+        scope.done();
+    });
+
+    it('creates a store when a name (not an ID) is not found, then throws because the key is missing', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const storeName = 'my-zapier-store';
+        const storeKey = randomString();
+        const createdId = randomString();
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { storeIdOrName: storeName, key: storeKey },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/key-value-stores/${storeName}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Key-value store was not found' } });
+        scope.post('/v2/key-value-stores')
+            .query({ name: storeName })
+            .reply(201, { data: getMockKVStore({ id: createdId }) });
+        scope.head(`/v2/key-value-stores/${createdId}/records/${storeKey}`)
+            .reply(404);
+
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+            .to.be.rejectedWith(/No record found for key/);
+        scope.done();
+    });
+
     it('work for plain text', async () => {
         const storeKey = randomString();
         const storeValue = 'Just some text.';

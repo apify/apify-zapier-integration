@@ -1,13 +1,9 @@
 const _ = require('lodash');
-const { APIFY_ID_REGEX } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
-const { getDatasetItems } = require('../apify_helpers');
+const { getDatasetItems, looksLikeApifyId } = require('../apify_helpers');
 const { getDatasetItemsOutputFields } = require('../output_fields');
-
-// A full-string Apify resource ID; anything else is treated as a dataset name.
-const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 const findDatasetByNameOrId = async (z, datasetIdOrName) => {
     // The first try to get dataset by ID.
