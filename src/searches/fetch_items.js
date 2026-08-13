@@ -53,8 +53,7 @@ const getItems = async (z, bundle) => {
     if (!datasetItems.items || datasetItems.items.length === 0) {
         throw new Error(
             `Dataset "${datasetIdOrName}" has no items${offset ? ` from offset ${offset}` : ''}. `
-            + 'Check that the Actor or task run finished successfully and produced results, '
-            + 'and that the dataset name or ID is correct: '
+            + 'Check that the dataset name or ID is correct, or view its contents in Apify Console: '
             + `https://console.apify.com/storage/datasets/${dataset.id}`,
         );
     }
