@@ -92,6 +92,12 @@ const ACTOR_RUN_SAMPLE_SYNC = {
     consoleUrl: 'https://console.apify.com/view/runs/tbplDsWxC8dabcsRb',
 };
 
+// An aborted run has the same shape as any other run, only the terminal status differs.
+const ABORT_ACTOR_RUN_SAMPLE = {
+    ...ACTOR_RUN_SAMPLE,
+    status: ACTOR_JOB_STATUSES.ABORTED,
+};
+
 const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -408,6 +414,7 @@ module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_SAMPLE_SYNC,
+    ABORT_ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
