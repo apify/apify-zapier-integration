@@ -195,8 +195,11 @@ describe('create abort actor run', () => {
             },
         };
 
-        // A create cannot signal a miss with [] the way a search does, so the error must surface.
-        await expect(appTester(App.creates.abortActorRun.operation.perform, bundle)).to.be.rejected;
+        // A create cannot signal a miss with [] the way a search does, so the error must surface,
+        // and it must name the run ID the user supplied rather than echo the bare API string.
+        const promise = appTester(App.creates.abortActorRun.operation.perform, bundle);
+        await expect(promise).to.be.rejectedWith(/non-existing-run-id/);
+        await expect(promise).to.be.rejectedWith(/console\.apify\.com\/view\/runs/);
 
         scope?.done();
     }).timeout(240000);

@@ -4,7 +4,7 @@ const {
     ACTOR_RUN_OUTPUT_FIELDS,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
 const { getRunDatasetOutputFields } = require('../output_fields');
 
 // Aborting a run that already reached a terminal status is a no-op, the API returns it unchanged,
@@ -12,14 +12,26 @@ const { getRunDatasetOutputFields } = require('../output_fields');
 const abortActorRun = async (z, bundle) => {
     const { runId, gracefully } = bundle.inputData;
 
-    // Only send `gracefully` when it is set, the API default is an immediate abort.
-    const { data: run } = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}/abort`,
-        method: 'POST',
-        params: gracefully ? { gracefully: true } : {},
-    });
+    let abortResponse;
+    try {
+        // Only send `gracefully` when it is set, the API default is an immediate abort.
+        abortResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}/abort`,
+            method: 'POST',
+            params: gracefully ? { gracefully: true } : {},
+        });
+    } catch (err) {
+        if (isNotFoundError(err)) {
+            throw new Error(
+                `Actor run "${runId}" was not found. Check that the run ID is correct and that your Apify `
+                + `account has access to it: https://console.apify.com/view/runs/${runId}`,
+            );
+        }
 
-    return enrichActorRun(z, bundle.authData.access_token, run);
+        throw err;
+    }
+
+    return enrichActorRun(z, bundle.authData.access_token, abortResponse.data);
 };
 
 module.exports = {
