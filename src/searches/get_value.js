@@ -1,6 +1,12 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
-const { getOrCreateKeyValueStore } = require('../apify_helpers');
+const { findStorageOrThrow } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
+
+const KEY_VALUE_STORE_LOOKUP = {
+    apiUrl: APIFY_API_ENDPOINTS.keyValueStores,
+    consoleUrl: 'https://console.apify.com/storage/key-value-stores',
+    label: 'Key-value store',
+};
 
 const stashFunction = async (z, bundle) => {
     const { contentType, storeId, key } = bundle.inputData;
@@ -25,7 +31,7 @@ const stashFunction = async (z, bundle) => {
 
 const getValue = async (z, bundle) => {
     const { storeIdOrName, key } = bundle.inputData;
-    const store = await getOrCreateKeyValueStore(z, storeIdOrName);
+    const store = await findStorageOrThrow(z, storeIdOrName, KEY_VALUE_STORE_LOOKUP);
 
     const sizeRequest = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,

@@ -1,43 +1,18 @@
 const _ = require('lodash');
 const { APIFY_API_ENDPOINTS, DATASET_PUBLISH_FIELDS,
     DATASET_OUTPUT_FIELDS, DATASET_SAMPLE } = require('../consts');
-const { wrapRequestWithRetries } = require('../request_helpers');
-const { getDatasetItems, looksLikeApifyId } = require('../apify_helpers');
+const { getDatasetItems, findStorageOrThrow } = require('../apify_helpers');
 const { getDatasetItemsOutputFields } = require('../output_fields');
 
-const findDatasetByNameOrId = async (z, datasetIdOrName) => {
-    // The first try to get dataset by ID.
-    try {
-        const datasetResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.datasets}/${datasetIdOrName}`,
-            method: 'GET',
-        });
-        return datasetResponse.data;
-    } catch (err) {
-        if (!err.message.includes('not found')) throw err;
-        // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
-        if (looksLikeApifyId(datasetIdOrName)) {
-            throw new Error(
-                `Dataset "${datasetIdOrName}" does not exist or your Apify account cannot access it. `
-                + 'Check the dataset ID in Apify Console: '
-                + `https://console.apify.com/storage/datasets/${datasetIdOrName}`,
-            );
-        }
-    }
-    // The second creates dataset with name, in case datasetId not found.
-    const storeResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}`,
-        method: 'POST',
-        params: {
-            name: datasetIdOrName,
-        },
-    });
-    return storeResponse.data;
+const DATASET_LOOKUP = {
+    apiUrl: APIFY_API_ENDPOINTS.datasets,
+    consoleUrl: 'https://console.apify.com/storage/datasets',
+    label: 'Dataset',
 };
 
 const getItems = async (z, bundle) => {
     const { datasetIdOrName, limit, offset, fields, omit } = bundle.inputData;
-    const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
+    const dataset = await findStorageOrThrow(z, datasetIdOrName, DATASET_LOOKUP);
 
     // NOTE: Because testing user had _id instead of id in data and we run integration tests under this user.
     dataset.id = dataset.id || dataset._id;
@@ -69,7 +44,7 @@ const getItems = async (z, bundle) => {
 
 const getAdditionalDatasetItemsOutputFields = async (z, bundle) => {
     const { datasetIdOrName } = bundle.inputData;
-    const dataset = await findDatasetByNameOrId(z, datasetIdOrName);
+    const dataset = await findStorageOrThrow(z, datasetIdOrName, DATASET_LOOKUP);
 
     return getDatasetItemsOutputFields(z, dataset.id, dataset.actId, bundle.authData.access_token, 'items[]');
 };

@@ -4,7 +4,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 
-const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, randomApifyId, getMockKVStore } = require('../helpers');
 const App = require('../../index');
 
 const { expect } = chai;
@@ -13,7 +13,7 @@ chai.use(chaiAsPromised);
 const appTester = zapier.createAppTester(App);
 
 describe('get key-value store value', () => {
-    let testStoreId = randomString();
+    let testStoreId = randomApifyId();
 
     before(async () => {
         if (TEST_USER_TOKEN) {
@@ -171,28 +171,49 @@ describe('get key-value store value', () => {
         scope.done();
     });
 
-    it('creates a store when a name (not an ID) is not found, then throws because the key is missing', async () => {
+    it('throws when a store name is not found instead of creating it', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const storeName = 'my-zapier-store';
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { storeIdOrName: storeName, key: randomString() },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/key-value-stores/~${storeName}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Key-value store was not found' } });
+
+        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+        scope.done();
+    });
+
+    it('resolves a bare store name in the token owner\'s account', async () => {
         if (TEST_USER_TOKEN) return; // Only run with nock mocks
 
         const storeName = 'my-zapier-store';
         const storeKey = randomString();
-        const createdId = randomString();
+        const storeValue = { key: 'value' };
         const bundle = {
             authData: { access_token: TEST_USER_TOKEN },
             inputData: { storeIdOrName: storeName, key: storeKey },
         };
 
         const scope = nock('https://api.apify.com');
-        scope.get(`/v2/key-value-stores/${storeName}`)
-            .reply(404, { error: { type: 'record-not-found', message: 'Key-value store was not found' } });
-        scope.post('/v2/key-value-stores')
-            .query({ name: storeName })
-            .reply(201, { data: getMockKVStore({ id: createdId }) });
-        scope.head(`/v2/key-value-stores/${createdId}/records/${storeKey}`)
-            .reply(404);
+        scope.get(`/v2/key-value-stores/~${storeName}`)
+            .reply(200, { data: getMockKVStore({ id: testStoreId, name: storeName }) });
+        scope.head(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
+            .reply(200, undefined, {
+                'content-type': 'application/json',
+                'content-length': Buffer.byteLength(JSON.stringify(storeValue)),
+            });
+        scope.get(`/v2/key-value-stores/${testStoreId}/records/${storeKey}`)
+            .reply(200, storeValue);
 
-        await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
-            .to.be.rejectedWith(/No record found for key/);
+        const testResult = await appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle);
+
+        expect(storeValue).to.be.eql(testResult[0]);
         scope.done();
     });
 

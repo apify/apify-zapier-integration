@@ -246,6 +246,35 @@ const getActorRun = async (z, bundle) => {
     return [enrichedRun];
 };
 
+// The API resolves an ID or `username~name`, the `~name` shorthand means a name in the token owner's account.
+const toStorageLookupId = (idOrName) => (
+    looksLikeApifyId(idOrName) || idOrName.includes('~') ? idOrName : `~${idOrName}`
+);
+
+/**
+ * Get a dataset or a key-value store by ID or by name, a storage that does not exist throws.
+ * @param z
+ * @param storageIdOrName - Storage ID or name
+ * @param options - API and Apify Console URLs of the storage type, and its label used in the error message
+ */
+const findStorageOrThrow = async (z, storageIdOrName, { apiUrl, consoleUrl, label }) => {
+    try {
+        const storageResponse = await wrapRequestWithRetries(z.request, {
+            url: `${apiUrl}/${toStorageLookupId(storageIdOrName)}`,
+            method: 'GET',
+        });
+        return storageResponse.data;
+    } catch (err) {
+        if (!isNotFoundError(err)) throw err;
+
+        const notFoundUrl = looksLikeApifyId(storageIdOrName) ? `${consoleUrl}/${storageIdOrName}` : consoleUrl;
+        throw new Error(
+            `${label} "${storageIdOrName}" does not exist or your Apify account cannot access it. `
+            + `Check the ${label.toLowerCase()} name or ID in Apify Console: ${notFoundUrl}`,
+        );
+    }
+};
+
 /**
  * Get store by ID or by name. A name that does not exist is created, an ID that does not exist throws.
  * @param z
@@ -713,8 +742,8 @@ module.exports = {
     unsubscribeWebhook,
     getActorRun,
     getOrCreateKeyValueStore,
+    findStorageOrThrow,
     getDatasetItems,
-    looksLikeApifyId,
     getActorAdditionalFields,
     getPrefilledValuesFromInputSchema,
     createFieldsFromInputSchemaV1,
