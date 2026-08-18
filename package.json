@@ -35,13 +35,14 @@
     "zapier-platform-schema": "19.0.0"
   },
   "overrides": {
-    "axios": "^1.17.0",
+    "axios": "^1.18.0",
     "diff": "^8.0.3",
     "flatted": "^3.4.2",
     "form-data": "^4.0.6",
-    "js-yaml": "^4.3.0",
+    "js-yaml": "^4.3.1",
     "lodash": "$lodash",
     "picomatch": "^2.3.2",
-    "serialize-javascript": "^7.0.5"
+    "serialize-javascript": "^7.0.5",
+    "brace-expansion": "^2.1.2"
   }
 }
