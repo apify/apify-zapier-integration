@@ -26,7 +26,7 @@ const getItems = async (z, bundle) => {
     const datasetItems = await getDatasetItems(z, dataset.id, bundle.authData.access_token, params, dataset.actId);
 
     if (!datasetItems.items || datasetItems.items.length === 0) {
-        throw new Error(
+        throw new z.errors.Error(
             `Dataset "${datasetIdOrName}" has no items${offset ? ` from offset ${offset}` : ''}. `
             + 'Check that the dataset name or ID is correct, or view its contents in Apify Console: '
             + `https://console.apify.com/storage/datasets/${dataset.id}`,

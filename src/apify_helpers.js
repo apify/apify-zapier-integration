@@ -268,7 +268,7 @@ const findStorageOrThrow = async (z, storageIdOrName, { apiUrl, consoleUrl, labe
         if (!isNotFoundError(err)) throw err;
 
         const notFoundUrl = looksLikeApifyId(storageIdOrName) ? `${consoleUrl}/${storageIdOrName}` : consoleUrl;
-        throw new Error(
+        throw new z.errors.Error(
             `${label} "${storageIdOrName}" does not exist or your Apify account cannot access it. `
             + `Check the ${label.toLowerCase()} name or ID in Apify Console: ${notFoundUrl}`,
         );
@@ -293,7 +293,7 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
         if (!isNotFoundError(err)) throw err;
         // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
         if (looksLikeApifyId(storeIdOrName)) {
-            throw new Error(
+            throw new z.errors.Error(
                 `Key-value store "${storeIdOrName}" does not exist or your Apify account cannot access it. `
                 + 'Check the key-value store ID in Apify Console: '
                 + `https://console.apify.com/storage/key-value-stores/${storeIdOrName}`,
