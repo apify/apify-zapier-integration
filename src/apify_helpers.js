@@ -652,7 +652,7 @@ const getActorAdditionalFields = async (z, bundle) => {
         {
             label: 'Timeout',
             helpText: 'Timeout for the actor run in seconds. If `0` there will be no timeout '
-                + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, a `0` '
+                + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, the timeout '
                 + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`,
             key: 'timeoutSecs',
             required: false,

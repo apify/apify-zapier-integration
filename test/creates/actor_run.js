@@ -784,39 +784,41 @@ describe('create actor run', () => {
         scope?.done();
     }).timeout(120000);
 
-    it('runSync caps a zero timeout at the synchronous default', async function () {
-        // Mock only, the assertion is about the query the start request is sent with.
-        if (TEST_USER_TOKEN) this.skip();
+    // No timeout and a timeout above the cap both end up at the synchronous cap.
+    [0, DEFAULT_SYNC_RUN_TIMEOUT_SECS * 2].forEach((timeoutSecs) => {
+        it(`runSync caps a ${timeoutSecs}s timeout at the synchronous cap`, async function () {
+            if (TEST_USER_TOKEN) this.skip();
 
-        const bundle = {
-            authData: {
-                access_token: randomString(),
-            },
-            inputData: {
-                actorId: testActorId,
-                runSync: true,
-                inputBody: '',
-                build: 'latest',
-                timeoutSecs: 0, // The Actor has no default timeout.
-                memoryMbytes: 1024,
-            },
-        };
+            const bundle = {
+                authData: {
+                    access_token: randomString(),
+                },
+                inputData: {
+                    actorId: testActorId,
+                    runSync: true,
+                    inputBody: '',
+                    build: 'latest',
+                    timeoutSecs,
+                    memoryMbytes: 1024,
+                },
+            };
 
-        const run = getMockRun({ actId: testActorId });
+            const run = getMockRun({ actId: testActorId });
 
-        const scope = nock('https://api.apify.com');
-        scope.post(`/v2/acts/${testActorId}/runs`)
-            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
-            .reply(200, { data: run });
+            const scope = nock('https://api.apify.com');
+            scope.post(`/v2/acts/${testActorId}/runs`)
+                .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+                .reply(200, { data: run });
 
-        const startedRun = await appTester(App.creates.createActorRun.operation.perform, bundle);
+            const startedRun = await appTester(App.creates.createActorRun.operation.perform, bundle);
 
-        expect(startedRun.id).to.be.eql(run.id);
+            expect(startedRun.id).to.be.eql(run.id);
 
-        scope.done();
+            scope.done();
+        });
     });
 
-    it('runAsync keeps a zero timeout, so the Actor run has no timeout', async function () {
+    it('runAsync keeps a zero timeout', async function () {
         if (TEST_USER_TOKEN) this.skip();
 
         const bundle = {

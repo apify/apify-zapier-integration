@@ -85,7 +85,7 @@ describe('create task run', () => {
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
                 .query((query) => {
                     webhooksParam = query.webhooks;
-                    // The task's own timeout is what caps the synchronous wait.
+                    // The task's own timeout caps the wait.
                     return query.timeout === '300' && !!query.webhooks;
                 })
                 .reply(201, { data: mockRun });
@@ -146,7 +146,7 @@ describe('create task run', () => {
             scope.get(`/v2/acts/${mockRun.actId}`)
                 .reply(200, { data: { id: mockRun.actId, defaultRunOptions: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
-                // A task without its own timeout inherits the Actor's default, the cap must not raise it.
+                // A task without its own timeout inherits the Actor's default.
                 .query((query) => query.timeout === '300' && !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)

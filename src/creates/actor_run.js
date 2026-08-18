@@ -142,9 +142,9 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    // NOTE: Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
+    // Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
-        requestOpts.params.timeout = timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS;
+        requestOpts.params.timeout = Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
         requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
     }
 
@@ -195,8 +195,8 @@ module.exports = {
             {
                 label: 'Run synchronously',
                 helpText: 'If you choose `yes`, this step waits until the Actor run finishes and then returns its results. '
-                    + 'The Zap shows the step as waiting in the meantime, and the wait is capped by the Timeout set below, '
-                    + 'or by 1 hour if the Timeout is `0`. '
+                    + 'The Zap shows the step as waiting in the meantime, and the run is limited by the Timeout set below, '
+                    + 'at most 1 hour, after which it is stopped. '
                     + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
                     + 'with Find Last Actor Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Actor Run trigger.',
                 key: 'runSync',
