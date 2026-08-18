@@ -19,7 +19,9 @@ describe('scrape single URL', () => {
         nock.cleanAll();
     });
 
-    it('runs scrape single URL with correct output fields (mocked)', async () => {
+    it('runs scrape single URL with correct output fields (mocked)', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
         const options = {
             url: 'https://www.example.com',
             crawlerType: 'cheerio',
