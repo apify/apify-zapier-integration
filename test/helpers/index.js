@@ -11,6 +11,13 @@ async function pageFunction({ request, setValue }) {
 
 const randomString = () => Math.random().toString(32).split('.')[1];
 
+// A 17-char alphanumeric string, i.e. shaped like a real Apify resource ID (APIFY_ID_REGEX).
+const randomApifyId = () => {
+    let id = '';
+    while (id.length < 17) id += randomString();
+    return id.slice(0, 17);
+};
+
 // Injects all secrets from .env file
 // There should be token for running local tests
 zapier.tools.env.inject();
@@ -443,6 +450,7 @@ const getMockInputSchema = () => ({
 module.exports = {
     TEST_USER_TOKEN,
     randomString,
+    randomApifyId,
     apifyClient,
     createWebScraperTask,
     createAndBuildActor,

@@ -3,7 +3,7 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
-const { TEST_USER_TOKEN, apifyClient, randomString, getMockDataset, mockDatasetPublicUrl } = require('../helpers');
+const { TEST_USER_TOKEN, apifyClient, randomString, randomApifyId, getMockDataset, mockDatasetPublicUrl } = require('../helpers');
 const { DATASET_SAMPLE } = require('../../src/consts');
 
 const App = require('../../index');
@@ -14,11 +14,12 @@ const { expect } = chai;
 const appTester = zapier.createAppTester(App);
 
 describe('fetch dataset items', () => {
-    let testDatasetId = randomString();
+    let testDatasetId = randomApifyId();
+    const testDatasetName = `test-zapier-${randomString()}`;
 
     before(async () => {
         if (TEST_USER_TOKEN) {
-            const dataset = await apifyClient.datasets().getOrCreate(`test-zapier-${randomString()}`);
+            const dataset = await apifyClient.datasets().getOrCreate(testDatasetName);
             testDatasetId = dataset.id;
         }
     });
@@ -157,31 +158,100 @@ describe('fetch dataset items', () => {
         scope.done();
     });
 
-    it('creates a dataset when a name (not an ID) is not found', async () => {
+    it('throws when the dataset has no items', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: testDatasetId },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, { data: getMockDataset({ id: testDatasetId }) });
+        scope.get(`/v2/datasets/${testDatasetId}/items`)
+            .query(true)
+            .reply(200, []);
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(testDatasetId));
+
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/has no items/);
+        scope.done();
+    });
+
+    it('throws when a dataset name is not found instead of creating it', async () => {
         if (TEST_USER_TOKEN) return; // Only run with nock mocks
 
         const datasetName = 'my-zapier-dataset';
-        const createdId = randomString();
         const bundle = {
             authData: { access_token: TEST_USER_TOKEN },
             inputData: { datasetIdOrName: datasetName },
         };
 
         const scope = nock('https://api.apify.com');
-        scope.get(`/v2/datasets/${datasetName}`)
+        scope.get(`/v2/datasets/~${datasetName}`)
             .reply(404, { error: { type: 'record-not-found', message: 'Dataset was not found' } });
-        scope.post('/v2/datasets')
-            .query({ name: datasetName })
-            .reply(201, { data: getMockDataset({ id: createdId }) });
-        scope.get(`/v2/datasets/${createdId}/items`)
+
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+        scope.done();
+    });
+
+    it('resolves a bare dataset name in the token owner\'s account', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const datasetName = 'my-zapier-dataset';
+        const items = [{ name: 'test', url: 'https://example.com' }];
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: datasetName },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/datasets/~${datasetName}`)
+            .reply(200, { data: getMockDataset({ id: testDatasetId, name: datasetName }) });
+        scope.get(`/v2/datasets/${testDatasetId}/items`)
             .query(true)
-            .reply(200, []);
-        scope.get(`/v2/datasets/${createdId}`)
-            .reply(200, mockDatasetPublicUrl(createdId));
+            .reply(200, items);
+        scope.get(`/v2/datasets/${testDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(testDatasetId));
 
         const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
 
-        expect(testResult[0].items).to.eql([]);
+        expect(testResult[0].items).to.eql(items);
         scope.done();
     });
+
+    it('fetches items by dataset name against the real API', async () => {
+        if (!TEST_USER_TOKEN) return; // Only run as E2E test
+
+        await apifyClient.dataset(testDatasetId).pushItems([{ testKey: 'testValue' }]);
+
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: testDatasetName },
+        };
+
+        const testResult = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
+
+        expect(testResult[0].id).to.be.eql(testDatasetId);
+        expect(testResult[0].items.length).to.be.above(0);
+    }).timeout(120000);
+
+    it('throws for a dataset name that does not exist against the real API', async () => {
+        if (!TEST_USER_TOKEN) return; // Only run as E2E test
+
+        const missingName = `test-zapier-missing-${randomString()}`;
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { datasetIdOrName: missingName },
+        };
+
+        await expect(appTester(App.searches.fetchDatasetItems.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+
+        const { items: datasets } = await apifyClient.datasets().list({ desc: true, limit: 10 });
+        expect(datasets.some((dataset) => dataset.name === missingName)).to.be.eql(false);
+    }).timeout(120000);
 });

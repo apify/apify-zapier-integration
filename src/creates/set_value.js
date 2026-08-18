@@ -39,9 +39,8 @@ module.exports = {
         inputFields: [
             {
                 label: 'Key-value store',
-                // TODO: We need to make sure if user enters ID, we don't create a named store with that ID.
-                // That can be checked with regex
-                helpText: 'Please enter name or ID of the key-value store. If the store with the name doesn\'t exist, it will be created.',
+                helpText: 'Please enter the name or ID of the key-value store. If a store with the given name doesn\'t exist, '
+                    + 'it will be created. An ID that doesn\'t exist will fail.',
                 key: 'storeIdOrName',
                 required: true,
             },
