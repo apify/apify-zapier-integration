@@ -114,7 +114,9 @@ module.exports = {
                     + 'The Zap shows the step as waiting in the meantime, and the run is limited by the timeout configured for the task '
                     + 'or its Actor, at most 1 hour, after which it is stopped. '
                     + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
-                    + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger.',
+                    + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger. '
+                    + 'Note: testing this step on its own in the Zap editor may return as soon as the run starts, '
+                    + 'without waiting for it to finish, even when you choose `yes`. Test the whole Zap to see the finished run and its results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

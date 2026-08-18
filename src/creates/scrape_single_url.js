@@ -112,7 +112,9 @@ module.exports = {
                     + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
                     + '[Web Scraper](https://apify.com/apify/web-scraper), '
                     + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
-                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
+                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps. '
+                    + 'Note: testing this step on its own in the Zap editor may return as soon as the run starts, '
+                    + 'without waiting for it to finish. Test the whole Zap to see the finished run and its results.',
             },
             {
                 label: 'URL',
