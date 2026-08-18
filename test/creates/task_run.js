@@ -198,6 +198,53 @@ describe('create task run', () => {
         scope.done();
     });
 
+    it('runSync caps a task timeout of zero at the synchronous cap', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const mockRun = getMockRun({ actorTaskId: testTask2Id });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { taskId: testTask2Id, runSync: true },
+        };
+
+        const scope = nock('https://api.apify.com');
+        // A `0` on the task means "no timeout", so the Actor default must not be fetched at all.
+        scope.get(`/v2/actor-tasks/${testTask2Id}`)
+            .reply(200, { data: { id: testTask2Id, actId: mockRun.actId, options: { timeoutSecs: 0 } } });
+        scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(201, { data: mockRun });
+
+        const startedRun = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(mockRun.id);
+
+        scope.done();
+    });
+
+    it('runSync starts the run with the capped timeout when the timeout lookup fails', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const mockRun = getMockRun({ actorTaskId: testTask2Id });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { taskId: testTask2Id, runSync: true },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-tasks/${testTask2Id}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Actor task was not found' } });
+        scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(201, { data: mockRun });
+
+        const startedRun = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(mockRun.id);
+
+        scope.done();
+    });
+
     const buildResumeBundle = (run) => ({
         authData: { access_token: randomString() },
         inputData: { taskId: testTask1Id, runSync: true },

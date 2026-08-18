@@ -6,19 +6,24 @@ const { getTaskDatasetOutputFields } = require('../output_fields');
 const RAW_INPUT_LABEL = 'Input JSON overrides';
 
 const getSyncTaskRunTimeoutSecs = async (z, taskId) => {
-    const { data: task } = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
-    });
-
-    let timeoutSecs = task.options?.timeoutSecs;
-    if (!timeoutSecs) {
-        const { data: actor } = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
+    try {
+        const { data: task } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
         });
-        timeoutSecs = actor.defaultRunOptions?.timeoutSecs;
-    }
 
-    return Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
+        let timeoutSecs = task.options?.timeoutSecs;
+        // A `0` means "no timeout", not "not configured", so only an absent value inherits the Actor default.
+        if (timeoutSecs === undefined || timeoutSecs === null) {
+            const { data: actor } = await wrapRequestWithRetries(z.request, {
+                url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
+            });
+            timeoutSecs = actor.defaultRunOptions?.timeoutSecs;
+        }
+
+        return Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
+    } catch (err) {
+        return DEFAULT_SYNC_RUN_TIMEOUT_SECS;
+    }
 };
 
 const runTask = async (z, bundle) => {

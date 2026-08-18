@@ -6,7 +6,7 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN, apifyClient, getMockRun, mockDatasetPublicUrl, TEST_CALLBACK_URL,
-    parseRunCallbackWebhookParam, performAndResume } = require('../helpers');
+    parseRunCallbackWebhookParam, performAndResume, randomString } = require('../helpers');
 const App = require('../../index');
 const { SCRAPE_SINGLE_URL_RUN_SAMPLE, SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
@@ -152,6 +152,38 @@ describe('scrape single URL', () => {
             expect(testResult.pageMetadata).to.be.eql(result.metadata);
         }).timeout(60000);
     }
+
+    it('performResume rejects a timed out run and points at the Run Actor action', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const timedOutRun = getMockRun({
+            actId: 'aYG0l9s7dbB7j3gbS',
+            status: 'TIMED-OUT',
+            options: { timeoutSecs: SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS },
+        });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { url: 'https://www.example.com', crawlerType: 'cheerio' },
+            outputData: { id: timedOutRun.id },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-runs/${timedOutRun.id}`)
+            .reply(200, { data: timedOutRun });
+
+        let error;
+        try {
+            await appTester(App.creates.scrapeSingleUrl.operation.performResume, bundle);
+        } catch (err) {
+            error = err;
+        }
+
+        expect(error.message).to.include(`did not finish within the ${SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS}s timeout`);
+        expect(error.message).to.include('use the Run Actor action with "Run synchronously" set to "no"');
+        expect(error.message).to.not.include('set "Run synchronously" to "no" and process');
+
+        scope.done();
+    });
 
     it('throws if there are no data', async () => {
         const options = {
