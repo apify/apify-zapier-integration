@@ -1,8 +1,10 @@
 /* eslint-env mocha */
 const zapier = require('zapier-platform-core');
-const { expect } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 const _ = require('lodash');
 const nock = require('nock');
+const { WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN,
     apifyClient,
     createWebScraperTask,
@@ -10,10 +12,16 @@ const { TEST_USER_TOKEN,
     randomString,
     getMockRun,
     mockDatasetPublicUrl,
+    TEST_CALLBACK_URL,
+    parseRunCallbackWebhookParam,
+    performAndResume,
 } = require('../helpers');
-const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
+const { TASK_RUN_SAMPLE, KEY_VALUE_STORE_SAMPLE, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
 const App = require('../../index');
+
+chai.use(chaiAsPromised);
+const { expect } = chai;
 
 const appTester = zapier.createAppTester(App);
 
@@ -68,13 +76,20 @@ describe('create task run', () => {
         };
 
         let scope;
+        let webhooksParam;
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask1Id });
             scope = nock('https://api.apify.com').persist();
+            scope.get(`/v2/actor-tasks/${testTask1Id}`)
+                .reply(200, { data: { id: testTask1Id, options: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`, { startUrls: [{ url: urlToScrape }] })
+                .query((query) => {
+                    webhooksParam = query.webhooks;
+                    // The task's own timeout caps the wait.
+                    return query.timeout === '300' && !!query.webhooks;
+                })
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
@@ -88,8 +103,19 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
 
+        if (!TEST_USER_TOKEN) {
+            expect(parseRunCallbackWebhookParam(webhooksParam)).to.be.eql([{
+                eventTypes: [
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_FAILED,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_TIMED_OUT,
+                    WEBHOOK_EVENT_TYPES.ACTOR_RUN_ABORTED,
+                ],
+                requestUrl: TEST_CALLBACK_URL,
+            }]);
+        }
         expect(testResult).to.have.any.keys(Object.keys(TASK_RUN_SAMPLE).concat(['isStatusMessageTerminal', 'statusMessage']));
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
@@ -115,10 +141,15 @@ describe('create task run', () => {
         if (!TEST_USER_TOKEN) {
             const mockRun = getMockRun({ actorTaskId: testTask2Id, status: 'READY' });
             scope = nock('https://api.apify.com').persist();
+            scope.get(`/v2/actor-tasks/${testTask2Id}`)
+                .reply(200, { data: { id: testTask2Id, actId: mockRun.actId, options: {} } });
+            scope.get(`/v2/acts/${mockRun.actId}`)
+                .reply(200, { data: { id: mockRun.actId, defaultRunOptions: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
+                // A task without its own timeout inherits the Actor's default.
+                .query((query) => query.timeout === '300' && !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, { ...KEY_VALUE_STORE_SAMPLE, error: 'No output' });
@@ -132,7 +163,7 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
 
         expect(testResult.status).to.be.eql('SUCCEEDED');
         expect(testResult.OUTPUT).to.not.equal(null);
@@ -141,6 +172,123 @@ describe('create task run', () => {
 
         scope?.done();
     }).timeout(180000);
+
+    it('runSync caps the timeout when neither the task nor the Actor sets one', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const mockRun = getMockRun({ actorTaskId: testTask2Id });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { taskId: testTask2Id, runSync: true },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-tasks/${testTask2Id}`)
+            .reply(200, { data: { id: testTask2Id, actId: mockRun.actId, options: {} } });
+        scope.get(`/v2/acts/${mockRun.actId}`)
+            .reply(200, { data: { id: mockRun.actId, defaultRunOptions: { timeoutSecs: 0 } } });
+        scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(201, { data: mockRun });
+
+        const startedRun = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(mockRun.id);
+
+        scope.done();
+    });
+
+    it('runSync caps a task timeout of zero at the synchronous cap', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const mockRun = getMockRun({ actorTaskId: testTask2Id });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { taskId: testTask2Id, runSync: true },
+        };
+
+        const scope = nock('https://api.apify.com');
+        // A `0` on the task means "no timeout", so the Actor default must not be fetched at all.
+        scope.get(`/v2/actor-tasks/${testTask2Id}`)
+            .reply(200, { data: { id: testTask2Id, actId: mockRun.actId, options: { timeoutSecs: 0 } } });
+        scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(201, { data: mockRun });
+
+        const startedRun = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(mockRun.id);
+
+        scope.done();
+    });
+
+    it('runSync starts the run with the capped timeout when the timeout lookup fails', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const mockRun = getMockRun({ actorTaskId: testTask2Id });
+        const bundle = {
+            authData: { access_token: randomString() },
+            inputData: { taskId: testTask2Id, runSync: true },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-tasks/${testTask2Id}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Actor task was not found' } });
+        scope.post(`/v2/actor-tasks/${testTask2Id}/runs`)
+            .query((query) => query.timeout === `${DEFAULT_SYNC_RUN_TIMEOUT_SECS}` && !!query.webhooks)
+            .reply(201, { data: mockRun });
+
+        const startedRun = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(startedRun.id).to.be.eql(mockRun.id);
+
+        scope.done();
+    });
+
+    const buildResumeBundle = (run) => ({
+        authData: { access_token: randomString() },
+        inputData: { taskId: testTask1Id, runSync: true },
+        outputData: { id: run.id },
+    });
+
+    it('performResume rejects a timed out run', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const timedOutRun = getMockRun({ actorTaskId: testTask1Id, status: 'TIMED-OUT', options: { timeoutSecs: 300 } });
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-runs/${timedOutRun.id}`)
+            .reply(200, { data: timedOutRun });
+
+        await expect(appTester(App.creates.createTaskRun.operation.performResume, buildResumeBundle(timedOutRun)))
+            .to.be.rejectedWith(new RegExp(`did not finish within the 300s timeout and was stopped \\(run ID: ${timedOutRun.id}\\)`));
+
+        scope.done();
+    });
+
+    it('performResume passes a failed run through', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const failedRun = getMockRun({ actorTaskId: testTask1Id, status: 'FAILED' });
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-runs/${failedRun.id}`)
+            .reply(200, { data: failedRun });
+        scope.get(`/v2/key-value-stores/${failedRun.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(200, KEY_VALUE_STORE_SAMPLE);
+        scope.get(`/v2/datasets/${failedRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [{ url: 'http://example.com' }]);
+        scope.get(`/v2/datasets/${failedRun.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, [{ url: 'http://example.com' }]);
+        scope.get(`/v2/datasets/${failedRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(failedRun.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.createTaskRun.operation.performResume, buildResumeBundle(failedRun));
+
+        expect(testResult.status).to.be.eql('FAILED');
+
+        scope.done();
+    });
 
     it('runAsync work', async () => {
         const bundle = {
@@ -197,10 +345,12 @@ describe('create task run', () => {
             const mockRun = getMockRun({ actorTaskId: testTask3Id });
 
             scope = nock('https://api.apify.com');
+            scope.get(`/v2/actor-tasks/${testTask3Id}`)
+                .reply(200, { data: { id: testTask3Id, options: { timeoutSecs: 300 } } });
             scope.post(`/v2/actor-tasks/${mockRun.actorTaskId}/runs`)
+                .query((query) => query.timeout === '300' && !!query.webhooks)
                 .reply(201, { data: mockRun });
             scope.get(`/v2/actor-runs/${mockRun.id}`)
-                .query({ waitForFinish: 60 })
                 .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
             scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
                 .reply(200, KEY_VALUE_STORE_SAMPLE);
@@ -214,7 +364,7 @@ describe('create task run', () => {
                 .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
         }
 
-        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+        const testResult = await performAndResume(appTester, App.creates.createTaskRun, bundle);
         expect(testResult.datasetItems[0].testedField).be.eql('testValue');
 
         scope?.done();

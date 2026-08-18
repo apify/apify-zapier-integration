@@ -4,7 +4,7 @@ const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
     RECENTLY_USED_ACTORS_KEY,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS,
 } = require('../consts');
 const {
     enrichActorRun,
@@ -12,8 +12,10 @@ const {
     maybeGetInputSchemaFromActor,
     prefixInputFieldKey,
     slugifyText,
+    buildRunCallbackWebhookParam,
+    getActorRunOnResume,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { wrapRequestWithRetries } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
@@ -62,13 +64,18 @@ const processInputField = (key, value, inputSchema) => {
     }
 };
 
+// API wordings: "Actor was not found", "Actor was not found or access denied" (ID form),
+// "Actor with this name was not found" (username~name form). Anchored, because matching just
+// "actor" + "not found" would also swallow missing build and run errors.
+const ACTOR_NOT_FOUND_MESSAGE_REGEX = /^actor (?:with this name )?was not found/;
+
 /** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
 const requestActorOrThrowNotFound = async (z, options, actorId) => {
     try {
         return await wrapRequestWithRetries(z.request, options);
     } catch (err) {
         const message = (err.message || '').toLowerCase();
-        if (message.includes('not found') && message.includes('actor')) {
+        if (ACTOR_NOT_FOUND_MESSAGE_REGEX.test(message)) {
             throw new Error(
                 `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
                 + 'and that your Apify account has access to it: '
@@ -135,9 +142,22 @@ const runActor = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
-    if (runSync) run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+    // Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
+    if (runSync) {
+        requestOpts.params.timeout = Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
+        requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
+    }
 
+    const { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
+
+    // The step is paused here and finished by performResume once the run reaches a terminal status.
+    if (runSync) return run;
+
+    return enrichActorRun(z, bundle.authData.access_token, run);
+};
+
+const resumeActorRun = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle, true);
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
@@ -174,9 +194,13 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds. '
-                    + 'For anything non-trivial, choose `no` and fetch the results in a later step with Find Last Actor Run or Fetch Dataset Items.',
+                helpText: 'If you choose `yes`, this step waits until the Actor run finishes and then returns its results. '
+                    + 'The Zap shows the step as waiting in the meantime, and the run is limited by the Timeout set below, '
+                    + 'at most 1 hour, after which it is stopped. '
+                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
+                    + 'with Find Last Actor Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Actor Run trigger. '
+                    + 'Note: testing this step on its own in the Zap editor may return as soon as the run starts, '
+                    + 'without waiting for it to finish, even when you choose `yes`. Test the whole Zap to see the finished run and its results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
@@ -186,6 +210,7 @@ module.exports = {
         ],
 
         perform: runActor,
+        performResume: resumeActorRun,
 
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [

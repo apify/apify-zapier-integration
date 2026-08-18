@@ -376,7 +376,10 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
     (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i),
 );
 
-const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = 360;
+// Cap for synchronous runs, so no run can keep a Zap step paused for more than an hour.
+const DEFAULT_SYNC_RUN_TIMEOUT_SECS = 3600;
+// Scraping a single page never needs an hour, so it uses a tighter cap.
+const SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS = 360;
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
@@ -431,7 +434,8 @@ module.exports = {
     DATASET_ITEMS_INLINE_MAX_BYTES,
     DATASET_MAX_SIZE_MARGIN,
     ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+    SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
     DEFAULT_ACTOR_MEMORY_MBYTES,
     DATASET_SAMPLE,
     DATASET_OUTPUT_FIELDS,

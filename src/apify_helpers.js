@@ -1,11 +1,12 @@
 const _ = require('lodash');
-const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
+const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES, ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
     ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     DATASET_MAX_SIZE_MARGIN,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS,
 } = require('./consts');
 const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 
@@ -241,6 +242,46 @@ const getActorRun = async (z, bundle) => {
     const run = bundle.cleanedRequest.resource;
     const enrichedRun = await enrichActorRun(z, bundle.authData.access_token, run);
     return [enrichedRun];
+};
+
+/**
+ * Encodes an ad-hoc webhook for the `webhooks` param of a run start request. Such a webhook rides along with
+ * the run itself, so it fires even if the run finishes before the start request returns.
+ */
+const buildRunCallbackWebhookParam = (callbackUrl) => Buffer.from(JSON.stringify([{
+    eventTypes: Object.values(ACTOR_RUN_TERMINAL_EVENT_TYPES),
+    requestUrl: callbackUrl,
+}]), 'utf8').toString('base64');
+
+/**
+ * Loads the finished run when Zapier resumes a paused step. The run is re-fetched instead of taken from the
+ * webhook payload, so the output matches exactly what the asynchronous path returns.
+ */
+const getActorRunOnResume = async (z, bundle, hasSyncField = false) => {
+    const runId = bundle.outputData?.id || bundle.cleanedRequest?.resource?.id;
+    if (!runId) {
+        throw new Error('The Apify run callback did not contain a run ID, so the run results could not be loaded.');
+    }
+
+    const { data: run } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+    });
+
+    if (run.status === ACTOR_JOB_STATUSES.TIMED_OUT) {
+        const timeoutSecs = run.options?.timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS;
+        // Only Run Actor and Run Task have the "Run synchronously" field.
+        const asyncSuffix = hasSyncField
+            ? 'To handle longer runs, set "Run synchronously" to "no" and process the results in a second Zap '
+                + 'that starts with a finished run trigger.'
+            : 'To handle longer runs, use the Run Actor action with "Run synchronously" set to "no" and process the results '
+                + 'in a second Zap that starts with the Finished Actor Run trigger.';
+        throw new Error(
+            `Run did not finish within the ${timeoutSecs}s timeout and was stopped (run ID: ${runId}). `
+            + `Check its log and partial results in Apify Console (https://console.apify.com/view/runs/${runId}). ${asyncSuffix}`,
+        );
+    }
+
+    return run;
 };
 
 /**
@@ -610,8 +651,9 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Timeout',
-            helpText: 'Timeout for the actor run in seconds. If `0` '
-                + 'there will be no timeout and the actor will run until completion, perhaps forever.',
+            helpText: 'Timeout for the actor run in seconds. If `0` there will be no timeout '
+                + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, the timeout '
+                + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`,
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
@@ -701,6 +743,8 @@ module.exports = {
     subscribeWebhook,
     unsubscribeWebhook,
     getActorRun,
+    buildRunCallbackWebhookParam,
+    getActorRunOnResume,
     getOrCreateKeyValueStore,
     getDatasetItems,
     getActorAdditionalFields,

@@ -1,6 +1,6 @@
 const { ApifyClient } = require('apify-client');
 const zapier = require('zapier-platform-core');
-const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_STATUSES } = require('@apify/consts');
+const { WEBHOOK_EVENT_TYPE_GROUPS, WEBHOOK_EVENT_TYPES, ACTOR_JOB_STATUSES } = require('@apify/consts');
 
 const DEFAULT_PAGE_FUNCTION = `
 async function pageFunction({ request, setValue }) {
@@ -440,7 +440,35 @@ const getMockInputSchema = () => ({
     },
 });
 
+// The callback URL that zapier-platform-core's appTester injects, i.e. what z.generateCallbackUrl() returns in tests.
+const TEST_CALLBACK_URL = 'https://auth-json-server.zapier-staging.com/echo';
+
+const parseRunCallbackWebhookParam = (webhooksParam) => JSON.parse(Buffer.from(webhooksParam, 'base64').toString('utf8'));
+
+/**
+ * Drives the two halves of a callback-based create: perform starts the run and pauses the step,
+ * performResume finishes it once the run reaches a terminal status.
+ */
+const performAndResume = async (appTester, create, bundle) => {
+    const startedRun = await appTester(create.operation.perform, bundle);
+
+    // Against the real API the run is still running, the Apify webhook would fire only once it finishes.
+    if (TEST_USER_TOKEN) await apifyClient.run(startedRun.id).waitForFinish();
+
+    return appTester(create.operation.performResume, {
+        ...bundle,
+        outputData: startedRun,
+        cleanedRequest: {
+            eventType: WEBHOOK_EVENT_TYPES.ACTOR_RUN_SUCCEEDED,
+            resource: { id: startedRun.id },
+        },
+    });
+};
+
 module.exports = {
+    TEST_CALLBACK_URL,
+    parseRunCallbackWebhookParam,
+    performAndResume,
     TEST_USER_TOKEN,
     randomString,
     apifyClient,
