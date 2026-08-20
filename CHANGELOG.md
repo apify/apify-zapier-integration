@@ -1,3 +1,13 @@
+## 4.6.0 / 2026-08-20
+## What's Changed
+* feat: zapier update npm dependencies by @daveomri in https://github.com/apify/apify-zapier-integration/pull/149
+* feat: surface approvalUrl for unapproved full-permission Actors by @daveomri in https://github.com/apify/apify-zapier-integration/pull/150
+* Add UTM params to Apify API-token link by @drobnikj in https://github.com/apify/apify-zapier-integration/pull/160
+* fix: Dependabot high severity package bumps by @JanHranicky in https://github.com/apify/apify-zapier-integration/pull/167
+
+
+**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.5.9...v4.6.0
+
 ## 4.5.9 / 2026-07-23
 ## What's Changed
 * fix: vulnerabilities by @protoss70
