@@ -65,7 +65,7 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - **Line endings:** LF, UTF-8.
 - **Commits/branches:** PRs target `master`. Releases are created as GitHub Releases; the publish workflow extracts the version from the release tag.
 - **Versioning:** Semantic versioning; `package.json` version is updated automatically during publish.
-- **CHANGELOG:** Updated automatically from GitHub release notes during publish.
+- **CHANGELOG:** Updated automatically from GitHub release notes during publish. The release body is copied verbatim under a `## <version> / <date>` heading, so omit GitHub's auto-generated `## What's Changed` heading from release notes — it duplicates the version heading.
 
 ## Key Notes for AI Assistants
 
