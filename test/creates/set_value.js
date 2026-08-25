@@ -1,10 +1,14 @@
 /* eslint-env mocha */
 const zapier = require('zapier-platform-core');
-const { expect } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { TEST_USER_TOKEN, apifyClient, randomString, getMockKVStore} = require('../helpers');
 const { KEY_VALUE_STORE_SAMPLE } = require('../../src/consts');
 const App = require('../../index');
+
+const { expect } = chai;
+chai.use(chaiAsPromised);
 
 const appTester = zapier.createAppTester(App);
 
@@ -104,4 +108,27 @@ describe('set key-value store value', () => {
 
         scope?.done();
     }).timeout(10000);
+
+    it('throws when an ID-shaped store is not found instead of creating one', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const missingStoreId = 'aBcDeFgHiJkLmNoPq'; // 17-char, ID-shaped
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: {
+                storeIdOrName: missingStoreId,
+                key: randomString(),
+                value: JSON.stringify({ myKey: randomString() }),
+            },
+        };
+
+        // No POST is mocked, so scope.done() proves no store was created.
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/key-value-stores/${missingStoreId}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Key-value store was not found' } });
+
+        await expect(appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle))
+            .to.be.rejectedWith(/does not exist/);
+        scope.done();
+    });
 });

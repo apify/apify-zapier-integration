@@ -1,6 +1,12 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
-const { getOrCreateKeyValueStore } = require('../apify_helpers');
+const { findStorageOrThrow } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
+
+const KEY_VALUE_STORE_LOOKUP = {
+    apiUrl: APIFY_API_ENDPOINTS.keyValueStores,
+    consoleUrl: 'https://console.apify.com/storage/key-value-stores',
+    label: 'Key-value store',
+};
 
 const stashFunction = async (z, bundle) => {
     const { contentType, storeId, key } = bundle.inputData;
@@ -25,7 +31,7 @@ const stashFunction = async (z, bundle) => {
 
 const getValue = async (z, bundle) => {
     const { storeIdOrName, key } = bundle.inputData;
-    const store = await getOrCreateKeyValueStore(z, storeIdOrName);
+    const store = await findStorageOrThrow(z, storeIdOrName, KEY_VALUE_STORE_LOOKUP);
 
     const sizeRequest = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,
@@ -34,7 +40,7 @@ const getValue = async (z, bundle) => {
 
     if (sizeRequest.status === 404) {
         throw new z.errors.Error(
-            `No record found for key "${key}" in key-value store ${store.id}. `
+            `No record found for key "${key}" in key-value store "${store.id}". `
             + 'The store exists but has no record under that key. Check the key name, '
             + 'or list the store keys in Apify Console: '
             + `https://console.apify.com/storage/key-value-stores/${store.id}`,
