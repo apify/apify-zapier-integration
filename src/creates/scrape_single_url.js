@@ -5,6 +5,7 @@ const {
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
     SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
+    ACTOR_RUN_TERMINAL_STATUSES,
 } = require('../consts');
 const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
 const { getDatasetItems, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
@@ -21,8 +22,9 @@ const buildScrapeResult = async (z, bundle, run, { allowUnfinished = false } = {
     if (defaultDatasetId) {
         const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
-            // A test step returns empty fields, so they can still be mapped.
-            if (allowUnfinished) {
+            // A test step returns empty fields, so they can still be mapped. A finished run has no more content
+            // coming, so it falls through to the diagnostic below instead.
+            if (allowUnfinished && !Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(run.status)) {
                 return _.omit({
                     ...run,
                     pageUrl: url,

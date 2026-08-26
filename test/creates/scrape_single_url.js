@@ -238,7 +238,7 @@ describe('scrape single URL', () => {
         scope.done();
     }).timeout(60000);
 
-    it('test step returns empty page fields with a warning when nothing is scraped yet', async function () {
+    it('test step surfaces the scrape diagnostic when a finished run has no content', async function () {
         if (TEST_USER_TOKEN) this.skip();
 
         const options = {
@@ -255,12 +255,13 @@ describe('scrape single URL', () => {
             },
         };
 
-        const mockRun = getMockRun({ actId: 'aYG0l9s7dbB7j3gbS', status: 'RUNNING', finishedAt: null });
+        // The run is finished, so there is no more content coming and the empty-fields fallback must not kick in.
+        const mockRun = getMockRun({ actId: 'aYG0l9s7dbB7j3gbS', status: 'SUCCEEDED' });
 
         const scope = nock('https://api.apify.com');
         scope.post(`/v2/acts/${mockRun.actId}/runs`)
             .query((query) => query.webhooks === undefined)
-            .reply(200, { data: mockRun });
+            .reply(200, { data: { ...mockRun, status: 'RUNNING' } });
         scope.get(`/v2/actor-runs/${mockRun.id}`)
             .query((query) => !!query.waitForFinish)
             .reply(200, { data: mockRun });
@@ -273,13 +274,8 @@ describe('scrape single URL', () => {
         scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
 
-        const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
-
-        expect(testResult.pageUrl).to.be.eql(options.url);
-        expect(testResult.pageMetadata).to.be.eql({});
-        expect(testResult.pageContent).to.be.eql({ html: '', markdown: '', text: '' });
-        expect(testResult.warning).to.include('has not scraped');
-        expect(testResult.warning).to.include(testResult.detailsPageUrl);
+        await expect(appTester(App.creates.scrapeSingleUrl.operation.perform, bundle))
+            .to.be.rejectedWith(/No content was scraped/);
 
         scope.done();
     }).timeout(60000);
