@@ -109,7 +109,9 @@ module.exports = {
         label: 'Run Task',
         description: 'Runs a saved Actor task (an Actor pre-configured with fixed input and settings in Apify Console). '
             + 'Use this when the configuration already exists; for ad-hoc runs with custom input, use Run Actor instead. '
-            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items.',
+            + 'By default the step waits for the run to finish and returns its results. '
+            + 'It always returns the run ID, status, and default dataset ID, so you can also fetch the results later '
+            + 'with Fetch Dataset Items.',
     },
 
     operation: {
@@ -124,7 +126,7 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose `yes`, this step waits until the task run finishes and then returns its results. '
+                helpText: 'With `yes` (the default), this step waits until the task run finishes and then returns its results. '
                     + 'The Zap shows the step as waiting in the meantime, and the run is limited by the timeout configured for the task '
                     + 'or its Actor, at most 1 hour, after which it is stopped. '
                     + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
@@ -134,7 +136,7 @@ module.exports = {
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
-                default: 'no',
+                default: 'yes',
             },
             getRawInputField,
         ],
