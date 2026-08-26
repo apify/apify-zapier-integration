@@ -784,6 +784,108 @@ describe('create actor run', () => {
         scope?.done();
     }).timeout(120000);
 
+    it('runSync in a test step waits for the run results instead of using a callback', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: true,
+                inputBody: '',
+                build: 'latest',
+                timeoutSecs: 120,
+                memoryMbytes: 1024,
+            },
+            meta: {
+                isLoadingSample: true,
+            },
+        };
+
+        const run = getMockRun({ actId: testActorId });
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${testActorId}/runs`)
+            // No callback webhook, the step is not paused in the editor.
+            .query((query) => query.timeout === '120' && query.webhooks === undefined)
+            .reply(200, { data: { ...run, status: ACTOR_JOB_STATUSES.RUNNING } });
+        scope.get(`/v2/actor-runs/${run.id}`)
+            .query((query) => !!query.waitForFinish)
+            .reply(200, { data: run });
+        scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(200, { foo: 'bar' });
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, [{ foo: 'bar' }]);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE_SYNC));
+        expect(testResult.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
+        expect(testResult.datasetItems).to.be.eql([{ foo: 'bar' }]);
+        expect(testResult.OUTPUT).to.be.eql({ foo: 'bar' });
+
+        scope.done();
+    }).timeout(60000);
+
+    it('runSync in a test step returns the run fields even with no items yet', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: {
+                actorId: testActorId,
+                runSync: true,
+                inputBody: '',
+                build: 'latest',
+                timeoutSecs: 120,
+                memoryMbytes: 1024,
+            },
+            meta: {
+                isLoadingSample: true,
+            },
+        };
+
+        const run = getMockRun({ actId: testActorId, status: ACTOR_JOB_STATUSES.RUNNING, finishedAt: null });
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${testActorId}/runs`)
+            .query((query) => query.webhooks === undefined)
+            .reply(200, { data: run });
+        // A failing poll falls back to the run as it was started.
+        scope.get(`/v2/actor-runs/${run.id}`)
+            .query((query) => !!query.waitForFinish)
+            .reply(500, {});
+        scope.get(`/v2/key-value-stores/${run.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(404, {});
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, []);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, []);
+        scope.get(`/v2/datasets/${run.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.createActorRun.operation.perform, bundle);
+
+        expect(testResult).to.have.all.keys(Object.keys(ACTOR_RUN_SAMPLE_SYNC));
+        expect(testResult.status).to.be.eql(ACTOR_JOB_STATUSES.RUNNING);
+        expect(testResult.datasetItems).to.be.eql([]);
+        expect(testResult.datasetItemsFileUrls).to.include.all.keys(Object.keys(ACTOR_RUN_SAMPLE_SYNC.datasetItemsFileUrls));
+
+        scope.done();
+    }).timeout(60000);
+
     // No timeout and a timeout above the cap both end up at the synchronous cap.
     [0, DEFAULT_SYNC_RUN_TIMEOUT_SECS * 2].forEach((timeoutSecs) => {
         it(`runSync caps a ${timeoutSecs}s timeout at the synchronous cap`, async function () {

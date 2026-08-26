@@ -1,4 +1,9 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
+const {
+    ACTOR_RUN_TERMINAL_STATUSES,
+    APIFY_API_ENDPOINTS,
+    TEST_STEP_RUN_WAIT_SECS,
+} = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -83,10 +88,52 @@ const validateApiResponse = (response, z) => {
  * Wrapper for z.request() to use exponential back off calls
  */
 const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
-    func: () => request(options),
+    func: () => request(typeof options === 'function' ? options() : options),
     expBackoffMillis: 200,
     expBackoffMaxRepeats: 3,
 });
+
+/**
+ * Wait budget left after the time already spent in the step.
+ */
+const getRemainingTestStepWaitSecs = (stepStartedAt) => Math.max(
+    0,
+    TEST_STEP_RUN_WAIT_SECS - ((Date.now() - stepStartedAt) / 1000),
+);
+
+/**
+ * Polls the run until it reaches a terminal status or the budget runs out. It never throws, it returns the run as of
+ * the last poll, or null when no poll succeeded.
+ */
+const waitForRunToFinish = async (request, runId, timeoutSecs) => {
+    const pollIntervalMillis = 1000;
+    const timeoutMillis = timeoutSecs * 1000;
+    const startTime = Date.now();
+    let lastRun = null;
+
+    // No single poll, including its retries, may outlive the remaining budget.
+    const getOptions = () => ({
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        params: {
+            waitForFinish: Math.min(60, Math.max(0, Math.floor((timeoutMillis - (Date.now() - startTime)) / 1000))),
+        },
+    });
+
+    while (Date.now() - startTime < timeoutMillis) {
+        try {
+            const { data: run } = await wrapRequestWithRetries(request, getOptions);
+
+            lastRun = run;
+            if (Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(run.status)) return run;
+        } catch (err) {
+            return lastRun;
+        }
+
+        await new Promise((resolve) => { setTimeout(resolve, Math.min(pollIntervalMillis, timeoutMillis - (Date.now() - startTime))); });
+    }
+
+    return lastRun;
+};
 
 /**
  * Checks whether an error represents a "not found" API response.
@@ -94,9 +141,11 @@ const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
 const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
 
 module.exports = {
+    getRemainingTestStepWaitSecs,
     isNotFoundError,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,
+    waitForRunToFinish,
     wrapRequestWithRetries,
 };

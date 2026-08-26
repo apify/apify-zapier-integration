@@ -187,6 +187,103 @@ describe('scrape single URL', () => {
         scope.done();
     });
 
+    it('test step returns the scraped content without a callback', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const options = {
+            url: 'https://www.example.com',
+            crawlerType: 'cheerio',
+        };
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: options,
+            meta: {
+                isLoadingSample: true,
+            },
+        };
+
+        const mockRun = getMockRun({ actId: 'aYG0l9s7dbB7j3gbS' });
+        const mockDatasetItem = {
+            url: options.url,
+            metadata: { title: 'Example Domain' },
+            html: '<html></html>',
+            markdown: '# Example Domain',
+            text: 'Example Domain',
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${mockRun.actId}/runs`)
+            // No callback webhook, the step is not paused in the editor.
+            .query((query) => query.webhooks === undefined)
+            .reply(200, { data: { ...mockRun, status: 'RUNNING' } });
+        scope.get(`/v2/actor-runs/${mockRun.id}`)
+            .query((query) => !!query.waitForFinish)
+            .reply(200, { data: mockRun });
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [mockDatasetItem]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [mockDatasetItem]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
+
+        expect(testResult.pageUrl).to.be.eql(options.url);
+        expect(testResult.pageContent.text).to.be.eql(mockDatasetItem.text);
+
+        scope.done();
+    }).timeout(60000);
+
+    it('test step returns empty page fields with a warning when nothing is scraped yet', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const options = {
+            url: 'https://www.example.com',
+            crawlerType: 'cheerio',
+        };
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: options,
+            meta: {
+                isLoadingSample: true,
+            },
+        };
+
+        const mockRun = getMockRun({ actId: 'aYG0l9s7dbB7j3gbS', status: 'RUNNING', finishedAt: null });
+
+        const scope = nock('https://api.apify.com');
+        scope.post(`/v2/acts/${mockRun.actId}/runs`)
+            .query((query) => query.webhooks === undefined)
+            .reply(200, { data: mockRun });
+        scope.get(`/v2/actor-runs/${mockRun.id}`)
+            .query((query) => !!query.waitForFinish)
+            .reply(200, { data: mockRun });
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, []);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, []);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.scrapeSingleUrl.operation.perform, bundle);
+
+        expect(testResult.pageUrl).to.be.eql(options.url);
+        expect(testResult.pageMetadata).to.be.eql({});
+        expect(testResult.pageContent).to.be.eql({ html: '', markdown: '', text: '' });
+        expect(testResult.warning).to.include('has not scraped');
+        expect(testResult.warning).to.include(testResult.detailsPageUrl);
+
+        scope.done();
+    }).timeout(60000);
+
     it('throws if there are no data', async () => {
         const options = {
             url: 'https://www.zz-this-page-doesn-not-exists-xx.com',

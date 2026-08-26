@@ -15,7 +15,7 @@ const {
     buildRunCallbackWebhookParam,
     getActorRunOnResume,
 } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const processInputField = (key, value, inputSchema) => {
@@ -87,6 +87,7 @@ const requestActorOrThrowNotFound = async (z, options, actorId) => {
 };
 
 const runActor = async (z, bundle) => {
+    const stepStartedAt = Date.now();
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
     const requestOpts = {
@@ -142,16 +143,24 @@ const runActor = async (z, bundle) => {
         }
     }
 
+    // The Zap editor cannot wait for the callback, so a test step waits for the results inline.
+    const isTestStep = !!bundle.meta?.isLoadingSample;
+
     // Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
         requestOpts.params.timeout = Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
-        requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
+        if (!isTestStep) requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
     }
 
     const { data: run } = await requestActorOrThrowNotFound(z, requestOpts, actorId);
 
-    // The step is paused here and finished by performResume once the run reaches a terminal status.
-    if (runSync) return run;
+    if (runSync) {
+        // The step is paused here and finished by performResume once the run reaches a terminal status.
+        if (!isTestStep) return run;
+
+        const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
+        return enrichActorRun(z, bundle.authData.access_token, waitedRun || run);
+    }
 
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
@@ -199,8 +208,8 @@ module.exports = {
                     + 'at most 1 hour, after which it is stopped. '
                     + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
                     + 'with Find Last Actor Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Actor Run trigger. '
-                    + 'Note: testing this step on its own in the Zap editor may return as soon as the run starts, '
-                    + 'without waiting for it to finish, even when you choose `yes`. Test the whole Zap to see the finished run and its results.',
+                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds and then returns the results '
+                    + 'produced so far, so you can map them in the next step. Test the whole Zap to see the finished run and all its results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

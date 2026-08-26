@@ -126,6 +126,55 @@ describe('create task run', () => {
         scope?.done();
     }).timeout(120000);
 
+    it('runSync in a test step waits for the run results instead of using a callback', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const urlToScrape = 'http://example.com';
+        const bundle = {
+            authData: {
+                access_token: randomString(),
+            },
+            inputData: {
+                taskId: testTask1Id,
+                runSync: true,
+            },
+            meta: {
+                isLoadingSample: true,
+            },
+        };
+
+        const mockRun = getMockRun({ actorTaskId: testTask1Id });
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/actor-tasks/${testTask1Id}`)
+            .reply(200, { data: { id: testTask1Id, options: { timeoutSecs: 300 } } });
+        scope.post(`/v2/actor-tasks/${testTask1Id}/runs`)
+            // No callback webhook, the step is not paused in the editor.
+            .query((query) => query.timeout === '300' && query.webhooks === undefined)
+            .reply(201, { data: { ...mockRun, status: 'RUNNING' } });
+        scope.get(`/v2/actor-runs/${mockRun.id}`)
+            .query((query) => !!query.waitForFinish)
+            .reply(200, { data: { ...mockRun, status: 'SUCCEEDED' } });
+        scope.get(`/v2/key-value-stores/${mockRun.defaultKeyValueStoreId}/records/OUTPUT`)
+            .reply(200, KEY_VALUE_STORE_SAMPLE);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 1, clean: true })
+            .reply(200, [{ url: urlToScrape }]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}/items`)
+            .query({ limit: 100, clean: true })
+            .reply(200, [{ url: urlToScrape }]);
+        scope.get(`/v2/datasets/${mockRun.defaultDatasetId}`)
+            .reply(200, mockDatasetPublicUrl(mockRun.defaultDatasetId));
+
+        const testResult = await appTester(App.creates.createTaskRun.operation.perform, bundle);
+
+        expect(testResult.status).to.be.eql('SUCCEEDED');
+        expect(testResult.datasetItems).to.be.eql([{ url: urlToScrape }]);
+        expect(testResult.detailsPageUrl).to.be.eql(`https://console.apify.com/actors/tasks/${testTask1Id}/runs/${mockRun.id}`);
+
+        scope.done();
+    }).timeout(60000);
+
     it('runSync work without output', async () => {
         const bundle = {
             authData: {
