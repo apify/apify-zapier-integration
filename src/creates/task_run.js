@@ -1,10 +1,33 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS } = require('../consts');
-const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../consts');
+const { enrichActorRun, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
+
+const getSyncTaskRunTimeoutSecs = async (z, taskId) => {
+    try {
+        const { data: task } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+        });
+
+        let timeoutSecs = task.options?.timeoutSecs;
+        // A `0` means "no timeout", not "not configured", so only an absent value inherits the Actor default.
+        if (timeoutSecs === undefined || timeoutSecs === null) {
+            const { data: actor } = await wrapRequestWithRetries(z.request, {
+                url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
+            });
+            timeoutSecs = actor.defaultRunOptions?.timeoutSecs;
+        }
+
+        return Math.min(timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS, DEFAULT_SYNC_RUN_TIMEOUT_SECS);
+    } catch (err) {
+        return DEFAULT_SYNC_RUN_TIMEOUT_SECS;
+    }
+};
+
 const runTask = async (z, bundle) => {
+    const stepStartedAt = Date.now();
     const { taskId, runSync, rawInput } = bundle.inputData;
 
     const requestOpts = {
@@ -22,11 +45,33 @@ const runTask = async (z, bundle) => {
         }
     }
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+    // The Zap editor cannot wait for the callback, so a test step waits for the results inline.
+    const isTestStep = !!bundle.meta?.isLoadingSample;
+
+    // Calling z.generateCallbackUrl() is what pauses the Zap step, so it must not be called when running async.
     if (runSync) {
-        run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS, true);
+        requestOpts.params = {
+            ...requestOpts.params,
+            timeout: await getSyncTaskRunTimeoutSecs(z, taskId),
+        };
+        if (!isTestStep) requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
     }
 
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    if (runSync) {
+        // The step is paused here and finished by performResume once the run reaches a terminal status.
+        if (!isTestStep) return run;
+
+        const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
+        return enrichActorRun(z, bundle.authData.access_token, waitedRun || run);
+    }
+
+    return enrichActorRun(z, bundle.authData.access_token, run);
+};
+
+const resumeTaskRun = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle, true);
     return enrichActorRun(z, bundle.authData.access_token, run);
 };
 
@@ -64,7 +109,9 @@ module.exports = {
         label: 'Run Task',
         description: 'Runs a saved Actor task (an Actor pre-configured with fixed input and settings in Apify Console). '
             + 'Use this when the configuration already exists; for ad-hoc runs with custom input, use Run Actor instead. '
-            + 'Returns the run ID, status, and default dataset ID; retrieve the results with Fetch Dataset Items.',
+            + 'By default the step waits for the run to finish and returns its results. '
+            + 'It always returns the run ID, status, and default dataset ID, so you can also fetch the results later '
+            + 'with Fetch Dataset Items.',
     },
 
     operation: {
@@ -79,17 +126,23 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'If you choose "yes", the Zap will wait until the task run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
+                helpText: 'With `yes` (the default), this step waits until the task run finishes and then returns its results. '
+                    + 'The Zap shows the step as waiting in the meantime, and the run is limited by the timeout configured for the task '
+                    + 'or its Actor, at most 1 hour, after which it is stopped. '
+                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
+                    + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger. '
+                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds and then returns the results '
+                    + 'produced so far, so you can map them in the next step. Test the whole Zap to see the finished run and all its results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',
-                default: 'no',
+                default: 'yes',
             },
             getRawInputField,
         ],
 
         perform: runTask,
+        performResume: resumeTaskRun,
 
         sample: TASK_RUN_SAMPLE,
         outputFields: [

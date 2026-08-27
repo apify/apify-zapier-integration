@@ -4,47 +4,16 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
+    ACTOR_RUN_TERMINAL_STATUSES,
 } = require('../consts');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
-const { getDatasetItems } = require('../apify_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
+const { getDatasetItems, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
 
 const WEBSITE_CONTENT_CRAWLER_ACTOR_ID = 'aYG0l9s7dbB7j3gbS';
 
-const runWebsiteContentCrawler = async (z, bundle) => {
+const buildScrapeResult = async (z, bundle, run, { allowUnfinished = false } = {}) => {
     const { url, crawlerType } = bundle.inputData;
-
-    // We can use lower memory for Cheerio crawler, because it's not using browser.
-    const memory = crawlerType === 'cheerio' ? 1024 : 4096;
-
-    const input = {
-        startUrls: [{ url }],
-        crawlerType,
-        maxCrawlDepth: 0,
-        maxCrawlPages: 1,
-        maxResults: 1,
-        proxyConfiguration: {
-            useApifyProxy: true,
-        },
-        removeCookieWarnings: true,
-        saveHtml: true,
-        saveMarkdown: true,
-    };
-
-    const requestOpts = {
-        url: `${APIFY_API_ENDPOINTS.actors}/${WEBSITE_CONTENT_CRAWLER_ACTOR_ID}/runs`,
-        method: 'POST',
-        params: {
-            memory,
-        },
-        headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-        },
-        body: JSON.stringify(input),
-    };
-
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
 
     const { defaultDatasetId } = run;
     // Attach Apify app URL to detail of run
@@ -53,6 +22,19 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     if (defaultDatasetId) {
         const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
         if (!datasetItems.items || datasetItems.items.length === 0) {
+            // A test step returns empty fields, so they can still be mapped. A finished run has no more content
+            // coming, so it falls through to the diagnostic below instead.
+            if (allowUnfinished && !Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(run.status)) {
+                return _.omit({
+                    ...run,
+                    pageUrl: url,
+                    pageMetadata: {},
+                    pageContent: { html: '', markdown: '', text: '' },
+                    warning: `The run has not scraped ${url} yet (run status: ${run.status}). `
+                        + `Test the whole Zap to get the page content, or check the run: ${run.detailsPageUrl}`,
+                }, OMIT_ACTOR_RUN_FIELDS);
+            }
+
             const statusInfo = run.statusMessage
                 ? `Run status: ${run.status} (${run.statusMessage}).`
                 : `Run status: ${run.status}.`;
@@ -78,6 +60,59 @@ const runWebsiteContentCrawler = async (z, bundle) => {
     return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 };
 
+const runWebsiteContentCrawler = async (z, bundle) => {
+    const stepStartedAt = Date.now();
+    const { url, crawlerType } = bundle.inputData;
+
+    // We can use lower memory for Cheerio crawler, because it's not using browser.
+    const memory = crawlerType === 'cheerio' ? 1024 : 4096;
+
+    const input = {
+        startUrls: [{ url }],
+        crawlerType,
+        maxCrawlDepth: 0,
+        maxCrawlPages: 1,
+        maxResults: 1,
+        proxyConfiguration: {
+            useApifyProxy: true,
+        },
+        removeCookieWarnings: true,
+        saveHtml: true,
+        saveMarkdown: true,
+    };
+
+    const requestOpts = {
+        url: `${APIFY_API_ENDPOINTS.actors}/${WEBSITE_CONTENT_CRAWLER_ACTOR_ID}/runs`,
+        method: 'POST',
+        params: {
+            memory,
+            timeout: SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
+        },
+        headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+        },
+        body: JSON.stringify(input),
+    };
+
+    // The Zap editor cannot wait for the callback, so a test step waits for the content inline.
+    const isTestStep = !!bundle.meta?.isLoadingSample;
+
+    // Calling z.generateCallbackUrl() pauses the Zap step, performResume then finishes it once the run is done.
+    if (!isTestStep) requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
+
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
+
+    if (!isTestStep) return run;
+
+    const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
+    return buildScrapeResult(z, bundle, waitedRun || run, { allowUnfinished: true });
+};
+
+const resumeWebsiteContentCrawler = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle);
+    return buildScrapeResult(z, bundle, run);
+};
+
 module.exports = {
     key: 'scrapeSingleUrl',
     noun: 'Scrape Single URL',
@@ -98,7 +133,9 @@ module.exports = {
                     + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
                     + '[Web Scraper](https://apify.com/apify/web-scraper), '
                     + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
-                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
+                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps. '
+                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds, so it can return empty page '
+                    + 'content when the scraper needs longer. Test the whole Zap to see the scraped content.',
             },
             {
                 label: 'URL',
@@ -129,6 +166,7 @@ module.exports = {
         ],
 
         perform: runWebsiteContentCrawler,
+        performResume: resumeWebsiteContentCrawler,
 
         sample: SCRAPE_SINGLE_URL_RUN_SAMPLE,
         outputFields: SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,

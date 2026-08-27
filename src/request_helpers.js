@@ -1,5 +1,9 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
-const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
+const {
+    ACTOR_RUN_TERMINAL_STATUSES,
+    APIFY_API_ENDPOINTS,
+    TEST_STEP_RUN_WAIT_SECS,
+} = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -84,44 +88,51 @@ const validateApiResponse = (response, z) => {
  * Wrapper for z.request() to use exponential back off calls
  */
 const wrapRequestWithRetries = (request, options) => retryWithExpBackoff({
-    func: () => request(options),
+    func: () => request(typeof options === 'function' ? options() : options),
     expBackoffMillis: 200,
     expBackoffMaxRepeats: 3,
 });
 
-const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false) => {
-    const maxWaitingForRequest = 60;
-    const pollIntervalMillis = maxWaitingForRequest * 1000;
+/**
+ * Wait budget left after the time already spent in the step.
+ */
+const getRemainingTestStepWaitSecs = (stepStartedAt) => Math.max(
+    0,
+    TEST_STEP_RUN_WAIT_SECS - ((Date.now() - stepStartedAt) / 1000),
+);
+
+/**
+ * Polls the run until it reaches a terminal status or the budget runs out. It never throws, it returns the run as of
+ * the last poll, or null when no poll succeeded.
+ */
+const waitForRunToFinish = async (request, runId, timeoutSecs) => {
+    const pollIntervalMillis = 1000;
     const timeoutMillis = timeoutSecs * 1000;
     const startTime = Date.now();
-    const options = {
-        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}?waitForFinish=${maxWaitingForRequest}`,
-    };
+    let lastRun = null;
+
+    // No single poll, including its retries, may outlive the remaining budget.
+    const getOptions = () => ({
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        params: {
+            waitForFinish: Math.min(60, Math.max(0, Math.floor((timeoutMillis - (Date.now() - startTime)) / 1000))),
+        },
+    });
 
     while (Date.now() - startTime < timeoutMillis) {
         try {
-            const { data: run } = await wrapRequestWithRetries(request, options);
+            const { data: run } = await wrapRequestWithRetries(request, getOptions);
 
-            const runStatus = await run.status;
-
-            if (Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(runStatus)) {
-                return run;
-            }
-        } catch (error) {
-            throw new Error(`Error while polling for run ${runId} (${options.url}): ${error}`);
+            lastRun = run;
+            if (Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(run.status)) return run;
+        } catch (err) {
+            return lastRun;
         }
 
-        await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
+        await new Promise((resolve) => { setTimeout(resolve, Math.min(pollIntervalMillis, timeoutMillis - (Date.now() - startTime))); });
     }
 
-    const asyncSuffix = asyncHint
-        ? ', or set "Run synchronously" to "no" to start runs without waiting for them to finish.'
-        : '.';
-    throw new Error(
-        `Run did not finish within the ${timeoutSecs}s synchronous timeout. `
-        + `The run is still active (run ID: ${runId}) and keeps running in the background. `
-        + `Check its status and results in Apify Console (https://console.apify.com/view/runs/${runId})${asyncSuffix}`,
-    );
+    return lastRun;
 };
 
 /**
@@ -130,10 +141,11 @@ const waitForRunToFinish = async (request, runId, timeoutSecs, asyncHint = false
 const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
 
 module.exports = {
+    getRemainingTestStepWaitSecs,
     isNotFoundError,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,
-    wrapRequestWithRetries,
     waitForRunToFinish,
+    wrapRequestWithRetries,
 };
