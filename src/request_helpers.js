@@ -1,5 +1,5 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
-const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
+const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS, WEB_FETCH_STANDBY_HOST } = require('./consts');
 
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
@@ -8,7 +8,9 @@ const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal
  * It runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
  */
 const setApifyRequestHeaders = (request, z, bundle) => {
-    const APIFY_HOSTS = ['api.apify.com'];
+    // Standby Actors, e.g. Web Fetch, are served from their own host, but they authenticate with
+    // the same Apify token and are attributed with the same integration platform header.
+    const APIFY_HOSTS = ['api.apify.com', WEB_FETCH_STANDBY_HOST];
 
     if (APIFY_HOSTS.includes(new URL(request.url).host)) {
         if (bundle.authData.access_token) {
@@ -33,6 +35,27 @@ const parseDataApiObject = (response) => {
 };
 
 /**
+ * Errors from the Web Fetch Standby endpoint use a flat `{ code, error }` envelope with a matching
+ * HTTP status, unlike the Apify API's nested `{ error: { type, message } }`. Without this mapping
+ * they would fall through to the generic handling below, and a 502/504 would be reported to the user
+ * as an Apify API internal error and pointlessly retried.
+ */
+const parseWebFetchError = (response) => {
+    if (new URL(response.request.url).host !== WEB_FETCH_STANDBY_HOST) return null;
+
+    let errorInfo;
+    try {
+        errorInfo = JSON.parse(response.content);
+    } catch (err) {
+        // This can be ignored, handled as a generic error below.
+    }
+
+    if (!errorInfo || typeof errorInfo.code !== 'string' || typeof errorInfo.error !== 'string') return null;
+
+    return { code: errorInfo.code, message: errorInfo.error };
+};
+
+/**
  * This middleware log each bad response from Apify API.
  * It uses RetryableError to retry bad responses from Apify API.
  */
@@ -43,6 +66,24 @@ const validateApiResponse = (response, z) => {
     if (['GET', 'HEAD'].includes(response.request.method) && response.request.url.match(/\/records\//) && response.status === 404) {
         response.skipThrowForStatus = true;
         return response;
+    }
+
+    /**
+     * NOTE: Web Fetch errors are checked before the generic status handling, because the Actor
+     * reports upstream failures with 5xx statuses, e.g. 502 UPSTREAM_FETCH_ERROR or 504 FETCH_TIMEOUT,
+     * that describe the target website rather than Apify and are not worth retrying - Web Fetch
+     * already retries the fetch internally.
+     */
+    if (response.status >= 300) {
+        const webFetchError = parseWebFetchError(response);
+        if (webFetchError) {
+            throw new z.errors.Error(
+                // This message is surfaced to the user
+                webFetchError.message,
+                webFetchError.code,
+                response.status,
+            );
+        }
     }
 
     /**

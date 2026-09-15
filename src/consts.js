@@ -26,6 +26,33 @@ const APIFY_API_ENDPOINTS = {
     webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
 };
 
+/**
+ * The Web Fetch Actor (apify/web-fetch) runs in Standby mode, i.e. it exposes a real-time HTTP
+ * endpoint on its own host instead of the Apify API. A single request returns the page content,
+ * so there is no run to poll and no dataset to read.
+ */
+const WEB_FETCH_STANDBY_URL = 'https://web-fetch.apify.actor';
+const WEB_FETCH_STANDBY_HOST = new URL(WEB_FETCH_STANDBY_URL).host;
+
+/**
+ * Output formats supported by the Web Fetch Actor. A format that does not apply to the fetched
+ * content type comes back as null, which is not an error, e.g. links for a PDF.
+ */
+const WEB_FETCH_FORMATS = {
+    markdown: 'Markdown',
+    html: 'HTML',
+    text: 'Plain text',
+    links: 'Links',
+    raw: 'Raw',
+};
+
+/**
+ * Web Fetch allows up to 2 minutes per fetch, but a Zapier perform has a much shorter budget,
+ * so we cut the request off ourselves to be able to return a meaningful error instead of letting
+ * Zapier kill the whole task with an opaque timeout.
+ */
+const WEB_FETCH_TIMEOUT_MILLIS = 25000;
+
 const ACTOR_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -211,6 +238,65 @@ const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [
     { key: 'pageContent__text', label: 'Page text', type: 'string' },
 ];
 
+/**
+ * A Web Fetch response envelope. Beside `url`, `fetch` and `metadata`, which are always present,
+ * the response carries one key per requested format, hence all of them are listed in the sample.
+ */
+const WEB_FETCH_SAMPLE = {
+    url: 'https://www.example.com',
+    fetch: {
+        loadedUrl: 'https://www.example.com/',
+        loadedTime: '2026-07-27T12:41:41.064Z',
+        httpStatusCode: 200,
+        contentLengthBytes: 1256,
+        contentType: 'text/html; charset=utf-8',
+    },
+    metadata: {
+        canonicalUrl: 'https://www.example.com/',
+        title: 'Example Domain',
+        description: null,
+        author: null,
+        keywords: null,
+        languageCode: 'en',
+        openGraph: [
+            { property: 'og:title', content: 'Example Domain' },
+        ],
+        jsonLd: null,
+        headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'content-length': '1256',
+        },
+    },
+    markdown: '## Example Domain\n\nThis domain is for use in illustrative examples in documents. '
+        + 'You may use this domain in literature without prior coordination or asking for permission.\n\n'
+        + '[More information...](https://www.iana.org/domains/example)',
+    html: '<div><h1>Example Domain</h1><p>This domain is for use in illustrative examples in documents.</p></div>',
+    text: 'Example Domain\nThis domain is for use in illustrative examples in documents. '
+        + 'You may use this domain in literature without prior coordination or asking for permission.\nMore information...',
+    links: ['https://www.iana.org/domains/example'],
+    raw: '<!doctype html><html><head><title>Example Domain</title></head><body></body></html>',
+};
+
+const WEB_FETCH_OUTPUT_FIELDS = [
+    { key: 'url', label: 'URL', type: 'string' },
+    { key: 'fetch__loadedUrl', label: 'Loaded URL', type: 'string' },
+    { key: 'fetch__loadedTime', label: 'Loaded at' },
+    { key: 'fetch__httpStatusCode', label: 'HTTP status code', type: 'integer' },
+    { key: 'fetch__contentLengthBytes', label: 'Content length in bytes', type: 'integer' },
+    { key: 'fetch__contentType', label: 'Content type', type: 'string' },
+    { key: 'metadata__title', label: 'Page title', type: 'string' },
+    { key: 'metadata__description', label: 'Page description', type: 'string' },
+    { key: 'metadata__canonicalUrl', label: 'Canonical URL', type: 'string' },
+    { key: 'metadata__author', label: 'Author', type: 'string' },
+    { key: 'metadata__keywords', label: 'Keywords', type: 'string' },
+    { key: 'metadata__languageCode', label: 'Language code', type: 'string' },
+    { key: 'markdown', label: 'Markdown', type: 'string' },
+    { key: 'html', label: 'HTML', type: 'string' },
+    { key: 'text', label: 'Plain text', type: 'string' },
+    { key: 'links', label: 'Links' },
+    { key: 'raw', label: 'Raw', type: 'string' },
+];
+
 const TASK_RUN_SAMPLE = {
     ...ACTOR_RUN_SAMPLE,
     actorTaskId: 'UJNG9zau8PEB7U',
@@ -350,6 +436,12 @@ module.exports = {
     KEY_VALUE_STORE_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
+    WEB_FETCH_STANDBY_URL,
+    WEB_FETCH_STANDBY_HOST,
+    WEB_FETCH_FORMATS,
+    WEB_FETCH_TIMEOUT_MILLIS,
+    WEB_FETCH_SAMPLE,
+    WEB_FETCH_OUTPUT_FIELDS,
     ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     ACTOR_RUN_STATUSES,
