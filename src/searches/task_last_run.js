@@ -6,7 +6,7 @@ const {
     ACTOR_RUN_STATUSES,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const getLastTaskRun = async (z, bundle) => {
@@ -19,7 +19,7 @@ const getLastTaskRun = async (z, bundle) => {
             params: status ? { status } : {},
         });
     } catch (err) {
-        if (err.message.includes('not found')) return [];
+        if (isNotFoundError(err)) return [];
 
         throw err;
     }
@@ -35,7 +35,8 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Finds the most recent task run with a specific status.',
+        description: 'Finds the most recent task run with a specific status (defaults to Succeeded). '
+            + 'It returns the latest run only; it cannot look up a specific run by ID.',
     },
 
     operation: {

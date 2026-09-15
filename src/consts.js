@@ -92,6 +92,12 @@ const ACTOR_RUN_SAMPLE_SYNC = {
     consoleUrl: 'https://console.apify.com/view/runs/tbplDsWxC8dabcsRb',
 };
 
+// An aborted run has the same shape as any other run, only the terminal status differs.
+const ABORT_ACTOR_RUN_SAMPLE = {
+    ...ACTOR_RUN_SAMPLE,
+    status: ACTOR_JOB_STATUSES.ABORTED,
+};
+
 const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -220,6 +226,83 @@ const TASK_RUN_SAMPLE = {
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
+// Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
+// The `stats.*` popularity/recency signals are flattened to `stats__*` keys (matching the
+// dynamic-field convention used elsewhere) so Zapier renders them as flat output fields.
+const STORE_ACTOR_SAMPLE = {
+    id: 'zdc3Pyhyz3m8vjDeM',
+    name: 'web-scraper',
+    title: 'Web Scraper',
+    description: 'Crawls arbitrary websites using a browser and extracts structured data from web pages.',
+    username: 'apify',
+    url: 'https://apify.com/apify/web-scraper',
+    categories: ['DEVELOPER_TOOLS', 'AUTOMATION'],
+    stats__totalRuns: 3208782,
+    stats__totalUsers: 62598,
+    stats__lastRunStartedAt: '2026-07-10T09:41:39.937Z',
+};
+
+const STORE_ACTOR_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'title', label: 'Title', type: 'string' },
+    { key: 'description', label: 'Description', type: 'string' },
+    { key: 'username', label: 'Username', type: 'string' },
+    { key: 'url', label: 'Store URL', type: 'string' },
+    { key: 'categories', label: 'Categories', type: 'string', list: true },
+    { key: 'stats__totalRuns', label: 'Total runs', type: 'number' },
+    { key: 'stats__totalUsers', label: 'Total users', type: 'number' },
+    { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
+];
+
+const ACTOR_SAMPLE = {
+    id: 'zdc3Pyhyz3m8vjDeM',
+    name: 'web-scraper',
+    title: 'Web Scraper',
+    description: 'Crawls arbitrary websites using a browser and extracts structured data from web pages.',
+    username: 'apify',
+    isPublic: true,
+    actorPermissionLevel: 'LIMITED_PERMISSIONS',
+    createdAt: '2019-07-08T11:27:57.401Z',
+    modifiedAt: '2019-07-08T14:01:05.546Z',
+    standbyUrl: 'https://web-scraper.apify.actor',
+    stats: {
+        totalRuns: 16,
+        totalUsers: 6,
+        lastRunStartedAt: '2019-07-08T14:01:05.546Z',
+    },
+    defaultRunOptions: {
+        build: 'latest',
+        timeoutSecs: 3600,
+        memoryMbytes: 2048,
+    },
+    taggedBuilds: {
+        latest: {
+            buildId: 'z2EryhbfhgSyqj6Hn',
+            buildNumber: '0.0.2',
+        },
+    },
+};
+
+const ACTOR_OUTPUT_FIELDS = [
+    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'title', label: 'Title', type: 'string' },
+    { key: 'description', label: 'Description', type: 'string' },
+    { key: 'username', label: 'Username', type: 'string' },
+    { key: 'isPublic', label: 'Is public', type: 'boolean' },
+    { key: 'actorPermissionLevel', label: 'Actor permission level', type: 'string' },
+    { key: 'createdAt', label: 'Created at' },
+    { key: 'modifiedAt', label: 'Modified at' },
+    { key: 'standbyUrl', label: 'Standby URL', type: 'string' },
+    { key: 'stats__totalRuns', label: 'Total runs', type: 'number' },
+    { key: 'stats__totalUsers', label: 'Total users', type: 'number' },
+    { key: 'stats__lastRunStartedAt', label: 'Last run started at' },
+    { key: 'defaultRunOptions__build', label: 'Default build', type: 'string' },
+    { key: 'defaultRunOptions__timeoutSecs', label: 'Default timeout (seconds)', type: 'number' },
+    { key: 'defaultRunOptions__memoryMbytes', label: 'Default memory (MB)', type: 'number' },
+];
+
 const DATASET_SAMPLE = {
     id: 'fYYRaBM5FSoCZ2Tf9',
     name: 'dataset-sample',
@@ -293,7 +376,15 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
     (x, i) => MIN_RUN_MEMORY_MBYTES * (2 ** i),
 );
 
-const DEFAULT_RUN_WAIT_TIME_OUT_SECONDS = 360;
+// Cap for synchronous runs, so no run can keep a Zap step paused for more than an hour.
+const DEFAULT_SYNC_RUN_TIMEOUT_SECS = 3600;
+// Scraping a single page never needs an hour, so it uses a tighter cap.
+const SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS = 360;
+
+// Zapier hard-kills any perform() after this limit.
+const ZAPIER_STEP_TIMEOUT_SECS = 30;
+// Test step waits for the run results inline, the rest of the limit is left for fetching and processing them.
+const TEST_STEP_RUN_WAIT_SECS = ZAPIER_STEP_TIMEOUT_SECS - 5;
 
 const DEFAULT_ACTOR_MEMORY_MBYTES = 2048;
 
@@ -331,9 +422,14 @@ module.exports = {
     APIFY_API_ENDPOINTS,
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_SAMPLE_SYNC,
+    ABORT_ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
+    STORE_ACTOR_SAMPLE,
+    STORE_ACTOR_OUTPUT_FIELDS,
+    ACTOR_SAMPLE,
+    ACTOR_OUTPUT_FIELDS,
     DEFAULT_KEY_VALUE_STORE_KEYS,
     DEFAULT_PAGINATION_LIMIT,
     LEGACY_PHANTOM_JS_CRAWLER_ID,
@@ -343,7 +439,10 @@ module.exports = {
     DATASET_ITEMS_INLINE_MAX_BYTES,
     DATASET_MAX_SIZE_MARGIN,
     ALLOWED_MEMORY_MBYTES_LIST,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+    SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
+    ZAPIER_STEP_TIMEOUT_SECS,
+    TEST_STEP_RUN_WAIT_SECS,
     DEFAULT_ACTOR_MEMORY_MBYTES,
     DATASET_SAMPLE,
     DATASET_OUTPUT_FIELDS,
