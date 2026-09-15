@@ -102,7 +102,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
 
     const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
-    if (!isTestStep) return run;
+    if (!isTestStep) return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 
     const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
     return buildScrapeResult(z, bundle, waitedRun || run, { allowUnfinished: true });

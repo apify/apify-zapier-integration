@@ -1,4 +1,6 @@
-const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../consts');
+const _ = require('lodash');
+const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+    OMIT_ACTOR_RUN_FIELDS } = require('../consts');
 const { enrichActorRun, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
@@ -61,7 +63,7 @@ const runTask = async (z, bundle) => {
 
     if (runSync) {
         // The step is paused here and finished by performResume once the run reaches a terminal status.
-        if (!isTestStep) return run;
+        if (!isTestStep) return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 
         const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
         return enrichActorRun(z, bundle.authData.access_token, waitedRun || run);

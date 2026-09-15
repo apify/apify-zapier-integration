@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const dayjs = require('dayjs');
 const {
     APIFY_API_ENDPOINTS,
@@ -5,6 +6,7 @@ const {
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
     RECENTLY_USED_ACTORS_KEY,
     DEFAULT_SYNC_RUN_TIMEOUT_SECS,
+    OMIT_ACTOR_RUN_FIELDS,
 } = require('../consts');
 const {
     enrichActorRun,
@@ -156,7 +158,7 @@ const runActor = async (z, bundle) => {
 
     if (runSync) {
         // The step is paused here and finished by performResume once the run reaches a terminal status.
-        if (!isTestStep) return run;
+        if (!isTestStep) return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
 
         const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
         return enrichActorRun(z, bundle.authData.access_token, waitedRun || run);
