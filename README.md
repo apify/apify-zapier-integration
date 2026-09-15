@@ -23,7 +23,7 @@ npm run test
 ```
 
 But if you want to run the tests against the Apify platform you will need your Apify API token before you run tests.
-You can find the token [on the Integrations page of your Apify account](https://console.apify.com/account/integrations).
+You can find the token [on the Integrations page of your Apify account](https://console.apify.com/settings/integrations?utm_source=zapier&utm_medium=integrations).
 Run this command to test the app:
 ```text
 TEST_USER_TOKEN=apify_api_token npm run test
