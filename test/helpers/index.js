@@ -17,6 +17,22 @@ zapier.tools.env.inject();
 const { TEST_USER_TOKEN } = process.env;
 const apifyClient = new ApifyClient({ token: TEST_USER_TOKEN });
 
+// Polls a webhooks list endpoint until it reports the expected number of webhooks, or a timeout elapses.
+// The live Apify API is eventually consistent, so a webhook created via performSubscribe may not appear on an
+// immediate read. This waits for it to propagate before the caller asserts, returning the final list result
+// either way so a genuine mismatch still fails the caller's assertion.
+const waitForWebhookCount = async (webhooksClient, expectedCount, { timeoutMillis = 30000, pollMillis = 1000 } = {}) => {
+    const deadline = Date.now() + timeoutMillis;
+    let webhooks = await webhooksClient.list();
+
+    while (webhooks.items.length !== expectedCount && Date.now() < deadline) {
+        await new Promise((resolve) => { setTimeout(resolve, pollMillis); });
+        webhooks = await webhooksClient.list();
+    }
+
+    return webhooks;
+};
+
 const createWebScraperTask = async (pageFunction = DEFAULT_PAGE_FUNCTION) => {
     const task = await apifyClient.tasks().create({
         actId: 'apify/web-scraper',
@@ -444,6 +460,7 @@ module.exports = {
     TEST_USER_TOKEN,
     randomString,
     apifyClient,
+    waitForWebhookCount,
     createWebScraperTask,
     createAndBuildActor,
     createLegacyCrawlerTask,
