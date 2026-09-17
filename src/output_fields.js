@@ -30,7 +30,7 @@ const getDatasetItemsOutputFields = async (z, datasetId, actorId, token, keyPref
     return convertPlainObjectToFieldSchema(mergedItem, keyPrefix);
 };
 
-const getActorDatasetOutputFields = async (z, bundle) => {
+const getActorDatasetOutputFields = async (z, bundle, keyPrefix = 'datasetItems[]') => {
     const { actorId } = bundle.inputData;
     let lastSuccessDatasetItems;
     try {
@@ -47,7 +47,7 @@ const getActorDatasetOutputFields = async (z, bundle) => {
         return [];
     }
     const { data: run } = lastSuccessDatasetItems;
-    return getDatasetItemsOutputFields(z, run.defaultDatasetId, actorId);
+    return getDatasetItemsOutputFields(z, run.defaultDatasetId, actorId, undefined, keyPrefix);
 };
 
 /**
