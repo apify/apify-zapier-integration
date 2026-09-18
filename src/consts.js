@@ -226,6 +226,18 @@ const TASK_RUN_SAMPLE = {
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
+const RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE = {
+    items: [],
+    itemsFileUrls: ACTOR_RUN_SAMPLE.datasetItemsFileUrls,
+};
+
+const RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS = [
+    { key: 'itemsFileUrls__xml', label: 'Items XML file URL', type: 'string' },
+    { key: 'itemsFileUrls__csv', label: 'Items CSV file URL', type: 'string' },
+    { key: 'itemsFileUrls__json', label: 'Items JSON file URL', type: 'string' },
+    { key: 'itemsFileUrls__xlsx', label: 'Items Excel file URL', type: 'string' },
+];
+
 // Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
 // The `stats.*` popularity/recency signals are flattened to `stats__*` keys (matching the
 // dynamic-field convention used elsewhere) so Zapier renders them as flat output fields.
@@ -380,6 +392,7 @@ const ALLOWED_MEMORY_MBYTES_LIST = Array.from(
 const DEFAULT_SYNC_RUN_TIMEOUT_SECS = 3600;
 // Scraping a single page never needs an hour, so it uses a tighter cap.
 const SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS = 360;
+const RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT = 10;
 
 // Zapier hard-kills any perform() after this limit.
 const ZAPIER_STEP_TIMEOUT_SECS = 30;
@@ -426,6 +439,9 @@ module.exports = {
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
+    RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE,
+    RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS,
+    RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT,
     STORE_ACTOR_SAMPLE,
     STORE_ACTOR_OUTPUT_FIELDS,
     ACTOR_SAMPLE,
