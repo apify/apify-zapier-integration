@@ -70,9 +70,7 @@ describe('run Actor and fetch results', () => {
             requestUrl: TEST_CALLBACK_URL,
         }]);
         expect(testResult).to.have.all.keys(Object.keys(RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE));
-        expect(testResult.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
         expect(testResult.items).to.be.eql(items);
-        expect(testResult.detailsPageUrl).to.eql(`https://console.apify.com/actors/${run.actId}/runs/${run.id}`);
 
         scope.done();
     });
@@ -202,7 +200,6 @@ describe('run Actor and fetch results', () => {
 
         const testResult = await appTester(App.creates.runActorAndFetchResults.operation.perform, bundle);
 
-        expect(testResult.status).to.be.eql(ACTOR_JOB_STATUSES.SUCCEEDED);
         expect(testResult.items).to.be.eql(items);
 
         scope.done();
@@ -295,7 +292,7 @@ describe('run Actor and fetch results', () => {
 
         const testResult = await appTester(App.creates.runActorAndFetchResults.operation.performResume, bundle);
 
-        expect(testResult.status).to.be.eql(ACTOR_JOB_STATUSES.FAILED);
+        expect(testResult).to.have.all.keys(Object.keys(RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE));
         expect(testResult.items).to.be.eql([{ url: 'http://example.com' }]);
 
         scope.done();

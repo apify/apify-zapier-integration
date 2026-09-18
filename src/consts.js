@@ -226,18 +226,12 @@ const TASK_RUN_SAMPLE = {
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
-// Same shape as ACTOR_RUN_SAMPLE, minus OUTPUT (not fetched here); always from the real API, so it also
-// carries `consoleUrl` like ACTOR_RUN_SAMPLE_SYNC.
-const { OUTPUT, datasetItems, datasetItemsFileUrls, ...ACTOR_RUN_SAMPLE_BASE } = ACTOR_RUN_SAMPLE;
 const RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE = {
-    ...ACTOR_RUN_SAMPLE_BASE,
-    consoleUrl: ACTOR_RUN_SAMPLE_SYNC.consoleUrl,
     items: [],
-    itemsFileUrls: datasetItemsFileUrls,
+    itemsFileUrls: ACTOR_RUN_SAMPLE.datasetItemsFileUrls,
 };
 
 const RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS = [
-    ...ACTOR_RUN_OUTPUT_FIELDS.filter(({ key }) => key !== 'OUTPUT' && !key.startsWith('datasetItemsFileUrls')),
     { key: 'itemsFileUrls__xml', label: 'Items XML file URL', type: 'string' },
     { key: 'itemsFileUrls__csv', label: 'Items CSV file URL', type: 'string' },
     { key: 'itemsFileUrls__json', label: 'Items JSON file URL', type: 'string' },

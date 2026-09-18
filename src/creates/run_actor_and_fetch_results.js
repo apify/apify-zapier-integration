@@ -23,21 +23,13 @@ const buildRunResult = async (z, bundle, run) => {
     const { limit, fields } = bundle.inputData;
     const { defaultDatasetId } = run;
 
-    // Attach Apify app URL to detail of run
-    run.detailsPageUrl = `https://console.apify.com/actors/${run.actId}/runs/${run.id}`;
+    if (!defaultDatasetId) return { items: [] };
 
-    if (defaultDatasetId) {
-        // NOTE: limit can be legitimately 0 (meaning "no items"), so only substitute the default when it's unset.
-        const params = { limit: (limit === undefined || limit === null || limit === '') ? RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT : limit };
-        if (fields && fields.length) params.fields = fields.split(',').map((f) => f.trim()).join(',');
+    // NOTE: limit can be legitimately 0 (meaning "no items"), so only substitute the default when it's unset.
+    const params = { limit: (limit === undefined || limit === null || limit === '') ? RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT : limit };
+    if (fields && fields.length) params.fields = fields.split(',').map((f) => f.trim()).join(',');
 
-        const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, params, run.actId, true);
-        run.items = datasetItems.items;
-        run.itemsFileUrls = datasetItems.itemsFileUrls;
-    }
-
-    // Omit fields, which are useless for Zapier users.
-    return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
+    return getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, params, run.actId, true);
 };
 
 const getActorAdditionalFieldsForFetchResults = (z, bundle) => getActorAdditionalFields(z, bundle, { hasSyncField: false });
