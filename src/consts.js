@@ -226,6 +226,18 @@ const TASK_RUN_SAMPLE = {
 
 const TASK_RUN_OUTPUT_FIELDS = ACTOR_RUN_OUTPUT_FIELDS.concat([{ key: 'actorTaskId', label: 'Actor task ID', type: 'string' }]);
 
+const RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE = {
+    items: [],
+    itemsFileUrls: ACTOR_RUN_SAMPLE.datasetItemsFileUrls,
+};
+
+const RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS = [
+    { key: 'itemsFileUrls__xml', label: 'Items XML file URL', type: 'string' },
+    { key: 'itemsFileUrls__csv', label: 'Items CSV file URL', type: 'string' },
+    { key: 'itemsFileUrls__json', label: 'Items JSON file URL', type: 'string' },
+    { key: 'itemsFileUrls__xlsx', label: 'Items Excel file URL', type: 'string' },
+];
+
 // Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
 // The `stats.*` popularity/recency signals are flattened to `stats__*` keys (matching the
 // dynamic-field convention used elsewhere) so Zapier renders them as flat output fields.
@@ -426,6 +438,8 @@ module.exports = {
     ACTOR_RUN_OUTPUT_FIELDS,
     TASK_RUN_SAMPLE,
     TASK_RUN_OUTPUT_FIELDS,
+    RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE,
+    RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS,
     STORE_ACTOR_SAMPLE,
     STORE_ACTOR_OUTPUT_FIELDS,
     ACTOR_SAMPLE,

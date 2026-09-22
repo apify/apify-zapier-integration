@@ -11,6 +11,7 @@ const getActorAdditionalFieldsTest = require('./src/triggers/actor_additional_fi
 const getActorDatasetOutputFieldsTest = require('./src/triggers/actor_dataset_additional_output_fields');
 const taskRunCreate = require('./src/creates/task_run');
 const actorRunCreate = require('./src/creates/actor_run');
+const runActorAndFetchResultsCreate = require('./src/creates/run_actor_and_fetch_results');
 const scrapeSingleUrlCreate = require('./src/creates/scrape_single_url');
 const setValueCreate = require('./src/creates/set_value');
 const abortActorRunCreate = require('./src/creates/abort_actor_run');
@@ -74,6 +75,7 @@ const App = {
     creates: {
         [taskRunCreate.key]: taskRunCreate,
         [actorRunCreate.key]: actorRunCreate,
+        [runActorAndFetchResultsCreate.key]: runActorAndFetchResultsCreate,
         [setValueCreate.key]: setValueCreate,
         [scrapeSingleUrlCreate.key]: scrapeSingleUrlCreate,
         [abortActorRunCreate.key]: abortActorRunCreate,
