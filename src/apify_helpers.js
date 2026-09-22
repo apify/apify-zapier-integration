@@ -128,7 +128,9 @@ const isTooLargeToDownload = async (z, datasetId, params) => {
     const singleItemBytes = Buffer.byteLength(sampleResponse.content);
     if (singleItemBytes <= 2) return null; // empty array "[]" — nothing to download
 
-    const downloadItems = params.limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
+    // Without an explicit limit the whole dataset gets downloaded, so the guard has to size it by the total item count.
+    const totalItemsCount = Number(sampleResponse.getHeader('x-apify-pagination-total'));
+    const downloadItems = params.limit || totalItemsCount || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
 
     if (singleItemBytes * downloadItems * DATASET_MAX_SIZE_MARGIN <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
 

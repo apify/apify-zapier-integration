@@ -8,8 +8,7 @@ const { ACTOR_JOB_STATUSES, WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN, getMockRun, getMockActorDetails, mockDatasetPublicUrl, TEST_CALLBACK_URL,
     parseRunCallbackWebhookParam, performAndResume, randomString } = require('../helpers');
 const App = require('../../index');
-const { RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE, RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT,
-    DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
+const { RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
@@ -53,7 +52,7 @@ describe('run Actor and fetch results', () => {
             .query({ limit: 1, clean: true })
             .reply(200, items.slice(0, 1));
         scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
-            .query({ limit: RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT, clean: true })
+            .query({ clean: true })
             .reply(200, items);
         scope.get(`/v2/datasets/${run.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
@@ -118,7 +117,7 @@ describe('run Actor and fetch results', () => {
         scope.done();
     });
 
-    it('respects an explicit limit of 0 instead of falling back to the default', async function () {
+    it('respects an explicit limit of 0 instead of omitting the limit', async function () {
         if (TEST_USER_TOKEN) this.skip();
 
         const testActorId = randomString();
@@ -193,7 +192,7 @@ describe('run Actor and fetch results', () => {
             .query({ limit: 1, clean: true })
             .reply(200, items);
         scope.get(`/v2/datasets/${run.defaultDatasetId}/items`)
-            .query({ limit: RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT, clean: true })
+            .query({ clean: true })
             .reply(200, items);
         scope.get(`/v2/datasets/${run.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(run.defaultDatasetId));
@@ -285,7 +284,7 @@ describe('run Actor and fetch results', () => {
             .query({ limit: 1, clean: true })
             .reply(200, [{ url: 'http://example.com' }]);
         scope.get(`/v2/datasets/${failedRun.defaultDatasetId}/items`)
-            .query({ limit: RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT, clean: true })
+            .query({ clean: true })
             .reply(200, [{ url: 'http://example.com' }]);
         scope.get(`/v2/datasets/${failedRun.defaultDatasetId}`)
             .reply(200, mockDatasetPublicUrl(failedRun.defaultDatasetId));

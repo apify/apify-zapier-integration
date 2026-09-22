@@ -4,7 +4,6 @@ const {
     RECENTLY_USED_ACTORS_KEY,
     RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE,
     RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS,
-    RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT,
     DEFAULT_SYNC_RUN_TIMEOUT_SECS,
     OMIT_ACTOR_RUN_FIELDS,
 } = require('../consts');
@@ -25,8 +24,9 @@ const buildRunResult = async (z, bundle, run) => {
 
     if (!defaultDatasetId) return { items: [] };
 
-    // NOTE: limit can be legitimately 0 (meaning "no items"), so only substitute the default when it's unset.
-    const params = { limit: (limit === undefined || limit === null || limit === '') ? RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT : limit };
+    // NOTE: limit can be legitimately 0 (meaning "no items"), so only omit it when it's unset, which returns all items.
+    const params = {};
+    if (limit !== undefined && limit !== null && limit !== '') params.limit = limit;
     if (fields && fields.length) params.fields = fields.split(',').map((f) => f.trim()).join(',');
 
     return getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, params, run.actId, true);
@@ -95,11 +95,10 @@ module.exports = {
             getActorAdditionalFieldsForFetchResults,
             {
                 label: 'Limit',
-                helpText: 'The maximum number of dataset items to return. Defaults to 10.',
+                helpText: 'Maximum number of items to return. By default there is no limit.',
                 key: 'limit',
                 required: false,
                 type: 'integer',
-                default: RUN_ACTOR_AND_FETCH_RESULTS_DEFAULT_ITEMS_LIMIT.toString(),
             },
             {
                 label: 'Fields',
