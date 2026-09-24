@@ -36,8 +36,16 @@ const WEB_FETCH_STANDBY_HOST = new URL(WEB_FETCH_STANDBY_URL).host;
 
 /**
  * Output formats supported by the Web Fetch Actor. A format that does not apply to the fetched
- * content type comes back as null, which is not an error, e.g. links for a PDF.
+ * content type comes back empty, which is not an error: an empty array for links on a PDF, null
+ * for markdown, html or text on content with no markup such as an image.
  */
+/**
+ * Each output format is offered as its own checkbox, keyed format_<format>, instead of a single
+ * list field. Zapier saves the default of a list field as a row that the user cannot remove, so a
+ * list field cannot offer a pre-selected format that is still possible to deselect.
+ */
+const WEB_FETCH_FORMAT_FIELD_PREFIX = 'format_';
+
 const WEB_FETCH_FORMATS = {
     markdown: 'Markdown',
     html: 'HTML',
@@ -439,6 +447,7 @@ module.exports = {
     WEB_FETCH_STANDBY_URL,
     WEB_FETCH_STANDBY_HOST,
     WEB_FETCH_FORMATS,
+    WEB_FETCH_FORMAT_FIELD_PREFIX,
     WEB_FETCH_TIMEOUT_MILLIS,
     WEB_FETCH_SAMPLE,
     WEB_FETCH_OUTPUT_FIELDS,

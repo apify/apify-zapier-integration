@@ -6,7 +6,7 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { TEST_USER_TOKEN } = require('../helpers');
 const App = require('../../index');
-const { WEB_FETCH_STANDBY_URL } = require('../../src/consts');
+const { WEB_FETCH_STANDBY_URL, WEB_FETCH_TIMEOUT_MILLIS } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
@@ -73,7 +73,7 @@ describe('web fetch', () => {
 
         const testResult = await appTester(App.creates.webFetch.operation.perform, getBundle({
             url: 'https://www.example.com',
-            formats: ['markdown'],
+            format_markdown: true,
         }));
 
         // The Actor input is sent as it is, there is no run to start and no dataset to read.
@@ -89,7 +89,7 @@ describe('web fetch', () => {
         scope.done();
     });
 
-    it('sends a single selected format as an array and passes custom headers (mocked)', async () => {
+    it('collects the ticked format checkboxes into an array and passes custom headers (mocked)', async () => {
         let requestBody;
         const scope = nock(WEB_FETCH_STANDBY_URL)
             .post('/', (body) => {
@@ -100,12 +100,14 @@ describe('web fetch', () => {
 
         await appTester(App.creates.webFetch.operation.perform, getBundle({
             url: 'https://www.example.com',
-            // Zapier sends a single selected value of a list field as a string.
-            formats: 'markdown',
+            format_markdown: true,
+            format_links: true,
+            // An unticked checkbox must not end up in the Actor input.
+            format_html: false,
             headers: { 'Accept-Language': 'fr-FR' },
         }));
 
-        expect(requestBody.formats).to.eql(['markdown']);
+        expect(requestBody.formats).to.eql(['markdown', 'links']);
         expect(requestBody.headers).to.eql({ 'Accept-Language': 'fr-FR' });
 
         scope.done();
@@ -126,7 +128,7 @@ describe('web fetch', () => {
             note: 'This action is designed to fetch the content of a single web page or file.',
         }));
 
-        // Web Fetch picks a format based on the content type when formats is not sent at all.
+        // With no checkbox ticked, Web Fetch picks a format based on the content type.
         expect(requestBody).to.eql({ url: 'https://www.example.com' });
 
         scope.done();
@@ -151,7 +153,9 @@ describe('web fetch', () => {
 
         const testResult = await appTester(App.creates.webFetch.operation.perform, getBundle({
             url: 'https://www.example.com/image.png',
-            formats: ['markdown', 'links', 'raw'],
+            format_markdown: true,
+            format_links: true,
+            format_raw: true,
         }));
 
         expect(testResult.markdown).to.eql(null);
@@ -171,7 +175,7 @@ describe('web fetch', () => {
 
         await expect(appTester(App.creates.webFetch.operation.perform, getBundle({
             url: 'https://www.example.com/archive.zip',
-            formats: ['markdown'],
+            format_markdown: true,
         }))).to.be.rejectedWith(/Cannot convert content type application\/zip/);
 
         scope.done();
@@ -194,17 +198,53 @@ describe('web fetch', () => {
 
         await expect(appTester(App.creates.webFetch.operation.perform, getBundle({
             url: 'https://www.zz-this-page-doesn-not-exists-xx.com',
-            formats: ['markdown'],
+            format_markdown: true,
         }))).to.be.rejectedWith(/The target URL could not be reached/);
 
         expect(callCount).to.eql(1);
     });
 
+    it('surfaces the Actor timeout message and does not replace it with the client-side one (mocked)', async () => {
+        // The Actor allows 2 minutes per fetch and reports its own timeout as 504 FETCH_TIMEOUT.
+        // That is a different failure from cutting the request off ourselves after
+        // WEB_FETCH_TIMEOUT_MILLIS, so the Actor's message has to reach the user unchanged.
+        const scope = nock(WEB_FETCH_STANDBY_URL)
+            .post('/')
+            .reply(504, {
+                code: 'FETCH_TIMEOUT',
+                error: 'The target website timed out after 120 seconds.',
+            });
+
+        await expect(appTester(App.creates.webFetch.operation.perform, getBundle({
+            url: 'https://www.example.com/slow',
+            format_markdown: true,
+        }))).to.be.rejectedWith(/The target website timed out after 120 seconds/);
+
+        scope.done();
+    });
+
+    // This one waits out the full WEB_FETCH_TIMEOUT_MILLIS, because the timeout is enforced by the
+    // request client and cannot be shortened from the test.
+    it('reports a client-side timeout with the URL and the time limit (mocked)', async () => {
+        // node-fetch surfaces our own timeout as a FetchError with no status, so it cannot be
+        // handled in the response middleware with the other Web Fetch errors.
+        nock(WEB_FETCH_STANDBY_URL)
+            .post('/')
+            .delayConnection(WEB_FETCH_TIMEOUT_MILLIS + 5000)
+            .reply(200, getMockWebFetchResponse());
+
+        await expect(appTester(App.creates.webFetch.operation.perform, getBundle({
+            url: 'https://www.example.com/slow',
+            format_markdown: true,
+        }))).to.be.rejectedWith(new RegExp(`took more than ${WEB_FETCH_TIMEOUT_MILLIS / 1000} seconds`));
+    }).timeout(WEB_FETCH_TIMEOUT_MILLIS + 10000);
+
     if (TEST_USER_TOKEN) {
         it('fetches a URL with correct output fields (E2E)', async () => {
             const bundle = getBundle({
                 url: 'https://www.example.com',
-                formats: ['markdown', 'links'],
+                format_markdown: true,
+                format_links: true,
             }, TEST_USER_TOKEN);
 
             const testResult = await appTester(App.creates.webFetch.operation.perform, bundle);
@@ -223,7 +263,7 @@ describe('web fetch', () => {
         it('fails with a readable error for an invalid URL (E2E)', async () => {
             const bundle = getBundle({
                 url: 'not-a-valid-url://example',
-                formats: ['markdown'],
+                format_markdown: true,
             }, TEST_USER_TOKEN);
 
             await expect(appTester(App.creates.webFetch.operation.perform, bundle)).to.be.rejected;
