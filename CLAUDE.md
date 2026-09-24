@@ -31,7 +31,7 @@ index.js            # App entry point (registers triggers/creates/searches)
 - **Runtime:** Node.js v22 (`.nvmrc` and `engines.node` are both pinned to 22)
 - **Platform:** `zapier-platform-core` 19.0.0 (`zapier-platform-schema` 19.0.0 in devDependencies — keep both on the same major)
 - **Apify SDK:** `apify-client` 2.19.0, `@apify/consts`, `@apify/utilities`
-- **Testing:** Mocha 11, Chai 4 (with chai-as-promised), nock 14 for HTTP mocking
+- **Testing:** Mocha 12, Chai 4 (with chai-as-promised), nock 14 for HTTP mocking
 - **Linting:** ESLint 8 with `eslint-config-airbnb-base`
 
 ## Build, Test & Run
@@ -77,4 +77,5 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - The `claude-md-maintenance.yml` workflow calls a reusable workflow from `apify/workflows` and runs on every push to `master`/`main`. It requires the `CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY` repository secret.
 - Zapier app ID is `15018`; the `.zapierapprc` also includes `axios` dist files in the build bundle.
 - `zapier-platform-schema` 19 renamed the input-field schema: use `zapier-platform-schema/lib/schemas/PlainInputFieldSchema` (not `FieldSchema`) when validating dynamic input fields, as in `test/apify_helpers.js`.
-- `package.json` has an `overrides` block (`axios`, `diff`, `flatted`, `form-data`, `js-yaml`, `lodash`, `picomatch`, `serialize-javascript`) that exists to clear `npm audit` findings from transitive deps — keep it in sync when bumping dependencies rather than removing entries.
+- `package.json` has a scoped `overrides` block (`zapier-platform-core` → `form-data`) to clear an `npm audit` finding in a transitive dep — keep it in sync when bumping dependencies; re-run `npm audit` before removing it.
+- E2E webhook assertions must tolerate the live API's eventual consistency: use `waitForWebhookCount` from `test/helpers` (polls until the expected count appears) rather than a single immediate `webhooks().list()` read.
