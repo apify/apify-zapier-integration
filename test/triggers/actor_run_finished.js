@@ -13,6 +13,7 @@ const { createAndBuildActor,
     getMockRun,
     getMockWebhookResponse,
     mockDatasetPublicUrl,
+    waitForWebhookCount,
 } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
@@ -77,8 +78,9 @@ describe('actor run finished trigger', () => {
         subscribeData = await appTester(App.triggers.actorRunFinished.operation.performSubscribe, bundle);
 
         if (TEST_USER_TOKEN) {
-            // Check if webhook is set
-            const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
+            // Check if webhook is set. The live API is eventually consistent, so poll until the created
+            // webhook propagates instead of asserting on a single immediate read (which flakes with 0).
+            const actorWebhooks = await waitForWebhookCount(apifyClient.actor(testActorId).webhooks(), 1);
 
             expect(actorWebhooks.items.length).to.be.eql(1);
             expect(actorWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -88,7 +90,7 @@ describe('actor run finished trigger', () => {
         } else {
             scope.done();
         }
-    });
+    }).timeout(120000);
 
     it('unsubscribe webhook work', async () => {
         const bundle = {
