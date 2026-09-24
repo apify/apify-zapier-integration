@@ -76,6 +76,11 @@ module.exports = {
         label: 'Scrape Single URL',
         description: 'Runs a scraper for the website and returns its content as text, markdown and HTML. '
             + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows.',
+        /**
+         * Deprecated in favour of the Web Fetch action. Removing it instead would break those Zaps and raise a
+         * publishing task that blocks promoting the integration.
+         */
+        hidden: true,
     },
     operation: {
         inputFields: [
@@ -83,7 +88,9 @@ module.exports = {
                 label: 'Note',
                 key: 'note',
                 type: 'copy',
-                helpText: 'This action is designed to scrape the content of a single web page. '
+                helpText: '**This action is deprecated, please use Web Fetch instead.** It fetches the content of a '
+                    + 'single page in one request, without running a scraper.\n\n'
+                    + 'This action is designed to scrape the content of a single web page. '
                     + 'Behind the scenes, it utilizes [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
                     + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
                     + '[Web Scraper](https://apify.com/apify/web-scraper), '
