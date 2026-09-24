@@ -29,7 +29,6 @@ const APIFY_API_ENDPOINTS = {
 const WEB_FETCH_STANDBY_URL = 'https://web-fetch.apify.actor';
 const WEB_FETCH_STANDBY_HOST = new URL(WEB_FETCH_STANDBY_URL).host;
 
-
 /**
  * NOTE: Each output format is offered as its own checkbox, keyed format_<format>, instead of a single
  * list field. Zapier saves the default of a list field as a row that the user cannot remove, so a
