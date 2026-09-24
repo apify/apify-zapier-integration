@@ -10,12 +10,11 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 
 /**
  * Fetches a single URL using the Web Fetch Actor (https://apify.com/apify/web-fetch) running in
- * Standby mode.
+ * Server mode.
  */
-/**
- * Zapier normally hands over a checkbox as a boolean, but it sends the raw value when input data
- * cleaning is turned off, so both shapes are accepted here.
- */
+
+// Zapier normally hands over a checkbox as a boolean,
+// but it sends the raw value when input data cleaning is turned off, so both shapes are accepted here.
 const isChecked = (value) => value === true || value === 'true' || value === 'yes';
 
 const webFetch = async (z, bundle) => {

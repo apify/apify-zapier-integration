@@ -26,21 +26,12 @@ const APIFY_API_ENDPOINTS = {
     webhooks: `${APIFY_API_BASE_URL}/v2/webhooks`,
 };
 
-/**
- * The Web Fetch Actor (apify/web-fetch) runs in Standby mode, i.e. it exposes a real-time HTTP
- * endpoint on its own host instead of the Apify API. A single request returns the page content,
- * so there is no run to poll and no dataset to read.
- */
 const WEB_FETCH_STANDBY_URL = 'https://web-fetch.apify.actor';
 const WEB_FETCH_STANDBY_HOST = new URL(WEB_FETCH_STANDBY_URL).host;
 
+
 /**
- * Output formats supported by the Web Fetch Actor. A format that does not apply to the fetched
- * content type comes back empty, which is not an error: an empty array for links on a PDF, null
- * for markdown, html or text on content with no markup such as an image.
- */
-/**
- * Each output format is offered as its own checkbox, keyed format_<format>, instead of a single
+ * NOTE: Each output format is offered as its own checkbox, keyed format_<format>, instead of a single
  * list field. Zapier saves the default of a list field as a row that the user cannot remove, so a
  * list field cannot offer a pre-selected format that is still possible to deselect.
  */
@@ -54,11 +45,6 @@ const WEB_FETCH_FORMATS = {
     raw: 'Raw',
 };
 
-/**
- * Web Fetch allows up to 2 minutes per fetch, but a Zapier perform has a much shorter budget,
- * so we cut the request off ourselves to be able to return a meaningful error instead of letting
- * Zapier kill the whole task with an opaque timeout.
- */
 const WEB_FETCH_TIMEOUT_MILLIS = 25000;
 
 const ACTOR_RUN_SAMPLE = {
@@ -246,10 +232,6 @@ const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [
     { key: 'pageContent__text', label: 'Page text', type: 'string' },
 ];
 
-/**
- * A Web Fetch response envelope. Beside `url`, `fetch` and `metadata`, which are always present,
- * the response carries one key per requested format, hence all of them are listed in the sample.
- */
 const WEB_FETCH_SAMPLE = {
     url: 'https://www.example.com',
     fetch: {
