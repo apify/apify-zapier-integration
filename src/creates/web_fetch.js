@@ -24,9 +24,12 @@ const webFetch = async (z, bundle) => {
     const requestedFormats = Object.keys(WEB_FETCH_FORMATS)
         .filter((format) => isChecked(bundle.inputData[`${WEB_FETCH_FORMAT_FIELD_PREFIX}${format}`]));
 
+    // Zapier keeps the blank rows of a dict field, and the Actor fails the whole fetch on a header without a name.
+    const validHeaders = Object.fromEntries(Object.entries(headers || {}).filter(([name]) => name.trim()));
+
     const input = { url };
     if (requestedFormats.length) input.formats = requestedFormats;
-    if (headers && Object.keys(headers).length) input.headers = headers;
+    if (Object.keys(validHeaders).length) input.headers = validHeaders;
 
     const requestOpts = {
         url: WEB_FETCH_STANDBY_URL,
@@ -122,7 +125,7 @@ module.exports = {
                 label: 'Output formats',
                 key: 'outputFormatsNote',
                 type: 'copy',
-                helpText: 'Switch any number of formats to **Yes**.'
+                helpText: 'Switch any number of formats to **Yes**. '
                     + 'Leave all of them on **No** to let Web Fetch choose a format based on the content type.',
                 group: FORMAT_FIELD_GROUP_KEY,
             },

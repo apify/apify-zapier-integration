@@ -88,14 +88,8 @@ module.exports = {
                 label: 'Note',
                 key: 'note',
                 type: 'copy',
-                helpText: '**This action is deprecated, please use Web Fetch instead.** It fetches the content of a '
-                    + 'single page in one request, without running a scraper.\n\n'
-                    + 'This action is designed to scrape the content of a single web page. '
-                    + 'Behind the scenes, it utilizes [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
-                    + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
-                    + '[Web Scraper](https://apify.com/apify/web-scraper), '
-                    + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
-                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
+                // Copy fields only render Markdown, there is no warning style, so the emoji stands in for one.
+                helpText: '⚠️ **Deprecated: use the Web Fetch action instead.**',
             },
             {
                 label: 'URL',

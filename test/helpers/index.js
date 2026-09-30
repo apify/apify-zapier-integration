@@ -440,6 +440,20 @@ const getMockInputSchema = () => ({
     },
 });
 
+/**
+ * The webhook list can lag behind a webhook create or delete for a moment, so asserting on it right
+ * after the write makes the E2E tests flaky. Polls the list until it has the expected number of items.
+ */
+const waitForWebhooks = async (webhookCollectionClient, expectedCount, { timeoutMillis = 10000, pollIntervalMillis = 500 } = {}) => {
+    const deadline = Date.now() + timeoutMillis;
+    let webhooks = await webhookCollectionClient.list();
+    while (webhooks.items.length !== expectedCount && Date.now() < deadline) {
+        await new Promise((resolve) => { setTimeout(resolve, pollIntervalMillis); });
+        webhooks = await webhookCollectionClient.list();
+    }
+    return webhooks;
+};
+
 module.exports = {
     TEST_USER_TOKEN,
     randomString,
@@ -456,4 +470,5 @@ module.exports = {
     getMockKVStore,
     mockDatasetPublicUrl,
     getMockInputSchema,
+    waitForWebhooks,
 };

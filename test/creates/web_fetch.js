@@ -110,6 +110,24 @@ describe('web fetch', () => {
         scope.done();
     });
 
+    it('drops custom headers without a name, and the headers entirely when none are left (mocked)', async () => {
+        const first = mockWebFetch();
+        await appTester(App.creates.webFetch.operation.perform, getBundle({
+            url: 'https://www.example.com',
+            headers: { '': 'orphan-value', ' ': 'x', 'Accept-Language': 'fr-FR' },
+        }));
+        expect(first.getRequestBody().headers).to.eql({ 'Accept-Language': 'fr-FR' });
+        first.scope.done();
+
+        const second = mockWebFetch();
+        await appTester(App.creates.webFetch.operation.perform, getBundle({
+            url: 'https://www.example.com',
+            headers: { '': '' },
+        }));
+        expect(second.getRequestBody()).to.not.have.property('headers');
+        second.scope.done();
+    });
+
     it('omits formats and headers from the input when they are not filled in (mocked)', async () => {
         const { scope, getRequestBody } = mockWebFetch();
 

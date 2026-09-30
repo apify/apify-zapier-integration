@@ -13,6 +13,7 @@ const { createAndBuildActor,
     getMockRun,
     getMockWebhookResponse,
     mockDatasetPublicUrl,
+    waitForWebhooks,
 } = require('../helpers');
 const { ACTOR_RUN_SAMPLE } = require('../../src/consts');
 
@@ -78,7 +79,7 @@ describe('actor run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is set
-            const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
+            const actorWebhooks = await waitForWebhooks(apifyClient.actor(testActorId).webhooks(), 1);
 
             expect(actorWebhooks.items.length).to.be.eql(1);
             expect(actorWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -111,7 +112,7 @@ describe('actor run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is not set
-            const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
+            const actorWebhooks = await waitForWebhooks(apifyClient.actor(testActorId).webhooks(), 0);
 
             expect(actorWebhooks.items.length).to.be.eql(0);
         } else {

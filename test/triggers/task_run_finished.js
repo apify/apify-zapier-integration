@@ -9,6 +9,7 @@ const {
     randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
     mockDatasetPublicUrl,
+    waitForWebhooks,
 } = require('../helpers');
 
 const App = require('../../index');
@@ -75,7 +76,7 @@ describe('task run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is set
-            const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
+            const taskWebhooks = await waitForWebhooks(apifyClient.task(testTaskId).webhooks(), 1);
 
             expect(taskWebhooks.items.length).to.be.eql(1);
             expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -107,7 +108,7 @@ describe('task run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is not set
-            const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
+            const taskWebhooks = await waitForWebhooks(apifyClient.task(testTaskId).webhooks(), 0);
 
             expect(taskWebhooks.items.length).to.be.eql(0);
         } else {
