@@ -15,6 +15,31 @@ const {
 } = require('../apify_helpers');
 const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
+const {
+    INTERFACE_FIELD_KEY, INTERFACES, ENDPOINT_OUTPUT_FIELDS,
+    isEndpointInterface, getEndpointFields, callServerActorEndpoint,
+} = require('../server_actor');
+
+const RUN_SYNC_FIELD = {
+    label: 'Run synchronously',
+    helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
+        + 'Beware that the hard timeout for the run is 30 seconds.',
+    key: 'runSync',
+    required: true,
+    type: 'boolean',
+    default: 'no',
+};
+
+// SPIKE: one dynamic function switches the rest of the form on the Interface value.
+const getInterfaceFields = async (z, bundle) => {
+    if (isEndpointInterface(bundle)) return getEndpointFields(z, bundle);
+    return [RUN_SYNC_FIELD, ...await getActorAdditionalFields(z, bundle)];
+};
+
+const getOutputFields = async (z, bundle) => {
+    if (isEndpointInterface(bundle)) return ENDPOINT_OUTPUT_FIELDS;
+    return [...ACTOR_RUN_OUTPUT_FIELDS, ...await getActorDatasetOutputFields(z, bundle)];
+};
 
 const processInputField = (key, value, inputSchema) => {
     const inputSchemaProp = inputSchema.properties[key];
@@ -63,6 +88,7 @@ const processInputField = (key, value, inputSchema) => {
 };
 
 const runActor = async (z, bundle) => {
+    if (isEndpointInterface(bundle)) return callServerActorEndpoint(z, bundle);
     const { actorId, runSync, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
 
     const requestOpts = {
@@ -153,23 +179,26 @@ module.exports = {
                 altersDynamicFields: true,
             },
             {
-                label: 'Run synchronously',
-                helpText: 'If you choose `yes`, the Zap will wait until the Actor run is finished. '
-                    + 'Beware that the hard timeout for the run is 30 seconds.',
-                key: 'runSync',
+                label: 'Interface',
+                helpText: '**Input** starts a run with input (default). **Endpoint** calls the Actor\'s server interface '
+                    + 'directly and returns its HTTP response, without a run. Only Actors with a server interface (Standby) have endpoints.',
+                key: INTERFACE_FIELD_KEY,
                 required: true,
-                type: 'boolean',
-                default: 'no',
+                default: INTERFACES.INPUT,
+                choices: [
+                    { value: INTERFACES.INPUT, label: 'Input (start a run)', sample: INTERFACES.INPUT },
+                    { value: INTERFACES.ENDPOINT, label: 'Endpoint (call the server interface)', sample: INTERFACES.ENDPOINT },
+                ],
+                altersDynamicFields: true,
             },
-            getActorAdditionalFields,
+            getInterfaceFields,
         ],
 
         perform: runActor,
 
         sample: ACTOR_RUN_SAMPLE,
         outputFields: [
-            ...ACTOR_RUN_OUTPUT_FIELDS,
-            getActorDatasetOutputFields,
+            getOutputFields,
         ],
     },
 };

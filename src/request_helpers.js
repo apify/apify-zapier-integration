@@ -1,6 +1,14 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
 const { ACTOR_RUN_TERMINAL_STATUSES, APIFY_API_ENDPOINTS } = require('./consts');
 
+const isServerActorUrl = (url) => {
+    try {
+        return new URL(url).host.endsWith('.apify.actor');
+    } catch (err) {
+        return false;
+    }
+};
+
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
 /**
@@ -24,6 +32,8 @@ const setApifyRequestHeaders = (request, z, bundle) => {
  * Middleware Parses nested data object into response.data
  */
 const parseDataApiObject = (response) => {
+    // SPIKE: Server Actor responses are arbitrary HTTP responses, not Apify API envelopes.
+    if (isServerActorUrl(response.request.url)) return response;
     const { data: responseData } = response;
     if (!responseData) return response;
     response.data = responseData.data
@@ -37,6 +47,8 @@ const parseDataApiObject = (response) => {
  * It uses RetryableError to retry bad responses from Apify API.
  */
 const validateApiResponse = (response, z) => {
+    // SPIKE: Server Actor responses (*.apify.actor) are handled by the caller (status + Actor's own error shape).
+    if (isServerActorUrl(response.request.url)) return response;
     /**
      * NOTE: In case key-value store records request we can skip 404 error
      */
@@ -134,6 +146,7 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
 };
 
 module.exports = {
+    isServerActorUrl,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,

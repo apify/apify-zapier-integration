@@ -16,5 +16,8 @@ module.exports = {
     operation: {
         // since this is a "hidden" trigger, there aren't any inputFields needed
         perform: getActorAdditionalFields,
+        // SPIKE: getActorAdditionalFields is no longer referenced directly in createActorRun.inputFields, so appTester
+        // now resolves it as this trigger and runs the "trigger results need an id" check. Fields are keyed by `key`.
+        outputFields: [{ key: 'key', primary: true }],
     },
 };
