@@ -8,8 +8,7 @@ const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
     randomString, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
-    mockDatasetPublicUrl,
-    waitForWebhooks,
+    mockDatasetPublicUrl, waitForWebhookCount,
 } = require('../helpers');
 
 const App = require('../../index');
@@ -75,8 +74,9 @@ describe('task run finished trigger', () => {
         subscribeData = await appTester(App.triggers.taskRunFinished.operation.performSubscribe, bundle);
 
         if (TEST_USER_TOKEN) {
-            // Check if webhook is set
-            const taskWebhooks = await waitForWebhooks(apifyClient.task(testTaskId).webhooks(), 1);
+            // Check if webhook is set. The live API is eventually consistent, so poll until the created
+            // webhook propagates instead of asserting on a single immediate read (which flakes with 0).
+            const taskWebhooks = await waitForWebhookCount(apifyClient.task(testTaskId).webhooks(), 1);
 
             expect(taskWebhooks.items.length).to.be.eql(1);
             expect(taskWebhooks.items[0].requestUrl).to.be.eql(requestUrl);
@@ -108,7 +108,7 @@ describe('task run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is not set
-            const taskWebhooks = await waitForWebhooks(apifyClient.task(testTaskId).webhooks(), 0);
+            const taskWebhooks = await waitForWebhookCount(apifyClient.task(testTaskId).webhooks(), 0);
 
             expect(taskWebhooks.items.length).to.be.eql(0);
         } else {
