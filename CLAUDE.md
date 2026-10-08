@@ -8,8 +8,8 @@ Zapier integration for the Apify platform. Allows users to connect Apify actors,
 
 ```
 src/
-  creates/          # Zapier "create" actions (run actor, run task, scrape URL, set value)
-  searches/         # Zapier "search" actions (last run, get value, fetch items)
+  creates/          # Zapier "create" actions (run actor, run task, run actor and fetch results, scrape URL, set value, abort run)
+  searches/         # Zapier "search" actions (last run, get run, get actor, search Apify Store, get value, fetch items)
   triggers/         # Zapier "trigger" actions (run finished, actors/tasks list, dynamic fields)
   apify_helpers.js  # Core Apify API interaction logic
   authentication.js # Zapier auth configuration
@@ -17,7 +17,7 @@ src/
   request_helpers.js # Request/response middleware: auth headers, retries, centralized error handling
   output_fields.js
   zapier_helpers.js
-test/               # Mirrors src/ structure; uses Mocha + Chai + nock
+test/               # Mirrors src/ structure; uses Mocha + Chai + nock (shared helpers in test/helpers/index.js)
 index.js            # App entry point (registers triggers/creates/searches)
 .github/workflows/
   test.yml          # CI: lint + mocked tests + E2E tests on PRs
@@ -73,6 +73,9 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - The Zapier app structure divides functionality into `triggers`, `creates`, and `searches` — new features must fit one of these categories and be registered in `index.js`.
 - Tests run in two modes: mocked (default, uses nock) and E2E (requires `TEST_USER_TOKEN`). Keep both modes working when changing API interaction code in `apify_helpers.js` or `request_helpers.js`.
 - API error handling is centralized in `validateApiResponse` (`src/request_helpers.js`), registered as the app-wide `afterResponse` middleware. Add new user-facing error cases there rather than in individual creates/searches/triggers — one branch covers every request path. The pattern: match on `errorInfo.error.type` from the Apify API response and throw `z.errors.Error(userMessage, 'ErrorName', status)` so the message reaches the user; a plain `Error` yields a generic failure, and `RetryableError` (5xx, 429) triggers exponential back-off. Only use `RetryableError` when retrying can actually succeed — e.g. `full-permission-actor-not-approved` requires manual approval in Apify Console, so it throws `z.errors.Error` with the `approvalUrl` appended instead.
+- Synchronous runs (`Run Actor`, `Run Task`, `Run Actor and Fetch Results`, `Scrape Single URL`) use Zapier callbacks: `perform` starts the run with an Apify webhook pointing at `z.generateCallbackUrl()` (built by `buildRunCallbackWebhookParam`), which pauses the step, and `performResume` finishes it via `getActorRunOnResume`. Only call `z.generateCallbackUrl()` when actually running sync — calling it is what pauses the step. In the Zap editor test step (`bundle.meta.isLoadingSample`) skip the callback and poll inline with `waitForRunToFinish` within `getRemainingTestStepWaitSecs` (Zapier kills `perform` after 30s). Sync runs are capped at `DEFAULT_SYNC_RUN_TIMEOUT_SECS` (1 hour); Scrape Single URL uses `SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS`. In tests, use `performAndResume` from `test/helpers` to drive both halves.
+- `waitForRunToFinish` never throws: it returns the last polled run (or `null`) when the budget runs out or a poll fails.
+- Actions are designed to be usable by Zapier AI agents: missing resources and empty results throw descriptive `z.errors.Error` messages (with an Apify Console link where useful) instead of returning empty output — e.g. Get Key-Value Store Record on a missing key, Fetch Dataset Items on an empty dataset, ID-shaped storage IDs that do not exist (`findStorageOrThrow`). Use `isNotFoundError` (`src/request_helpers.js`) to detect API 404s. Keep action `display.description` and `helpText` agent-readable (explain when to use the action and how to chain it; no em dashes).
 - The `publish.yml` workflow updates `package.json` version and `CHANGELOG.md` automatically — do not manually edit these for releases.
 - The `claude-md-maintenance.yml` workflow calls a reusable workflow from `apify/workflows` and runs on every push to `master`/`main`. It requires the `CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY` repository secret.
 - Zapier app ID is `15018`; the `.zapierapprc` also includes `axios` dist files in the build bundle.
