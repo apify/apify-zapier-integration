@@ -8,7 +8,7 @@ Zapier integration for the Apify platform. Allows users to connect Apify actors,
 
 ```
 src/
-  creates/          # Zapier "create" actions (run actor, run task, scrape URL, set value)
+  creates/          # Zapier "create" actions (run actor, run task, web fetch, scrape URL [hidden/deprecated], set value)
   searches/         # Zapier "search" actions (last run, get value, fetch items)
   triggers/         # Zapier "trigger" actions (run finished, actors/tasks list, dynamic fields)
   apify_helpers.js  # Core Apify API interaction logic
@@ -73,6 +73,8 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - The Zapier app structure divides functionality into `triggers`, `creates`, and `searches` — new features must fit one of these categories and be registered in `index.js`.
 - Tests run in two modes: mocked (default, uses nock) and E2E (requires `TEST_USER_TOKEN`). Keep both modes working when changing API interaction code in `apify_helpers.js` or `request_helpers.js`.
 - API error handling is centralized in `validateApiResponse` (`src/request_helpers.js`), registered as the app-wide `afterResponse` middleware. Add new user-facing error cases there rather than in individual creates/searches/triggers — one branch covers every request path. The pattern: match on `errorInfo.error.type` from the Apify API response and throw `z.errors.Error(userMessage, 'ErrorName', status)` so the message reaches the user; a plain `Error` yields a generic failure, and `RetryableError` (5xx, 429) triggers exponential back-off. Only use `RetryableError` when retrying can actually succeed — e.g. `full-permission-actor-not-approved` requires manual approval in Apify Console, so it throws `z.errors.Error` with the `approvalUrl` appended instead.
+- **Web Fetch** (`src/creates/web_fetch.js`) calls the Web Fetch Standby Actor at `WEB_FETCH_STANDBY_URL` (`https://web-fetch.apify.actor`), not `api.apify.com`. Its host is in `APIFY_HOSTS` in `setApifyRequestHeaders` so it gets the Apify token, and its flat `{ code, error }` error envelope is handled by `parseWebFetchError` *before* the generic status handling — its 5xx codes (e.g. 502 `UPSTREAM_FETCH_ERROR`, 504 `FETCH_TIMEOUT`) describe the target site and must not be retried. Each output format is a separate `format_<name>` checkbox (not a list field) because Zapier list-field defaults can't be deselected.
+- `scrape_single_url` is deprecated in favour of Web Fetch and marked `hidden: true` — keep it registered rather than removing it, since removal breaks existing Zaps and blocks publishing.
 - The `publish.yml` workflow updates `package.json` version and `CHANGELOG.md` automatically — do not manually edit these for releases.
 - The `claude-md-maintenance.yml` workflow calls a reusable workflow from `apify/workflows` and runs on every push to `master`/`main`. It requires the `CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY` repository secret.
 - Zapier app ID is `15018`; the `.zapierapprc` also includes `axios` dist files in the build bundle.
