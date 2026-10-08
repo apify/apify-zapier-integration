@@ -11,7 +11,7 @@ const setValue = async (z, bundle) => {
     try {
         valueObject = JSON.parse(value);
     } catch (err) {
-        throw new Error('Please check that your record value is a valid JSON.');
+        throw new Error(`The record value is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
     }
 
     await wrapRequestWithRetries(z.request, {
@@ -31,16 +31,16 @@ module.exports = {
     noun: 'Key-Value Store Value',
     display: {
         label: 'Set Key-Value Store Record',
-        description: 'Creates a new or updates an existing record in a key-value store.',
+        description: 'Creates a new or updates an existing record in a key-value store. '
+            + 'Can be used as agent memory - save intermediate data here and retrieve it later with Get Key-Value Store Record.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Key-value store',
-                // TODO: We need to make sure if user enters ID, we don't create a named store with that ID.
-                // That can be checked with regex
-                helpText: 'Please enter name or ID of the key-value store. If the store with the name doesn\'t exist, it will be created.',
+                helpText: 'Please enter the name or ID of the key-value store. If a store with the given name doesn\'t exist, '
+                    + 'it will be created. An ID that doesn\'t exist will fail.',
                 key: 'storeIdOrName',
                 required: true,
             },

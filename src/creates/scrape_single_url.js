@@ -4,14 +4,64 @@ const {
     SCRAPE_SINGLE_URL_RUN_SAMPLE,
     OMIT_ACTOR_RUN_FIELDS,
     SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,
-    DEFAULT_RUN_WAIT_TIME_OUT_SECONDS,
+    SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
+    ACTOR_RUN_TERMINAL_STATUSES,
 } = require('../consts');
-const { wrapRequestWithRetries, waitForRunToFinish } = require('../request_helpers');
-const { getDatasetItems } = require('../apify_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
+const { getDatasetItems, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
 
 const WEBSITE_CONTENT_CRAWLER_ACTOR_ID = 'aYG0l9s7dbB7j3gbS';
 
+const buildScrapeResult = async (z, bundle, run, { allowUnfinished = false } = {}) => {
+    const { url, crawlerType } = bundle.inputData;
+
+    const { defaultDatasetId } = run;
+    // Attach Apify app URL to detail of run
+    run.detailsPageUrl = `https://console.apify.com/actors/${run.actId}/runs/${run.id}`;
+
+    if (defaultDatasetId) {
+        const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
+        if (!datasetItems.items || datasetItems.items.length === 0) {
+            // A test step returns empty fields, so they can still be mapped. A finished run has no more content
+            // coming, so it falls through to the diagnostic below instead.
+            if (allowUnfinished && !Object.keys(ACTOR_RUN_TERMINAL_STATUSES).includes(run.status)) {
+                return _.omit({
+                    ...run,
+                    pageUrl: url,
+                    pageMetadata: {},
+                    pageContent: { html: '', markdown: '', text: '' },
+                    warning: `The run has not scraped ${url} yet (run status: ${run.status}). `
+                        + `Test the whole Zap to get the page content, or check the run: ${run.detailsPageUrl}`,
+                }, OMIT_ACTOR_RUN_FIELDS);
+            }
+
+            const statusInfo = run.statusMessage
+                ? `Run status: ${run.status} (${run.statusMessage}).`
+                : `Run status: ${run.status}.`;
+            const jsRenderingCause = crawlerType === 'cheerio'
+                ? 'needs JavaScript rendering (try a headless browser crawler type instead of the Raw HTTP client)'
+                : 'needs JavaScript rendering';
+            throw new Error(
+                `No content was scraped from ${url}. ${statusInfo} `
+                + `Common causes: the page is protected by anti-bot measures, ${jsRenderingCause}, or requires login. `
+                + `See the run log for details: ${run.detailsPageUrl}#log`,
+            );
+        }
+        run.pageUrl = datasetItems.items[0].url;
+        run.pageMetadata = datasetItems.items[0].metadata;
+        run.pageContent = {
+            html: datasetItems.items[0].html,
+            markdown: datasetItems.items[0].markdown,
+            text: datasetItems.items[0].text,
+        };
+    }
+
+    // Omit fields, which are useless for Zapier users.
+    return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
+};
+
 const runWebsiteContentCrawler = async (z, bundle) => {
+    const stepStartedAt = Date.now();
     const { url, crawlerType } = bundle.inputData;
 
     // We can use lower memory for Cheerio crawler, because it's not using browser.
@@ -36,6 +86,7 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         method: 'POST',
         params: {
             memory,
+            timeout: SCRAPE_SINGLE_URL_RUN_TIMEOUT_SECS,
         },
         headers: {
             'Content-Type': 'application/json; charset=utf-8',
@@ -43,30 +94,23 @@ const runWebsiteContentCrawler = async (z, bundle) => {
         body: JSON.stringify(input),
     };
 
-    let { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
-    run = await waitForRunToFinish(z.request, run.id, DEFAULT_RUN_WAIT_TIME_OUT_SECONDS);
+    // The Zap editor cannot wait for the callback, so a test step waits for the content inline.
+    const isTestStep = !!bundle.meta?.isLoadingSample;
 
-    const { defaultDatasetId } = run;
-    // Attach Apify app URL to detail of run
-    run.detailsPageUrl = `https://console.apify.com/actors/${run.actId}/runs/${run.id}`;
+    // Calling z.generateCallbackUrl() pauses the Zap step, performResume then finishes it once the run is done.
+    if (!isTestStep) requestOpts.params.webhooks = buildRunCallbackWebhookParam(z.generateCallbackUrl());
 
-    if (defaultDatasetId) {
-        const datasetItems = await getDatasetItems(z, defaultDatasetId, bundle.authData.access_token, { limit: 1 }, run.actId, true);
-        if (!datasetItems.items || datasetItems.items.length === 0) {
-            throw new Error('The data for the page content is missing. The scraper cannot scrape the page '
-                + `or did not finish on time. Please check ${run.detailsPageUrl}#log for more details.`);
-        }
-        run.pageUrl = datasetItems.items[0].url;
-        run.pageMetadata = datasetItems.items[0].metadata;
-        run.pageContent = {
-            html: datasetItems.items[0].html,
-            markdown: datasetItems.items[0].markdown,
-            text: datasetItems.items[0].text,
-        };
-    }
+    const { data: run } = await wrapRequestWithRetries(z.request, requestOpts);
 
-    // Omit fields, which are useless for Zapier users.
-    return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
+    if (!isTestStep) return _.omit(run, OMIT_ACTOR_RUN_FIELDS);
+
+    const waitedRun = await waitForRunToFinish(z.request, run.id, getRemainingTestStepWaitSecs(stepStartedAt));
+    return buildScrapeResult(z, bundle, waitedRun || run, { allowUnfinished: true });
+};
+
+const resumeWebsiteContentCrawler = async (z, bundle) => {
+    const run = await getActorRunOnResume(z, bundle);
+    return buildScrapeResult(z, bundle, run);
 };
 
 module.exports = {
@@ -74,8 +118,9 @@ module.exports = {
     noun: 'Scrape Single URL',
     display: {
         label: 'Scrape Single URL',
-        description: 'Runs a scraper for the website and returns its content as text, markdown and HTML. '
-            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows.',
+        description: 'Runs a scraper for the website and returns its content as text, markdown, and HTML. '
+            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows. '
+            + 'It is ideal when an agent needs to read live web page content as context for a decision or research task.',
     },
     operation: {
         inputFields: [
@@ -88,7 +133,9 @@ module.exports = {
                     + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
                     + '[Web Scraper](https://apify.com/apify/web-scraper), '
                     + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
-                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps.',
+                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps. '
+                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds, so it can return empty page '
+                    + 'content when the scraper needs longer. Test the whole Zap to see the scraped content.',
             },
             {
                 label: 'URL',
@@ -119,6 +166,7 @@ module.exports = {
         ],
 
         perform: runWebsiteContentCrawler,
+        performResume: resumeWebsiteContentCrawler,
 
         sample: SCRAPE_SINGLE_URL_RUN_SAMPLE,
         outputFields: SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS,

@@ -1,16 +1,89 @@
 const _ = require('lodash');
-const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
+const dayjs = require('dayjs');
+const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES, ACTOR_JOB_STATUSES, APIFY_ID_REGEX } = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
     ALLOWED_MEMORY_MBYTES_LIST, DEFAULT_ACTOR_MEMORY_MBYTES, ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     DATASET_MAX_SIZE_MARGIN,
+    DEFAULT_SYNC_RUN_TIMEOUT_SECS,
 } = require('./consts');
-const { wrapRequestWithRetries } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
 
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
+
+// API wordings: "Actor was not found", "Actor was not found or access denied" (ID form),
+// "Actor with this name was not found" (username~name form). Anchored, because matching just
+// "actor" + "not found" would also swallow missing build and run errors.
+const ACTOR_NOT_FOUND_MESSAGE_REGEX = /^actor (?:with this name )?was not found/;
+
+/** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
+const requestActorOrThrowNotFound = async (z, options, actorId) => {
+    try {
+        return await wrapRequestWithRetries(z.request, options);
+    } catch (err) {
+        const message = (err.message || '').toLowerCase();
+        if (ACTOR_NOT_FOUND_MESSAGE_REGEX.test(message)) {
+            throw new Error(
+                `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
+                + 'and that your Apify account has access to it: '
+                + `https://console.apify.com/actors/${actorId}`,
+            );
+        }
+        throw err;
+    }
+};
+
+const processInputField = (key, value, inputSchema) => {
+    const inputSchemaProp = inputSchema.properties[key];
+    if (!inputSchemaProp) return value; // This should never happen
+
+    const { editor, title, type } = inputSchemaProp;
+
+    switch (editor) {
+        case 'datepicker':
+            return dayjs(value).format('YYYY-MM-DD');
+        case 'requestListSources':
+            return value.map((url) => ({ url: url.trim() }));
+        case 'pseudoUrls':
+            return value.map((purl) => ({ purl: purl.trim() }));
+        case 'globs':
+            return value.map((glob) => ({ glob: glob.trim() }));
+        case 'proxy':
+        case 'json':
+        case 'keyValue':
+            try {
+                return JSON.parse(value);
+            } catch (err) {
+                throw new Error(`${title} is not a valid JSON, please check it. Error: ${err.message}`);
+            }
+        case 'schemaBased':
+            if (type === 'array') {
+                const itemsType = inputSchemaProp.items.type;
+                if (['string', 'number', 'boolean', 'integer'].includes(itemsType)) {
+                    return value;
+                }
+
+                return JSON.parse(value);
+            }
+
+            // eslint-disable-next-line no-case-declarations
+            const result = {};
+            // eslint-disable-next-line no-restricted-syntax
+            for (const [propKey, propValue] of Object.entries(value[0])) {
+                const realPropKey = propKey.substring(propKey.indexOf('.') + 1); // propKey is like "input-my-object.key1 but can have more dots
+                result[realPropKey] = processInputField(realPropKey, propValue, inputSchemaProp);
+            }
+            return result;
+        default:
+            return value;
+    }
+};
+
+// A full-string Apify resource ID; anything else is treated as a resource name.
+const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 const getDatasetPublicUrl = async (token, datasetIdOrName) => {
     const apifyClient = new ApifyClient({ token });
@@ -55,7 +128,9 @@ const isTooLargeToDownload = async (z, datasetId, params) => {
     const singleItemBytes = Buffer.byteLength(sampleResponse.content);
     if (singleItemBytes <= 2) return null; // empty array "[]" — nothing to download
 
-    const downloadItems = params.limit || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
+    // Without an explicit limit the whole dataset gets downloaded, so the guard has to size it by the total item count.
+    const totalItemsCount = Number(sampleResponse.getHeader('x-apify-pagination-total'));
+    const downloadItems = params.limit || totalItemsCount || FETCH_DATASET_ITEMS_ITEMS_LIMIT;
 
     if (singleItemBytes * downloadItems * DATASET_MAX_SIZE_MARGIN <= DATASET_ITEMS_INLINE_MAX_BYTES) return null;
 
@@ -244,7 +319,76 @@ const getActorRun = async (z, bundle) => {
 };
 
 /**
- * Get store by ID or by name
+ * Encodes an ad-hoc webhook for the `webhooks` param of a run start request. Such a webhook rides along with
+ * the run itself, so it fires even if the run finishes before the start request returns.
+ */
+const buildRunCallbackWebhookParam = (callbackUrl) => Buffer.from(JSON.stringify([{
+    eventTypes: Object.values(ACTOR_RUN_TERMINAL_EVENT_TYPES),
+    requestUrl: callbackUrl,
+}]), 'utf8').toString('base64');
+
+/**
+ * Loads the finished run when Zapier resumes a paused step. The run is re-fetched instead of taken from the
+ * webhook payload, so the output matches exactly what the asynchronous path returns.
+ */
+const getActorRunOnResume = async (z, bundle, hasSyncField = false) => {
+    const runId = bundle.outputData?.id || bundle.cleanedRequest?.resource?.id;
+    if (!runId) {
+        throw new Error('The Apify run callback did not contain a run ID, so the run results could not be loaded.');
+    }
+
+    const { data: run } = await wrapRequestWithRetries(z.request, {
+        url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+    });
+
+    if (run.status === ACTOR_JOB_STATUSES.TIMED_OUT) {
+        const timeoutSecs = run.options?.timeoutSecs || DEFAULT_SYNC_RUN_TIMEOUT_SECS;
+        // Only Run Actor and Run Task have the "Run synchronously" field.
+        const asyncSuffix = hasSyncField
+            ? 'To handle longer runs, set "Run synchronously" to "no" and process the results in a second Zap '
+                + 'that starts with a finished run trigger.'
+            : 'To handle longer runs, use the Run Actor action with "Run synchronously" set to "no" and process the results '
+                + 'in a second Zap that starts with the Finished Actor Run trigger.';
+        throw new Error(
+            `Run did not finish within the ${timeoutSecs}s timeout and was stopped (run ID: ${runId}). `
+            + `Check its log and partial results in Apify Console (https://console.apify.com/view/runs/${runId}). ${asyncSuffix}`,
+        );
+    }
+
+    return run;
+};
+
+// The API resolves an ID or `username~name`, the `~name` shorthand means a name in the token owner's account.
+const toStorageLookupId = (idOrName) => (
+    looksLikeApifyId(idOrName) || idOrName.includes('~') ? idOrName : `~${idOrName}`
+);
+
+/**
+ * Get a dataset or a key-value store by ID or by name, a storage that does not exist throws.
+ * @param z
+ * @param storageIdOrName - Storage ID or name
+ * @param options - API and Apify Console URLs of the storage type, and its label used in the error message
+ */
+const findStorageOrThrow = async (z, storageIdOrName, { apiUrl, consoleUrl, label }) => {
+    try {
+        const storageResponse = await wrapRequestWithRetries(z.request, {
+            url: `${apiUrl}/${toStorageLookupId(storageIdOrName)}`,
+            method: 'GET',
+        });
+        return storageResponse.data;
+    } catch (err) {
+        if (!isNotFoundError(err)) throw err;
+
+        const notFoundUrl = looksLikeApifyId(storageIdOrName) ? `${consoleUrl}/${storageIdOrName}` : consoleUrl;
+        throw new z.errors.Error(
+            `${label} "${storageIdOrName}" does not exist or your Apify account cannot access it. `
+            + `Check the ${label.toLowerCase()} name or ID in Apify Console: ${notFoundUrl}`,
+        );
+    }
+};
+
+/**
+ * Get store by ID or by name. A name that does not exist is created, an ID that does not exist throws.
  * @param z
  * @param storeIdOrName - Key-value store ID or name
  */
@@ -258,7 +402,15 @@ const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
         });
         store = storeResponse.data;
     } catch (err) {
-        if (!err.message.includes('not found')) throw err;
+        if (!isNotFoundError(err)) throw err;
+        // ID-shaped input can't be a name to create, so a not-found ID is a real miss; names fall through to create below.
+        if (looksLikeApifyId(storeIdOrName)) {
+            throw new z.errors.Error(
+                `Key-value store "${storeIdOrName}" does not exist or your Apify account cannot access it. `
+                + 'Check the key-value store ID in Apify Console: '
+                + `https://console.apify.com/storage/key-value-stores/${storeIdOrName}`,
+            );
+        }
     }
 
     // The second creates store with name, in case storeId not found.
@@ -560,10 +712,71 @@ const maybeGetInputSchemaFromActor = async (z, actor, buildTag) => {
     }
 };
 
+// Shared by every create that runs an Actor, so each only has to add its own webhook/timeout handling on top.
+const buildActorRunRequestOptions = async (z, bundle) => {
+    const { actorId, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
+
+    const requestOpts = {
+        url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs`,
+        method: 'POST',
+        params: {
+            build,
+            timeout: timeoutSecs,
+            memory: parseInt(memoryMbytes, 10),
+        },
+    };
+
+    if (inputContentType) {
+        requestOpts.headers = {
+            'Content-Type': inputContentType,
+        };
+    }
+    if (inputBody !== undefined) {
+        if (inputContentType && inputContentType.includes('application/json')) {
+            try {
+                JSON.parse(inputBody);
+            } catch (err) {
+                throw new Error(`The Input body is not valid JSON: ${err.message}. Please provide a valid JSON object.`);
+            }
+        }
+        requestOpts.body = inputBody;
+    } else {
+        const actorResponse = await requestActorOrThrowNotFound(z, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
+        }, actorId);
+        const inputSchema = await maybeGetInputSchemaFromActor(z, actorResponse.data, build);
+        if (inputSchema) {
+            const input = {};
+            const inputSchemaKeys = Object.keys(inputSchema.properties);
+            inputSchemaKeys.forEach((key) => {
+                const fieldKey = prefixInputFieldKey(key);
+                const fieldTitle = prefixInputFieldKey(slugifyText(inputSchema.properties[key].title));
+
+                // NOTE: Due to this bug: https://github.com/zapier/zapier-platform/issues/1178 we're using title property
+                // from the input schema as a key for some of the input fields.
+                const value = bundle.inputData[fieldKey] ?? bundle.inputData[fieldTitle];
+                if (value !== undefined && value !== null) { // NOTE: value can be false or 0, these are legit value.
+                    input[key] = processInputField(key, value, inputSchema);
+                }
+            });
+            requestOpts.body = JSON.stringify(input);
+            requestOpts.headers = {
+                'Content-Type': 'application/json; charset=utf-8',
+            };
+        } else {
+            // This can happen in very rare cases, when user deletes input schema by build actor without schema.
+            throw new Error(`It cannot run Actor, the build ${build} has no input schema, but the Zap was set up with it.`);
+        }
+    }
+
+    return requestOpts;
+};
+
 /**
  * This method loads additional input fields regarding actor default values.
+ * @param hasSyncField - Whether the Timeout helpText should reference a "Run synchronously" field.
  */
-const getActorAdditionalFields = async (z, bundle) => {
+const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {}) => {
     const { actorId } = bundle.inputData;
     if (!actorId) return []; // Actor not selected yet, no additional fields to load.
 
@@ -610,8 +823,12 @@ const getActorAdditionalFields = async (z, bundle) => {
         },
         {
             label: 'Timeout',
-            helpText: 'Timeout for the actor run in seconds. If `0` '
-                + 'there will be no timeout and the actor will run until completion, perhaps forever.',
+            helpText: hasSyncField
+                ? 'Timeout for the actor run in seconds. If `0` there will be no timeout '
+                    + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, the timeout '
+                    + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`
+                : 'Timeout for the actor run in seconds. If `0` there will be no timeout, but the timeout '
+                    + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`,
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
@@ -701,7 +918,12 @@ module.exports = {
     subscribeWebhook,
     unsubscribeWebhook,
     getActorRun,
+    buildRunCallbackWebhookParam,
+    buildActorRunRequestOptions,
+    requestActorOrThrowNotFound,
+    getActorRunOnResume,
     getOrCreateKeyValueStore,
+    findStorageOrThrow,
     getDatasetItems,
     getActorAdditionalFields,
     getPrefilledValuesFromInputSchema,
