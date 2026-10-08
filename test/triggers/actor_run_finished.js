@@ -113,7 +113,7 @@ describe('actor run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is not set
-            const actorWebhooks = await apifyClient.actor(testActorId).webhooks().list();
+            const actorWebhooks = await waitForWebhookCount(apifyClient.actor(testActorId).webhooks(), 0);
 
             expect(actorWebhooks.items.length).to.be.eql(0);
         } else {

@@ -108,7 +108,7 @@ describe('task run finished trigger', () => {
 
         if (TEST_USER_TOKEN) {
             // Check if webhook is not set
-            const taskWebhooks = await apifyClient.task(testTaskId).webhooks().list();
+            const taskWebhooks = await waitForWebhookCount(apifyClient.task(testTaskId).webhooks(), 0);
 
             expect(taskWebhooks.items.length).to.be.eql(0);
         } else {

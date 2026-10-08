@@ -121,6 +121,11 @@ module.exports = {
         description: 'Runs a scraper for the website and returns its content as text, markdown, and HTML. '
             + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows. '
             + 'It is ideal when an agent needs to read live web page content as context for a decision or research task.',
+        /**
+         * Deprecated in favour of the Web Fetch action. Removing it instead would break those Zaps and raise a
+         * publishing task that blocks promoting the integration.
+         */
+        hidden: true,
     },
     operation: {
         inputFields: [
@@ -128,14 +133,8 @@ module.exports = {
                 label: 'Note',
                 key: 'note',
                 type: 'copy',
-                helpText: 'This action is designed to scrape the content of a single web page. '
-                    + 'Behind the scenes, it utilizes [Website Content Crawler](https://apify.com/apify/website-content-crawler). '
-                    + 'You can choose to run either [Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
-                    + '[Web Scraper](https://apify.com/apify/web-scraper), '
-                    + 'both of which offer a range of options to assist you in dealing with anti-scraping or '
-                    + 'scraping multiple URLs and many more. These scrapers are available to run under "Run Actor" in Apify Zaps. '
-                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds, so it can return empty page '
-                    + 'content when the scraper needs longer. Test the whole Zap to see the scraped content.',
+                // Copy fields only render Markdown, there is no warning style, so the emoji stands in for one.
+                helpText: '⚠️ **Deprecated: use the Web Fetch action instead.**',
             },
             {
                 label: 'URL',
