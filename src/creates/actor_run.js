@@ -55,10 +55,7 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs an Apify Actor (a cloud program for web scraping, data extraction, or automation) with your input. '
-            + 'To run a configuration saved in Apify Console, use Run Task instead. '
-            + 'By default, the step waits for the run to finish and returns its results. '
-            + 'It always returns the run ID, status, and default dataset ID, so you can fetch the results later with Fetch Dataset Items.',
+        description: 'Runs an Apify Actor with your input. To run a configuration saved in Apify Console, use Run Task instead.',
     },
 
     operation: {

@@ -35,7 +35,7 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Finds the most recent run of a task with the selected status (Succeeded by default). '
+        description: 'Finds the most recent run of a task with the selected status. '
             + 'To look up a specific run, use Get Actor Run by ID.',
     },
 

@@ -33,7 +33,7 @@ module.exports = {
     noun: 'Last Actor run',
     display: {
         label: 'Find Last Actor Run',
-        description: 'Finds the most recent run of an Actor with the selected status (Succeeded by default). '
+        description: 'Finds the most recent run of an Actor with the selected status. '
             + 'To look up a specific run, use Get Actor Run by ID.',
     },
 
