@@ -30,9 +30,8 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Get Actor Run by ID',
-        description: 'Retrieves details and results of a specific Actor run by its ID. '
-            + 'Use this to check the status or fetch the output of a run started in a previous step. '
-            + 'The run can be triggered by Run Actor or Run Task.',
+        description: 'Retrieves the details and results of an Actor run by its ID. '
+            + 'Use it to check the status or get the output of a run started earlier, e.g. by Run Actor or Run Task.',
     },
 
     operation: {
@@ -43,7 +42,7 @@ module.exports = {
                 required: true,
                 type: 'string',
                 helpText: 'The ID of the Actor run to retrieve, e.g. `HG7ML7M8z78YcAPEB`. '
-                    + 'You typically get this from a previous **Run Actor** or **Run Task** step.',
+                    + 'You usually get it from a previous **Run Actor** or **Run Task** step.',
             },
         ],
 

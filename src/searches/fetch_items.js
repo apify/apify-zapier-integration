@@ -59,23 +59,21 @@ module.exports = {
 
     operation: {
         inputFieldGroups: [
-            { key: 'basic', label: 'Basic Options', emphasize: true },
-            { key: 'advanced', label: 'Advanced Options', emphasize: false },
+            { key: 'basic', label: 'Basic options', emphasize: true },
+            { key: 'advanced', label: 'Advanced options', emphasize: false },
         ],
         inputFields: [
             {
                 label: 'Dataset',
-                helpText: 'Please enter the name or ID of the dataset. '
-                    + 'You can find dataset ID under each a task or an Actor run detail. '
-                    + 'The usual way is to use default dataset ID from the task or the Actor run trigger. '
-                    + 'Use the default dataset ID returned by a Run Actor or Run Task step to fetch that run\'s results.',
+                helpText: 'Name or ID of the dataset. To get the results of a run, use the default dataset ID '
+                    + 'from a Run Actor or Run Task step, or from a Finished Actor Run or Finished Task Run trigger.',
                 key: 'datasetIdOrName',
                 required: true,
                 group: 'basic',
             },
             {
                 label: 'Limit',
-                helpText: 'The maximum number of dataset items to fetch. If empty, the default limit will be used.',
+                helpText: 'Maximum number of items to return. Leave empty to use the default limit.',
                 key: 'limit',
                 required: false,
                 type: 'integer',
@@ -83,7 +81,7 @@ module.exports = {
             },
             {
                 label: 'Offset',
-                helpText: 'The offset in the dataset from where to start fetching the items. If empty, it will be from the beginning.',
+                helpText: 'Number of items to skip from the start of the dataset. Leave empty to start from the first item.',
                 key: 'offset',
                 required: false,
                 type: 'integer',
@@ -91,9 +89,8 @@ module.exports = {
             },
             {
                 label: 'Fields',
-                helpText: 'Only return these fields in each item, as a comma-separated list (e.g. `title,url,price`). '
-                    + 'All other fields will be dropped from the result. Leave empty to return all fields. '
-                    + 'Takes priority over **Omit** when both are set.',
+                helpText: 'Comma-separated list of fields to return, e.g. `title,url,price`. Leave empty to return all fields. '
+                    + 'Takes priority over **Omit**.',
                 key: 'fields',
                 required: false,
                 type: 'string',
@@ -101,9 +98,8 @@ module.exports = {
             },
             {
                 label: 'Omit',
-                helpText: 'Remove these fields from each item, as a comma-separated list (e.g. `_id,createdAt`). '
-                    + 'All other fields will be kept. Leave empty to return all fields. '
-                    + 'Ignored for any field that is also listed in **Fields**.',
+                helpText: 'Comma-separated list of fields to remove, e.g. `_id,createdAt`. Leave empty to keep all fields. '
+                    + 'Fields also listed in **Fields** are kept.',
                 key: 'omit',
                 required: false,
                 type: 'string',

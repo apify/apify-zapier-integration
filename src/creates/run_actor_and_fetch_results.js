@@ -67,16 +67,16 @@ module.exports = {
     noun: 'Actor Results',
     display: {
         label: 'Run Actor and Fetch Results',
-        description: 'Runs an Actor and waits for it to finish, then returns the dataset items produced by the run - all in a single step. '
-            + 'Best suited for short-running Actors (under 5 minutes) where you need the scraped data immediately. '
-            + 'For long-running Actors, use Run Actor (async) + Fetch Dataset Items separately.',
+        description: 'Runs an Actor, waits for it to finish, and returns the items from its default dataset. '
+            + 'Best for Actors that finish in under 5 minutes. '
+            + 'For longer runs, use Run Actor with **Run synchronously** set to `no`, then Fetch Dataset Items.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Search Actors from',
-                helpText: 'Please select the source to search Actors from.',
+                helpText: 'Where to search for Actors.',
                 key: 'searchLocation',
                 required: true,
                 type: 'string',
@@ -86,7 +86,7 @@ module.exports = {
             },
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor to run, or pass an Actor ID or slug directly (for example `apify~web-scraper`).',
+                helpText: 'Select the Actor to run, or enter an Actor ID or slug, e.g. `apify~web-scraper`.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actorsWithStore.id.name',
@@ -95,15 +95,14 @@ module.exports = {
             getActorAdditionalFieldsForFetchResults,
             {
                 label: 'Limit',
-                helpText: 'Maximum number of items to return. By default there is no limit.',
+                helpText: 'Maximum number of items to return. Leave empty for no limit.',
                 key: 'limit',
                 required: false,
                 type: 'integer',
             },
             {
                 label: 'Fields',
-                helpText: 'Only return these fields in each item, as a comma-separated list (e.g. `title,url,price`). '
-                    + 'All other fields will be dropped from the result. Leave empty to return all fields.',
+                helpText: 'Comma-separated list of fields to return, e.g. `title,url,price`. Leave empty to return all fields.',
                 key: 'fields',
                 required: false,
                 type: 'string',

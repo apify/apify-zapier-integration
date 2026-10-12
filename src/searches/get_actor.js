@@ -65,8 +65,8 @@ module.exports = {
     noun: 'Actor',
     display: {
         label: 'Get Actor Details',
-        description: 'Retrieves metadata and description for a specific Actor, including its title, description, '
-            + 'and whether it is publicly available. Use this to confirm an Actor is suitable before running it.',
+        description: 'Retrieves the details of an Actor, such as its title, description, and whether it is public. '
+            + 'Use it to check that an Actor fits the job before you run it.',
     },
 
     operation: {

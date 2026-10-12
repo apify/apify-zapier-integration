@@ -615,8 +615,8 @@ const convertPropertyToInputFields = (z, propertyKey, definition, required) => {
                     label: 'Proxy',
                     key: prefixInputFieldKey('proxyWarning'),
                     type: 'copy',
-                    helpText: `${definition.title} depends on Apify platform and is not compatible with Zapier integration. `
-                        + 'We suggest setting this value in the Apify console',
+                    helpText: `${definition.title} depends on the Apify platform and is not supported in Zapier. `
+                        + 'Set this value in Apify Console instead.',
                 });
                 field.type = 'text';
             } else if (definition.editor === 'schemaBased') {
@@ -678,8 +678,8 @@ const createFieldsFromInputSchemaV1 = (z, inputSchema, actor) => {
             label: actor.title,
             key: prefixInputFieldKey(`actor-${actor.id}-info`),
             type: 'copy',
-            helpText: description || `${actor.title} Input, see [documentation](https://apify.com/${actor.username}/${actor.name}) `
-                + 'for detailed fields description.',
+            helpText: description || `Input for ${actor.title}. See the [documentation](https://apify.com/${actor.username}/${actor.name}) `
+                + 'for field details.',
         },
     ];
     // eslint-disable-next-line no-restricted-syntax
@@ -813,7 +813,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
         },
         {
             label: 'Build',
-            helpText: 'Tag or number of the build that you want to run, e.g. `latest`, `beta` or `1.2.34`.',
+            helpText: 'Tag or number of the build to run, e.g. `latest`, `beta`, or `1.2.34`.',
             key: 'build',
             required: false,
             default: actorBuildTag,
@@ -824,11 +824,9 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
         {
             label: 'Timeout',
             helpText: hasSyncField
-                ? 'Timeout for the actor run in seconds. If `0` there will be no timeout '
-                    + 'and the actor will run until completion, perhaps forever. When "Run synchronously" is `yes`, the timeout '
-                    + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`
-                : 'Timeout for the actor run in seconds. If `0` there will be no timeout, but the timeout '
-                    + `is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds so the Zap cannot wait forever.`,
+                ? 'Run timeout in seconds. `0` means no timeout. '
+                    + `When **Run synchronously** is \`yes\`, the timeout is capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds.`
+                : `Run timeout in seconds, capped at ${DEFAULT_SYNC_RUN_TIMEOUT_SECS} seconds. \`0\` uses the cap.`,
             key: 'timeoutSecs',
             required: false,
             default: timeoutSecs || 0,
@@ -836,7 +834,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
         },
         {
             label: 'Memory',
-            helpText: 'Amount of memory allocated for the actor run, in megabytes. The more memory, the faster your actor will run.',
+            helpText: 'Memory for the Actor run, in megabytes. More memory usually makes the run faster.',
             key: 'memoryMbytes',
             required: false,
             // NOTE: Zapier UI allows only choices with strings
@@ -854,8 +852,8 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
                 label: 'Options',
                 key: `actor-${actor.id}-options`,
                 type: 'copy',
-                helpText: 'Actor options, see [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
-                    + ' for detailed description.',
+                helpText: 'Actor run options. See the [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
+                    + ' for details.',
             },
             ...baseFields,
         ];
@@ -880,10 +878,10 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
             inputBody = body;
         }
     }
-    let inputBodyHelpText = 'Input configuration for the actor.';
+    let inputBodyHelpText = 'Input for the Actor.';
     if (actor.isPublic) {
         inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}/input-schema) `
-                + 'for detailed fields description.';
+                + 'for field details.';
     }
     return [
         {
@@ -896,7 +894,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
         },
         {
             label: 'Input content type',
-            helpText: 'Specifies the `Content-Type` for the actor input body, e.g. `application/json`.',
+            helpText: '`Content-Type` of the input body, e.g. `application/json`.',
             key: 'inputContentType',
             required: false,
             default: inputContentType || '',

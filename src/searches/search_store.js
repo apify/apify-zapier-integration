@@ -59,9 +59,8 @@ module.exports = {
     noun: 'Actor',
     display: {
         label: 'Search Apify Store',
-        description: 'Searches the public Apify Store for Actors matching a keyword or use case '
-            + '(e.g. "linkedin scraper", "google maps", "instagram"). Returns matching actors with their IDs, '
-            + 'which can be passed directly to the Run Actor action.',
+        description: 'Searches Apify Store for Actors that match a keyword or use case, e.g. "linkedin scraper" or "google maps". '
+            + 'Returns the matching Actors with IDs you can pass to the Run Actor action.',
     },
 
     operation: {
@@ -80,8 +79,7 @@ module.exports = {
                 type: 'integer',
                 // Zapier field defaults must be strings, even for integer fields.
                 default: String(DEFAULT_STORE_SEARCH_LIMIT),
-                helpText: 'Maximum number of Actors to return. Keep this small (the default is 10) — '
-                    + 'a short, most-relevant list is easier for an agent to pick from than hundreds of results.',
+                helpText: 'Maximum number of Actors to return. The default is 10. A short list is easier for an agent to choose from.',
             },
             {
                 label: 'Offset',
