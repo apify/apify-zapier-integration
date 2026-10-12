@@ -69,7 +69,7 @@ module.exports = {
         label: 'Run Actor and Fetch Results',
         description: 'Runs an Actor, waits for it to finish, and returns the items from its default dataset. '
             + 'Best for Actors that finish in under 5 minutes. '
-            + 'For longer runs, use Run Actor with **Run synchronously** set to `no`, then Fetch Dataset Items.',
+            + 'For longer runs, use Run Actor with Run synchronously set to no, then Fetch Dataset Items.',
     },
 
     operation: {
