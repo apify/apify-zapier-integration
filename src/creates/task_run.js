@@ -89,7 +89,7 @@ const getRawInputField = async (z, bundle) => {
     });
 
     if (actor && actor.isPublic) {
-        helpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+        helpText += ` See the [input schema](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
             + 'for field details.';
     }
 
@@ -125,8 +125,8 @@ module.exports = {
                 label: 'Run synchronously',
                 helpText: 'If `yes` (default), the step waits for the run to finish and returns its results. '
                     + 'The run stops when it reaches the timeout set for the task or its Actor, at most 1 hour. '
-                    + 'If `no`, the step returns as soon as the run starts. Get the results later with Fetch Dataset Items, '
-                    + 'or in a second Zap that starts with the Finished Task Run trigger. '
+                    + 'If `no`, the step returns as soon as the run starts. Get the results later with **Fetch Dataset Items**, '
+                    + 'or in a second Zap that starts with the **Finished Task Run** trigger. '
                     + 'When you test this step alone in the Zap editor, it waits about 25 seconds and returns the results so far. '
                     + 'Test the whole Zap to see all results.',
                 key: 'runSync',

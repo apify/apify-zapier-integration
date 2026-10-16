@@ -144,11 +144,11 @@ module.exports = {
             },
             {
                 label: 'Crawler type',
-                helpText: '- **Headless browser (Chrome)**: for modern websites with anti-scraping protection and JavaScript rendering. '
+                helpText: '- **Headless browser (Chrome+Playwright)**: for modern websites with anti-scraping protection and JavaScript rendering. '
                     + 'It detects common blocking, such as CAPTCHAs, and retries blocked requests with new sessions. \n'
-                    + '- **Headless browser (stealthy Firefox)**: a headless browser with anti-blocking measures. '
+                    + '- **Headless browser (stealthy Firefox+Playwright)**: a headless browser with anti-blocking measures. '
                     + 'Try it if the website blocks the other options. \n'
-                    + '- **Raw HTTP client** (default): fetches pages with plain HTTP requests. '
+                    + '- **Raw HTTP client (Cheerio)** (default): fetches pages with plain HTTP requests. '
                     + 'Faster and cheaper, but it does not work on every website.',
                 key: 'crawlerType',
                 required: true,

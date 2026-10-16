@@ -678,8 +678,8 @@ const createFieldsFromInputSchemaV1 = (z, inputSchema, actor) => {
             label: actor.title,
             key: prefixInputFieldKey(`actor-${actor.id}-info`),
             type: 'copy',
-            helpText: description || `Input for ${actor.title}. See the [documentation](https://apify.com/${actor.username}/${actor.name}) `
-                + 'for field details.',
+            helpText: description || `Input for ${actor.title}. `
+                + `See the [${actor.title} page in Apify Store](https://apify.com/${actor.username}/${actor.name}) for field details.`,
         },
     ];
     // eslint-disable-next-line no-restricted-syntax
@@ -852,7 +852,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
                 label: 'Options',
                 key: `actor-${actor.id}-options`,
                 type: 'copy',
-                helpText: 'Actor run options. See the [documentation](https://docs.apify.com/platform/actors/running/usage-and-resources)'
+                helpText: 'Actor run options. See [Usage and resources](https://docs.apify.com/platform/actors/running/usage-and-resources)'
                     + ' for details.',
             },
             ...baseFields,
@@ -880,7 +880,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
     }
     let inputBodyHelpText = 'Input for the Actor.';
     if (actor.isPublic) {
-        inputBodyHelpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}/input-schema) `
+        inputBodyHelpText += ` See the [input schema](https://apify.com/${actor.username}/${actor.name}/input-schema) `
                 + 'for field details.';
     }
     return [

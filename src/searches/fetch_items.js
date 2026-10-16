@@ -66,7 +66,7 @@ module.exports = {
             {
                 label: 'Dataset',
                 helpText: 'Name or ID of the dataset. To get the results of a run, use the default dataset ID '
-                    + 'from a Run Actor or Run Task step, or from a Finished Actor Run or Finished Task Run trigger.',
+                    + 'from a **Run Actor** or **Run Task** step, or from a **Finished Actor Run** or **Finished Task Run** trigger.',
                 key: 'datasetIdOrName',
                 required: true,
                 group: 'basic',
