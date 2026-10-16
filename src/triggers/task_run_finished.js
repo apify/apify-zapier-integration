@@ -38,21 +38,20 @@ module.exports = {
     noun: 'Task run',
     display: {
         label: 'Finished Task Run',
-        description: 'Triggers whenever a selected task is run and finished.',
+        description: 'Triggers when a run of the selected task finishes.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select the task to keep an eye on.',
+                helpText: 'Select the task to watch.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
             },
             {
                 label: 'Statuses',
-                // eslint-disable-next-line max-len
-                helpText: 'Select one or more terminal statuses for the run. If none are selected, all terminal statuses will be included by default.',
+                helpText: 'Run statuses that fire the trigger. Leave empty to fire on any finished run.',
                 key: 'statuses',
                 required: false,
                 list: true,
