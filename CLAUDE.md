@@ -19,6 +19,7 @@ src/
   zapier_helpers.js
 test/               # Mirrors src/ structure; uses Mocha + Chai + nock
 index.js            # App entry point (registers triggers/creates/searches)
+renovate.json5      # Renovate config: weekly (Wed) dependency PRs, auto-merge after approval
 .github/workflows/
   test.yml          # CI: lint + mocked tests + E2E tests on PRs
   publish.yml       # CD: version bump, CHANGELOG update, push to Zapier on GitHub release
@@ -79,4 +80,5 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - The `claude-md-maintenance.yml` workflow calls a reusable workflow from `apify/workflows` and runs on every push to `master`/`main`. It requires the `CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY` repository secret.
 - Zapier app ID is `15018`; the `.zapierapprc` also includes `axios` dist files in the build bundle.
 - `zapier-platform-schema` 19 renamed the input-field schema: use `zapier-platform-schema/lib/schemas/PlainInputFieldSchema` (not `FieldSchema`) when validating dynamic input fields, as in `test/apify_helpers.js`.
+- Dependency updates are handled by Renovate (`renovate.json5`): bumps use `chore:` commits, `zapier-platform-core`/`zapier-platform-schema` are grouped into one PR, and Node major bumps are disabled (Node follows the Zapier runtime, not the Node release cycle).
 - `package.json` has an `overrides` block (`axios`, `diff`, `flatted`, `form-data`, `js-yaml`, `lodash`, `picomatch`, `serialize-javascript`) that exists to clear `npm audit` findings from transitive deps — keep it in sync when bumping dependencies rather than removing entries.
