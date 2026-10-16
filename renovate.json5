@@ -1,0 +1,44 @@
+{
+	$schema: 'https://docs.renovatebot.com/renovate-schema.json',
+
+	extends: [
+		'config:recommended',
+		// Dependency bumps are `chore:`, never `fix:`.
+		':semanticCommitTypeAll(chore)',
+	],
+	semanticCommits: 'enabled',
+
+	timezone: 'Europe/Prague',
+	schedule: ['* * * * 3'],
+	labels: ['t-integrations', 'dependencies'],
+	reviewers: ['drobnikj', 'protoss70'],
+
+	// Merge once approved: GitHub auto-merge waits for the ruleset's required approval and passing checks.
+	automerge: true,
+	platformAutomerge: true,
+
+	minimumReleaseAge: '3 days',
+	// Skip a version while it is still in cooldown instead of opening a pending PR.
+	internalChecksFilter: 'strict',
+
+	// Weekly lockfile rebuild — the only time transitive dependencies are refreshed.
+	lockFileMaintenance: {
+		enabled: true,
+		schedule: ['* * * * 3'],
+	},
+
+	packageRules: [
+		{
+			// The runtime and its schema validator must stay on the same version.
+			groupName: 'zapier-platform',
+			matchPackageNames: ['zapier-platform-core', 'zapier-platform-schema'],
+		},
+		{
+			// Node is pinned to what the Zapier runtime supports (.nvmrc, engines.node);
+			// a major bump has to follow Zapier, not the Node release cycle.
+			matchDepNames: ['node'],
+			matchUpdateTypes: ['major'],
+			enabled: false,
+		},
+	],
+}
