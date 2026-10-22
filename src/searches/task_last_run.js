@@ -35,15 +35,15 @@ module.exports = {
     noun: 'Last task run',
     display: {
         label: 'Find Last Task Run',
-        description: 'Finds the most recent task run with a specific status (defaults to Succeeded). '
-            + 'It returns the latest run only; it cannot look up a specific run by ID.',
+        description: 'Finds the most recent run of a task with the selected status. '
+            + 'To look up a specific run, use Get Actor Run by ID.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select the task, whose last run you want to get.',
+                helpText: 'Select the task whose last run you want.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',

@@ -91,20 +91,20 @@ module.exports = {
         display: {
             label: 'Get Key-Value Store Record',
             description: 'Gets a record from a key-value store. '
-                + 'Can be used as agent memory - retrieve a value saved earlier with Set Key-Value Store Record.',
+                + 'Agents can use it as memory: read a value saved earlier with Set Key-Value Store Record.',
         },
         operation: {
             inputFields: [
                 {
                     label: 'Key-value store',
-                    helpText: 'Key-value store ID or name.',
+                    helpText: 'Name or ID of the key-value store.',
                     key: 'storeIdOrName',
                     required: true,
                 },
                 {
                     label: 'Record key',
-                    // eslint-disable-next-line max-len
-                    helpText: 'If the record is a valid JSON object, the output will include all parsed attributes as individual fields. If the record is any other file type (such as PDFs, images, or plain text), the output will instead be a file, which you can reference or use in later steps via the "value" key.',
+                    helpText: 'If the record is a JSON object, each attribute becomes a separate output field. '
+                        + 'Any other record, such as a PDF, image, or plain text, is returned as a file in the `value` field.',
                     key: 'key',
                     required: true,
                     type: 'string',

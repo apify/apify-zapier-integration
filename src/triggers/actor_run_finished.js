@@ -33,21 +33,20 @@ module.exports = {
     noun: 'Actor run',
     display: {
         label: 'Finished Actor Run',
-        description: 'Triggers whenever a selected Actor is run and finished.',
+        description: 'Triggers when a run of the selected Actor finishes.',
     },
     operation: {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor to keep an eye on.',
+                helpText: 'Select the Actor to watch.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
             },
             {
                 label: 'Statuses',
-                // eslint-disable-next-line max-len
-                helpText: 'Select one or more terminal statuses for the run. If none are selected, all terminal statuses will be included by default.',
+                helpText: 'Run statuses that fire the trigger. Leave empty to fire on any finished run.',
                 key: 'statuses',
                 required: false,
                 list: true,

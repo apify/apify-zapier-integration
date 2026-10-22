@@ -70,14 +70,14 @@ const ADVANCED_FIELD_GROUP_KEY = 'advanced';
  * (https://apify.com/apify/web-fetch/input-schema).
  */
 const FORMAT_HELP_TEXTS = {
-    markdown: 'Page content converted to clean Markdown.',
-    html: 'Cleaned HTML: the main article, with ads, navigation and footers stripped, when the page reads as one, '
-        + 'or the full page with fixed boilerplate removed otherwise.',
-    text: 'Page content as plain text, narrowed to the main article when the page reads as one, or the full page with '
-        + 'boilerplate stripped otherwise. Content that is already text is returned verbatim.',
-    links: 'Absolute URLs of the links found on the page, deduplicated and in document order.',
-    raw: 'Original HTTP response body, available for any content type. Textual content is returned as it is, '
-        + 'binary content such as an image or a PDF is base64-encoded.',
+    markdown: 'Page content as Markdown.',
+    html: 'Cleaned HTML of the main article, without ads, navigation, and footers. '
+        + 'If the page has no clear main article, the full page without boilerplate.',
+    text: 'Plain text of the main article, or of the full page without boilerplate if there is no clear article. '
+        + 'Plain-text files are returned unchanged.',
+    links: 'Absolute URLs of all links on the page, deduplicated, in page order.',
+    raw: 'Original HTTP response body, for any content type. Text is returned unchanged; '
+        + 'binary content, such as images and PDFs, is base64-encoded.',
 };
 
 const FORMAT_INPUT_FIELDS = Object.entries(WEB_FETCH_FORMATS).map(([format, label]) => ({
@@ -95,9 +95,8 @@ module.exports = {
     noun: 'Web Fetch',
     display: {
         label: 'Web Fetch',
-        description: 'Fetches the content of a web page, PDF or file and returns it as markdown, HTML, plain text, links or raw content. '
-            + 'It gets past bot protection and returns the content in a single step, which makes it a good fit for '
-            + 'large language model (LLM) flows.',
+        description: 'Fetches a web page, PDF, or other file and returns it as Markdown, HTML, plain text, links, or raw content. '
+            + 'It gets past bot protection, which makes it a good fit for large language model (LLM) workflows.',
     },
     operation: {
         inputFields: [
@@ -105,18 +104,14 @@ module.exports = {
                 label: 'Note',
                 key: 'note',
                 type: 'copy',
-                helpText: 'This action is designed to fetch the content of a single web page or file. '
-                    + 'Behind the scenes, it utilizes [Web Fetch](https://apify.com/apify/web-fetch), '
-                    + 'which gets past bot protection and returns the content in a single step. '
-                    + 'If you need to crawl multiple URLs or a whole website, you can run '
+                helpText: 'Fetches a single web page or file using [Web Fetch](https://apify.com/apify/web-fetch). '
+                    + 'To crawl many URLs or a whole website, use the **Run Actor** action with '
                     + '[Website Content Crawler](https://apify.com/apify/website-content-crawler) or '
-                    + '[Web Scraper](https://apify.com/apify/web-scraper), '
-                    + 'both of which offer a range of options to assist you with scraping multiple URLs and many more. '
-                    + 'These scrapers are available to run under "Run Actor" in Apify Zaps.',
+                    + '[Web Scraper](https://apify.com/apify/web-scraper).',
             },
             {
                 label: 'URL',
-                helpText: 'The URL of a web page, PDF, image or other file to fetch. Only `http://` and `https://` URLs are supported.',
+                helpText: 'The URL of a web page, PDF, image, or other file to fetch. Only `http://` and `https://` URLs are supported.',
                 key: 'url',
                 required: true,
                 type: 'string',
@@ -125,8 +120,7 @@ module.exports = {
                 label: 'Output formats',
                 key: 'outputFormatsNote',
                 type: 'copy',
-                helpText: 'Switch any number of formats to **Yes**. '
-                    + 'Leave all of them on **No** to let Web Fetch choose a format based on the content type.',
+                helpText: 'Set any number of formats to **Yes**. If all are **No**, Web Fetch picks a format based on the content type.',
                 group: FORMAT_FIELD_GROUP_KEY,
             },
             ...FORMAT_INPUT_FIELDS,

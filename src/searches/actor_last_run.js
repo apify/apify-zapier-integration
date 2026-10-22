@@ -33,15 +33,15 @@ module.exports = {
     noun: 'Last Actor run',
     display: {
         label: 'Find Last Actor Run',
-        description: 'Finds the most recent Actor run with a specific status (defaults to Succeeded). '
-            + 'It returns the latest run only; it cannot look up a specific run by ID.',
+        description: 'Finds the most recent run of an Actor with the selected status. '
+            + 'To look up a specific run, use Get Actor Run by ID.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor, whose last run you want to get.',
+                helpText: 'Select the Actor whose last run you want.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actors.id.name',
