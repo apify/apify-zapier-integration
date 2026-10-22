@@ -322,6 +322,72 @@ describe('run Actor and fetch results', () => {
         scope.done();
     });
 
+    it('shows a descriptive message with Actor ID when the Actor is not found while loading its input fields', async () => {
+        // A bare name mapped from Search Apify Store. The API cannot find an Actor by its name without the username.
+        const actorId = 'crawler-google-places';
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/acts/${actorId}`)
+                .reply(404, { error: { type: 'record-or-token-not-found', message: 'Actor was not found or access denied' } });
+        }
+
+        const inputFields = App.creates.runActorAndFetchResults.operation.inputFields;
+        const getAdditionalFields = inputFields.find((field) => typeof field === 'function');
+
+        const fields = await appTester(getAdditionalFields, {
+            authData: { access_token: TEST_USER_TOKEN || randomString() },
+            inputData: { actorId },
+        });
+
+        // The Zap editor does not show errors thrown while loading fields, so the message is shown as a read-only field.
+        expect(fields).to.have.lengthOf(1);
+        expect(fields[0].type).to.be.eql('copy');
+        expect(fields[0].helpText).to.match(new RegExp(`Actor "${actorId}" was not found`));
+        expect(fields[0].helpText).to.include('username~name');
+        // A link to a missing Actor leads nowhere.
+        expect(fields[0].helpText).to.not.include('console.apify.com');
+        scope?.done();
+    }).timeout(30000);
+
+    it('still fails the run with the descriptive message when only the "Actor not found" field was shown', async () => {
+        const actorId = 'crawler-google-places';
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/acts/${actorId}`)
+                .reply(404, { error: { type: 'record-or-token-not-found', message: 'Actor was not found or access denied' } });
+        }
+
+        // With no input fields loaded there is no inputBody, so the run looks the Actor up for its input schema first.
+        await expect(appTester(App.creates.runActorAndFetchResults.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN || randomString() },
+            inputData: { actorId },
+        })).to.be.rejectedWith(new RegExp(`Actor "${actorId}" was not found or your Apify account cannot access it. `
+            + 'Check that the Actor ID or username~name is correct'));
+        scope?.done();
+    }).timeout(30000);
+
+    it('throws errors other than Actor not found while loading its input fields', async () => {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const actorId = randomString();
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/acts/${actorId}`)
+            .reply(401, { error: { type: 'token-not-found', message: 'User was not found or authentication token is not valid' } });
+
+        const inputFields = App.creates.runActorAndFetchResults.operation.inputFields;
+        const getAdditionalFields = inputFields.find((field) => typeof field === 'function');
+
+        await expect(appTester(getAdditionalFields, {
+            authData: { access_token: randomString() },
+            inputData: { actorId },
+        })).to.be.rejectedWith(/authentication token is not valid/);
+        scope.done();
+    });
+
     it('loads the dynamic Actor input fields with wording for an action with no "Run synchronously" field', async () => {
         const actorId = randomString();
         // A build tag with no matching entry in taggedBuilds means no input schema exists,

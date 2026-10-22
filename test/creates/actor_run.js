@@ -1131,6 +1131,47 @@ describe('create actor run', () => {
         }).timeout(30000);
     });
 
+    it('shows a descriptive message with Actor ID when the Actor is not found while loading its input fields', async () => {
+        // A bare name mapped from Search Apify Store. The API cannot find an Actor by its name without the username.
+        const actorId = 'crawler-google-places';
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/acts/${actorId}`)
+                .reply(404, { error: { type: 'record-or-token-not-found', message: 'Actor was not found or access denied' } });
+        }
+
+        const getAdditionalFields = App.creates.createActorRun.operation.inputFields.find((field) => typeof field === 'function');
+        const fields = await appTester(getAdditionalFields, {
+            authData: { access_token: TEST_USER_TOKEN || randomString() },
+            inputData: { actorId },
+        });
+
+        expect(fields).to.have.lengthOf(1);
+        expect(fields[0].type).to.be.eql('copy');
+        expect(fields[0].helpText).to.match(new RegExp(`Actor "${actorId}" was not found`));
+        scope?.done();
+    }).timeout(30000);
+
+    it('still fails the run with the descriptive message when only the "Actor not found" field was shown', async () => {
+        const actorId = 'crawler-google-places';
+
+        let scope;
+        if (!TEST_USER_TOKEN) {
+            scope = nock('https://api.apify.com');
+            scope.get(`/v2/acts/${actorId}`)
+                .reply(404, { error: { type: 'record-or-token-not-found', message: 'Actor was not found or access denied' } });
+        }
+
+        // With no input fields loaded there is no inputBody, so the run looks the Actor up for its input schema first.
+        await expect(appTester(App.creates.createActorRun.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN || randomString() },
+            inputData: { actorId, runSync: false },
+        })).to.be.rejectedWith(new RegExp(`Actor "${actorId}" was not found or your Apify account cannot access it`));
+        scope?.done();
+    }).timeout(30000);
+
     it('throws a descriptive error with the parser detail for invalid JSON input body', async () => {
         const bundle = {
             authData: {
