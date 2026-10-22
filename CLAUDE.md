@@ -8,8 +8,8 @@ Zapier integration for the Apify platform. Allows users to connect Apify actors,
 
 ```
 src/
-  creates/          # Zapier "create" actions (run actor, run task, web fetch, scrape URL [hidden/deprecated], set value)
-  searches/         # Zapier "search" actions (last run, get value, fetch items)
+  creates/          # Zapier "create" actions (run actor, run task, run actor & fetch results, abort run, web fetch, set value, scrape URL [hidden/deprecated])
+  searches/         # Zapier "search" actions (actor/task last run, get run, get actor, search store, get value, fetch items)
   triggers/         # Zapier "trigger" actions (run finished, actors/tasks list, dynamic fields)
   apify_helpers.js  # Core Apify API interaction logic
   authentication.js # Zapier auth configuration
@@ -64,6 +64,7 @@ Publishing to Zapier is handled automatically by `publish.yml` on GitHub release
 - **Code style:** Airbnb ESLint base with 4-space indentation and 150-character line limit.
 - **Indentation:** 4 spaces (enforced by `.editorconfig` and ESLint).
 - **Line endings:** LF, UTF-8.
+- **User-facing copy** (labels, `helpText`, `display.description`): keep it short and direct, following Apify style — capitalize "Actor", say "Apify Console"/"Apify Store", use "e.g." for examples, bold step/field names (e.g. **Run Task**), skip "Please".
 - **Commits/branches:** PRs target `master`. Releases are created as GitHub Releases; the publish workflow extracts the version from the release tag.
 - **Versioning:** Semantic versioning; `package.json` version is updated automatically during publish.
 - **CHANGELOG:** Updated automatically from GitHub release notes during publish.
