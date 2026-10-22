@@ -29,7 +29,8 @@ const getBundle = (inputData, token = MOCKED_TOKEN) => ({
  * response is the sample narrowed down to those formats. Deriving it from the sample keeps the mocks
  * and the sample that the Zap editor advertises from drifting apart.
  */
-const getMockWebFetchResponse = (formats = ['markdown']) => _.pick(WEB_FETCH_SAMPLE, ['url', 'fetch', 'metadata', ...formats]);
+// Deep-cloned, so a test that adjusts the response cannot alter the shared sample.
+const getMockWebFetchResponse = (formats = ['markdown']) => _.cloneDeep(_.pick(WEB_FETCH_SAMPLE, ['url', 'fetch', 'metadata', ...formats]));
 
 /**
  * Mocks a single request to the Web Fetch Standby endpoint. getRequestBody() returns the Actor input
@@ -167,6 +168,85 @@ describe('web fetch', () => {
         }));
 
         expect(testResult).to.eql(mockResponse);
+
+        scope.done();
+    });
+
+    it('rejects several comma-separated URLs without calling the Actor (mocked)', async () => {
+        const { scope } = mockWebFetch();
+
+        await expect(appTester(App.creates.webFetch.operation.perform, getBundle({
+            // This is how Zapier hands over a mapped line-item field.
+            url: 'https://www.kavove-okenko.cz/,http://www.kultcafe.cz/,http://www.gimmicafe.cz/',
+            format_markdown: true,
+        }))).to.be.rejectedWith(/Web Fetch accepts one URL.*Looping by Zapier/);
+
+        expect(scope.isDone()).to.eql(false);
+    });
+
+    it('rejects a URL without an http(s) scheme without calling the Actor (mocked)', async () => {
+        const { scope } = mockWebFetch();
+
+        await Promise.all(['www.example.com', 'ftp://example.com/file.txt', '', '   '].map((url) => expect(
+            appTester(App.creates.webFetch.operation.perform, getBundle({ url })),
+        ).to.be.rejectedWith(/is not a valid URL.*http:\/\/ or https:\/\//)));
+
+        expect(scope.isDone()).to.eql(false);
+    });
+
+    it('trims the URL and accepts a single URL with a comma in its query (mocked)', async () => {
+        const { scope, getRequestBody } = mockWebFetch();
+
+        await appTester(App.creates.webFetch.operation.perform, getBundle({ url: '  https://www.example.com/?ids=1,2  ' }));
+
+        expect(getRequestBody().url).to.eql('https://www.example.com/?ids=1,2');
+
+        scope.done();
+    });
+
+    it('fails on a non-2xx status of the target website by default (mocked)', async () => {
+        const body = _.merge(getMockWebFetchResponse(), {
+            fetch: { httpStatusCode: 404 },
+            metadata: { title: '404 Error - Document not found' },
+        });
+
+        // Zaps created before the option existed have no value for it, and must fail too.
+        const { scope } = mockWebFetch({ body, times: 2 });
+
+        await Promise.all([undefined, true].map((failOnErrorStatus) => expect(appTester(App.creates.webFetch.operation.perform, getBundle({
+            url: 'https://www.example.com/missing',
+            failOnErrorStatus,
+        }))).to.be.rejectedWith(/www\.example\.com\/missing responded with HTTP status 404 \(page title: .*404 Error - Document not found/)));
+
+        scope.done();
+    });
+
+    it('returns a non-2xx response when "Fail on error status" is off (mocked)', async () => {
+        const body = _.merge(getMockWebFetchResponse(), { fetch: { httpStatusCode: 404 } });
+
+        const { scope } = mockWebFetch({ body, times: 2 });
+
+        const testResults = await Promise.all([false, 'no'].map((failOnErrorStatus) => appTester(
+            App.creates.webFetch.operation.perform,
+            getBundle({ url: 'https://www.example.com/missing', failOnErrorStatus }),
+        )));
+
+        testResults.forEach((testResult) => expect(testResult.fetch.httpStatusCode).to.eql(404));
+        scope.done();
+    });
+
+    it('drops the internal unblocker header and returns JSON-LD as one JSON string (mocked)', async () => {
+        const jsonLd = { '@context': 'https://schema.org', '@graph': [{ '@type': 'WebPage', name: 'Example' }] };
+        const body = _.merge(getMockWebFetchResponse(), {
+            metadata: { jsonLd, headers: { 'X-Apify-Unblocker-Route': 'direct' } },
+        });
+        const { scope } = mockWebFetch({ body });
+
+        const testResult = await appTester(App.creates.webFetch.operation.perform, getBundle({ url: 'https://www.example.com' }));
+
+        expect(testResult.metadata.headers).to.eql(WEB_FETCH_SAMPLE.metadata.headers);
+        expect(testResult.metadata.jsonLd).to.be.a('string');
+        expect(JSON.parse(testResult.metadata.jsonLd)).to.eql(jsonLd);
 
         scope.done();
     });

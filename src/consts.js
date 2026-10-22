@@ -285,6 +285,7 @@ const WEB_FETCH_OUTPUT_FIELDS = [
     { key: 'metadata__author', label: 'Author', type: 'string' },
     { key: 'metadata__keywords', label: 'Keywords', type: 'string' },
     { key: 'metadata__languageCode', label: 'Language code', type: 'string' },
+    { key: 'metadata__jsonLd', label: 'JSON-LD', type: 'string' },
     { key: 'markdown', label: 'Markdown', type: 'string' },
     { key: 'html', label: 'HTML', type: 'string' },
     { key: 'text', label: 'Plain text', type: 'string' },
