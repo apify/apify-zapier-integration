@@ -39,8 +39,7 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Abort Actor Run',
-        description: 'Aborts a running or ready Actor run by its ID. '
-            + 'Use this to stop a run that is no longer needed or that has exceeded an expected duration.',
+        description: 'Aborts a ready or running Actor run by its ID. Use it to stop a run you no longer need or one that takes too long.',
     },
 
     operation: {
@@ -51,7 +50,7 @@ module.exports = {
                 required: true,
                 type: 'string',
                 helpText: 'The ID of the Actor run to abort, e.g. `HG7ML7M8z78YcAPEB`. '
-                    + 'You typically get this from a previous **Run Actor** or **Run Task** step.',
+                    + 'You usually get it from a previous **Run Actor** or **Run Task** step.',
             },
             {
                 label: 'Abort gracefully',

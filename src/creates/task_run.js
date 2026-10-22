@@ -79,8 +79,7 @@ const resumeTaskRun = async (z, bundle) => {
 
 const getRawInputField = async (z, bundle) => {
     const { taskId } = bundle.inputData;
-    let helpText = 'Here you can enter a JSON object to override the task input configuration. '
-        + 'Only the provided fields will be overridden, the rest will be left unchanged.';
+    let helpText = 'JSON object that overrides the task input. Fields you leave out keep their saved values.';
 
     const { data: task } = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
@@ -90,8 +89,8 @@ const getRawInputField = async (z, bundle) => {
     });
 
     if (actor && actor.isPublic) {
-        helpText += ` See [documentation](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
-            + 'for detailed fields description.';
+        helpText += ` See the [input schema](https://apify.com/${actor.username}/${actor.name}?section=input-schema) `
+            + 'for field details.';
     }
 
     return {
@@ -109,18 +108,14 @@ module.exports = {
     noun: 'Task Run',
     display: {
         label: 'Run Task',
-        description: 'Runs a saved Actor task (an Actor pre-configured with fixed input and settings in Apify Console). '
-            + 'Use this when the configuration already exists; for ad-hoc runs with custom input, use Run Actor instead. '
-            + 'By default the step waits for the run to finish and returns its results. '
-            + 'It always returns the run ID, status, and default dataset ID, so you can also fetch the results later '
-            + 'with Fetch Dataset Items.',
+        description: 'Runs a saved Actor task. To run an Actor with custom input, use Run Actor instead.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Task',
-                helpText: 'Please select the task to run.',
+                helpText: 'Select the task to run.',
                 key: 'taskId',
                 required: true,
                 dynamic: 'tasks.id.name',
@@ -128,13 +123,12 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'With `yes` (the default), this step waits until the task run finishes and then returns its results. '
-                    + 'The Zap shows the step as waiting in the meantime, and the run is limited by the timeout configured for the task '
-                    + 'or its Actor, at most 1 hour, after which it is stopped. '
-                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
-                    + 'with Find Last Task Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Task Run trigger. '
-                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds and then returns the results '
-                    + 'produced so far, so you can map them in the next step. Test the whole Zap to see the finished run and all its results.',
+                helpText: 'If `yes` (default), the step waits for the run to finish and returns its results. '
+                    + 'The run stops when it reaches the timeout set for the task or its Actor, at most 1 hour. '
+                    + 'If `no`, the step returns as soon as the run starts. Get the results later with **Fetch Dataset Items**, '
+                    + 'or in a second Zap that starts with the **Finished Task Run** trigger. '
+                    + 'When you test this step alone in the Zap editor, it waits about 25 seconds and returns the results so far. '
+                    + 'Test the whole Zap to see all results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

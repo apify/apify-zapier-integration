@@ -55,18 +55,14 @@ module.exports = {
     noun: 'Actor Run',
     display: {
         label: 'Run Actor',
-        description: 'Runs an Apify Actor (a cloud program for web scraping, data extraction, or automation) with custom input parameters. '
-            + 'Use this for ad-hoc runs; if you already have a saved configuration in Apify Console, use Run Task instead. '
-            + 'By default the step waits for the run to finish and returns its results. '
-            + 'It always returns the run ID, status, and default dataset ID, so you can also fetch the results later '
-            + 'with Fetch Dataset Items or look up the run with Find Last Actor Run.',
+        description: 'Runs an Apify Actor with your input. To run a configuration saved in Apify Console, use Run Task instead.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Search Actors from',
-                helpText: 'Please select the source to search Actors from.',
+                helpText: 'Where to search for Actors.',
                 key: 'searchLocation',
                 required: true,
                 type: 'string',
@@ -76,7 +72,7 @@ module.exports = {
             },
             {
                 label: 'Actor',
-                helpText: 'Please select the Actor to run, or pass an Actor ID or slug directly (for example `apify~web-scraper`).',
+                helpText: 'Select the Actor to run, or enter an Actor ID or slug, e.g. `apify~web-scraper`.',
                 key: 'actorId',
                 required: true,
                 dynamic: 'actorsWithStore.id.name',
@@ -84,13 +80,12 @@ module.exports = {
             },
             {
                 label: 'Run synchronously',
-                helpText: 'With `yes` (the default), this step waits until the Actor run finishes and then returns its results. '
-                    + 'The Zap shows the step as waiting in the meantime, and the run is limited by the Timeout set below, '
-                    + 'at most 1 hour, after which it is stopped. '
-                    + 'If you choose `no`, the step returns as soon as the run starts, and you can fetch the results in a later step '
-                    + 'with Find Last Actor Run or Fetch Dataset Items, or in a second Zap that starts with the Finished Actor Run trigger. '
-                    + 'Note: testing this step on its own in the Zap editor waits only about 25 seconds and then returns the results '
-                    + 'produced so far, so you can map them in the next step. Test the whole Zap to see the finished run and all its results.',
+                helpText: 'If `yes` (default), the step waits for the run to finish and returns its results. '
+                    + 'The run stops when it reaches the **Timeout**, at most 1 hour. '
+                    + 'If `no`, the step returns as soon as the run starts. Get the results later with **Fetch Dataset Items**, '
+                    + 'or in a second Zap that starts with the **Finished Actor Run** trigger. '
+                    + 'When you test this step alone in the Zap editor, it waits about 25 seconds and returns the results so far. '
+                    + 'Test the whole Zap to see all results.',
                 key: 'runSync',
                 required: true,
                 type: 'boolean',

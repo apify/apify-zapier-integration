@@ -118,9 +118,8 @@ module.exports = {
     noun: 'Scrape Single URL',
     display: {
         label: 'Scrape Single URL',
-        description: 'Runs a scraper for the website and returns its content as text, markdown, and HTML. '
-            + 'This action is made for getting content of a single page, for example, to use in large language models (LLM) flows. '
-            + 'It is ideal when an agent needs to read live web page content as context for a decision or research task.',
+        description: 'Runs a scraper on a website and returns its content as text, Markdown, and HTML. '
+            + 'Made for getting the content of a single page, e.g. for large language model (LLM) workflows.',
         /**
          * Deprecated in favour of the Web Fetch action. Removing it instead would break those Zaps and raise a
          * publishing task that blocks promoting the integration.
@@ -145,12 +144,12 @@ module.exports = {
             },
             {
                 label: 'Crawler type',
-                helpText: '- **Headless web browser** - Useful for modern websites with anti-scraping protections and JavaScript rendering. '
-                    + 'It recognizes common blocking patterns like CAPTCHAs and automatically retries blocked requests through new sessions. \n'
-                    + '- **Stealthy web browser** (default) - Another headless web browser with anti-blocking measures enabled. '
-                    + 'Try this if you encounter anti-bot protections while scraping. \n'
-                    + '- **Raw HTTP client** - High-performance crawling mode that uses raw HTTP requests to fetch the pages. '
-                    + 'It is faster and cheaper, but it might not work on all websites.',
+                helpText: '- **Headless browser (Chrome+Playwright)**: for modern websites with anti-scraping protection and JavaScript rendering. '
+                    + 'It detects common blocking, such as CAPTCHAs, and retries blocked requests with new sessions. \n'
+                    + '- **Headless browser (stealthy Firefox+Playwright)**: a headless browser with anti-blocking measures. '
+                    + 'Try it if the website blocks the other options. \n'
+                    + '- **Raw HTTP client (Cheerio)** (default): fetches pages with plain HTTP requests. '
+                    + 'Faster and cheaper, but it does not work on every website.',
                 key: 'crawlerType',
                 required: true,
                 type: 'string',

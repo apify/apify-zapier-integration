@@ -31,16 +31,16 @@ module.exports = {
     noun: 'Key-Value Store Value',
     display: {
         label: 'Set Key-Value Store Record',
-        description: 'Creates a new or updates an existing record in a key-value store. '
-            + 'Can be used as agent memory - save intermediate data here and retrieve it later with Get Key-Value Store Record.',
+        description: 'Creates or updates a record in a key-value store. '
+            + 'Agents can use it as memory: save data here and read it later with Get Key-Value Store Record.',
     },
 
     operation: {
         inputFields: [
             {
                 label: 'Key-value store',
-                helpText: 'Please enter the name or ID of the key-value store. If a store with the given name doesn\'t exist, '
-                    + 'it will be created. An ID that doesn\'t exist will fail.',
+                helpText: 'Name or ID of the key-value store. If no store with that name exists, a new one is created. '
+                    + 'An unknown ID returns an error.',
                 key: 'storeIdOrName',
                 required: true,
             },
@@ -52,7 +52,7 @@ module.exports = {
             },
             {
                 label: 'Record value',
-                helpText: 'Please enter a JSON value. The record will have `Content-Type: application/json`.',
+                helpText: 'A JSON value. The record is saved with `Content-Type: application/json`.',
                 key: 'value',
                 required: true,
                 type: 'text',
