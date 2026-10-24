@@ -44,17 +44,19 @@ All HTTP goes through `z.request`, so the app-wide middleware in `src/request_he
 - `parseDataApiObject` unwraps the API's `{ data: ... }` envelope into `response.data`.
 - `validateApiResponse` is the single place for user-facing API errors. Order matters: a 404 on a
   key-value store `/records/` GET/HEAD is let through (callers check `status === 404`); Web Fetch
-  errors are mapped next; then 5xx and 429 throw `RetryableError`; other ≥300 statuses are matched
-  on `error.type`. Throw `z.errors.Error(message, name, status)` for messages the user must see — a
-  plain `Error` becomes a generic failure. Use `RetryableError` only when a retry can succeed:
+  errors are mapped next; then 5xx throws `RetryableError`; other ≥300 statuses are matched on
+  `error.type`. The 429 branch never runs: `zapier-platform-core` throws `ThrottledError` on a 429
+  before app middleware, and Zapier retries the step later. Throw `z.errors.Error(message, name,
+  status)` for messages the user must see — Zapier's docs say a plain `Error` won't work as expected.
+  Use `RetryableError` only when a retry can succeed:
   `full-permission-actor-not-approved` needs manual approval, so it throws `z.errors.Error` with the
   `approvalUrl` appended.
 - Retries only happen where a call is wrapped in `wrapRequestWithRetries` (exponential back-off,
-  3 repeats). Most calls are; a bare `z.request` is not retried.
+  3 attempts in total). Most calls are; a bare `z.request` is not retried.
 
 Auth is OAuth2 with PKCE against Apify Console (`src/authentication.js`, `CLIENT_ID`/`CLIENT_SECRET`
-from env). `autoRefresh` is deliberately off because Zapier's `RefreshAuthError` can't be handled
-from the app.
+from env). `autoRefresh` is deliberately off: with it on, core turns every 401 into
+`RefreshAuthError`, and the app has no `refreshAccessToken` to answer it.
 
 ### Running Actors and tasks
 
@@ -68,8 +70,9 @@ Synchronous runs don't block `perform`, since Zapier kills a step after 30 s
 `getActorRunOnResume`. Rules that follow from this:
 
 - Call `z.generateCallbackUrl()` only on the sync path — calling it pauses the Zap.
-- In the Zap editor's test step (`bundle.meta.isLoadingSample`) no callback can arrive, so the step
-  polls with `waitForRunToFinish` for `TEST_STEP_RUN_WAIT_SECS` (25 s) and returns what it has.
+- In the Zap editor's test step (`bundle.meta.isLoadingSample`) no callback is requested (Zapier
+  advises avoiding callbacks while sampling), so the step polls with `waitForRunToFinish` for
+  `TEST_STEP_RUN_WAIT_SECS` (25 s) and returns what it has.
 - Sync run timeouts are capped at `DEFAULT_SYNC_RUN_TIMEOUT_SECS` (1 hour). Run Task reads the
   task's timeout (falling back to the Actor default) because the input has none.
 
@@ -118,7 +121,7 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
   `getValueSearch.perform` and spreads its hydrators (`stashFunction`, which turns non-JSON records
   into files).
 - Validate dynamic fields in tests with `zapier-platform-schema/lib/schemas/PlainInputFieldSchema`
-  (renamed from `FieldSchema` in schema 19), as `test/apify_helpers.js` does.
+  (`FieldSchema` is gone as of schema 19), as `test/apify_helpers.js` does.
 - User-facing copy (labels, `helpText`, `display.description`): short and direct — "Actor"
   capitalized, "Apify Console"/"Apify Store", "e.g." for examples, step and field names in bold
   (**Run Task**), no "Please".
