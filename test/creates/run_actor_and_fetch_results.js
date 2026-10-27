@@ -370,7 +370,7 @@ describe('run Actor and fetch results', () => {
         scope?.done();
     }).timeout(30000);
 
-    it('throws errors other than Actor not found while loading its input fields', async () => {
+    it('throws errors other than Actor not found while loading its input fields', async function () {
         if (TEST_USER_TOKEN) this.skip();
 
         const actorId = randomString();
