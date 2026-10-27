@@ -1,3 +1,41 @@
+## 5.0.0 / 2026-10-27
+**✨ New actions**
+  * **Web Fetch**: fetch any web page and get its content as Markdown, cleaned HTML or plain text. It's fast, needs no Actor setup, and replaces **Scrape Single URL**.
+  (#172, #188)
+  * **Run Actor and Fetch Results**: run an Actor, wait for it to finish and get its dataset items in one step. You can set a Limit and choose which Fields to return.
+  (#159)
+  * **Get Actor Run by ID**: look up a run by its ID and get its details and dataset items. (#159)
+  * **Get Actor Details**: get an Actor's title, description, stats and default run options by ID or `username/name`. (#159)
+  * **Search Apify Store**: find public Actors by keyword or use case. (#159)
+  * **Abort Actor Run**: stop a running Actor run, optionally gracefully. (#159)
+
+  **🚀 Improvements**
+  * Synchronous runs can now take much longer. Instead of failing after 6 minutes, the Zap step pauses and resumes when the run finishes. (#159)
+  * When you test a single step in the Zap editor, it returns the partial results produced so far instead of timing out. (#159)
+  * Clearer error messages for common problems: Actor not found (with a link to Apify Console), invalid JSON input, missing dataset, key-value store or record, empty
+  dataset, and run timeouts. (#159)
+  * If Apify can't find the Actor you selected, **Run Actor** and **Run Actor and Fetch Results** now say so where the input fields would be, instead of showing an empty
+  form. (#187)
+  * Action descriptions and help texts were rewritten so they're easier for both people and AI agents to follow. (#159, #179)
+  * UX polish: consistent "Run ID" labels, Store Actors shown by default in the Actor picker, Limit and Fields shown above the Actor input, and labeled Store stats. (#191)
+
+  **⚠️  Breaking changes**
+  * **Scrape Single URL** is deprecated and hidden from new Zaps. Existing Zaps keep working, but please switch to **Web Fetch**. (#172)
+  * **Get Key-Value Store Record** now fails with an error when the key or the store doesn't exist. Before, it returned an empty result (and could silently create an empty
+  store). (#159)
+  * **Fetch Dataset Items** now fails when the dataset doesn't exist or has no items. Before, it returned an empty result or silently created a new dataset. (#159)
+  * **Set Key-Value Store Record** now fails when you pass a store ID that doesn't exist. Passing a store *name* still creates the store if it's missing. (#159)
+  * **Run Actor** and **Run Task** now default **Run synchronously** to `yes` in new steps. Existing Zaps keep their saved setting. (#159)
+  * Synchronous runs now stop at their timeout: up to 1 hour for **Run Actor** and **Run Task**, and 6 minutes for **Scrape Single URL**. Before, the Zap step failed but
+  the run kept going on Apify. (#159)
+
+  **🔧 Maintenance**
+  * Fixed dependency vulnerabilities (#173), set up Renovate (#180), pinned Node.js 22 (#192), cleaned up the changelog (#170) and updated docs (#178, #181).
+
+  **Contributors:** @jsimecek, @drobnikj, @jakcinmarina, @protoss70, @JanHranicky
+
+  **Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v4.6.0...v5.0.0
+
 ## 4.6.0 / 2026-08-20
 * feat: zapier update npm dependencies by @daveomri in https://github.com/apify/apify-zapier-integration/pull/149
 * feat: surface approvalUrl for unapproved full-permission Actors by @daveomri in https://github.com/apify/apify-zapier-integration/pull/150
