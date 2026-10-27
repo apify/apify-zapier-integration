@@ -32,7 +32,7 @@ renovate.json5      # Renovate config: weekly (Wed) dependency PRs, auto-merge a
 - **Runtime:** Node.js v22 (`.nvmrc` pins the exact version CI uses, e.g. `v22.23.4`; `engines.node` stays at 22, the Zapier runtime major)
 - **Platform:** `zapier-platform-core` 19.0.0 (`zapier-platform-schema` 19.0.0 in devDependencies — keep both on the same major)
 - **Apify SDK:** `apify-client` 2.19.0, `@apify/consts`, `@apify/utilities`
-- **Testing:** Mocha 11, Chai 4 (with chai-as-promised), nock 14 for HTTP mocking
+- **Testing:** Mocha 12, Chai 4 (with chai-as-promised), nock 14 for HTTP mocking
 - **Linting:** ESLint 8 with `eslint-config-airbnb-base`
 
 ## Build, Test & Run
