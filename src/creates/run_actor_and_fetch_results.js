@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const {
     ACTOR_SEARCH_SOURCES,
-    RECENTLY_USED_ACTORS_KEY,
+    STORE_ACTORS_KEY,
     RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE,
     RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS,
     DEFAULT_SYNC_RUN_TIMEOUT_SECS,
@@ -64,7 +64,7 @@ const resumeRunActorAndFetchResults = async (z, bundle) => {
 
 module.exports = {
     key: 'runActorAndFetchResults',
-    noun: 'Actor Results',
+    noun: 'Run',
     display: {
         label: 'Run Actor and Fetch Results',
         description: 'Runs an Actor, waits for it to finish, and returns the items from its default dataset. '
@@ -80,7 +80,7 @@ module.exports = {
                 key: 'searchLocation',
                 required: true,
                 type: 'string',
-                default: RECENTLY_USED_ACTORS_KEY,
+                default: STORE_ACTORS_KEY,
                 choices: ACTOR_SEARCH_SOURCES,
                 altersDynamicFields: true,
             },
@@ -92,10 +92,11 @@ module.exports = {
                 dynamic: 'actorsWithStore.id.name',
                 altersDynamicFields: true,
             },
-            getActorAdditionalFieldsForFetchResults,
+            // Listed before the Actor input fields, which can run to dozens for a large Actor.
             {
                 label: 'Limit',
-                helpText: 'Maximum number of items to return. Leave empty for no limit.',
+                helpText: 'Maximum number of items to return, all by default. With several items, each mapped field '
+                    + 'lists the values of all of them. Set `1` for a single item, or use Looping by Zapier to process them one by one.',
                 key: 'limit',
                 required: false,
                 type: 'integer',
@@ -107,6 +108,7 @@ module.exports = {
                 required: false,
                 type: 'string',
             },
+            getActorAdditionalFieldsForFetchResults,
         ],
 
         perform: runActorAndFetchResults,

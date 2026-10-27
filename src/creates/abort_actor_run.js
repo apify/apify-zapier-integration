@@ -36,7 +36,7 @@ const abortActorRun = async (z, bundle) => {
 
 module.exports = {
     key: 'abortActorRun',
-    noun: 'Actor Run',
+    noun: 'Run',
     display: {
         label: 'Abort Actor Run',
         description: 'Aborts a ready or running Actor run by its ID. Use it to stop a run you no longer need or one that takes too long.',
