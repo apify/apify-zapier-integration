@@ -17,8 +17,74 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 // but it sends the raw value when input data cleaning is turned off, so both shapes are accepted here.
 const isChecked = (value) => value === true || value === 'true' || value === 'yes';
 
+// An option that defaults to Yes has to stay on in Zaps created before it existed, where the value is missing.
+const isUnchecked = (value) => value === false || value === 'false' || value === 'no';
+
+// Zapier joins a mapped line-item field with commas, so several URLs arrive as one string.
+const MULTIPLE_URLS_REGEX = /[\s,]+https?:\/\//i;
+
+// Added by the Apify unblocking proxy, it says nothing about the target website.
+const INTERNAL_RESPONSE_HEADERS = ['x-apify-unblocker-route'];
+
+/**
+ * Rejects input that is not one http(s) URL, before it is sent to the Actor. Web Fetch would otherwise
+ * fetch e.g. the first of several comma-separated URLs with the rest as its path, and return a 404 page.
+ */
+const validateUrl = (z, rawUrl) => {
+    const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+
+    if (MULTIPLE_URLS_REGEX.test(url)) {
+        throw new z.errors.Error(
+            'Web Fetch accepts one URL, but the URL field contains several. '
+                + 'To fetch each of them, use Looping by Zapier and map a single URL into this field.',
+            'INVALID_URL',
+            400,
+        );
+    }
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(url);
+    } catch (err) {
+        // Handled below together with unsupported schemes.
+    }
+
+    if (!parsedUrl || !['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new z.errors.Error(
+            `"${url}" is not a valid URL. Enter one full URL starting with http:// or https://, e.g. https://www.example.com.`,
+            'INVALID_URL',
+            400,
+        );
+    }
+
+    return url;
+};
+
+/**
+ * Shapes the Actor response for Zapier. Zapier flattens nested objects into one output field per key,
+ * which turns JSON-LD into dozens of "Metadata Json Ld Graph ..." fields, so it is passed as one JSON string.
+ */
+const formatOutput = (data) => {
+    const { metadata } = data || {};
+    if (!metadata) return data;
+
+    const output = { ...data, metadata: { ...metadata } };
+
+    if (metadata.headers) {
+        output.metadata.headers = Object.fromEntries(Object.entries(metadata.headers)
+            .filter(([name]) => !INTERNAL_RESPONSE_HEADERS.includes(name.toLowerCase())));
+    }
+
+    if (metadata.jsonLd != null && typeof metadata.jsonLd !== 'string') {
+        output.metadata.jsonLd = JSON.stringify(metadata.jsonLd);
+    }
+
+    return output;
+};
+
 const webFetch = async (z, bundle) => {
-    const { url, headers } = bundle.inputData;
+    const { headers, failOnErrorStatus } = bundle.inputData;
+    const url = validateUrl(z, bundle.inputData.url);
 
     // Each format has its own checkbox, so the Actor input is assembled from whichever are ticked.
     const requestedFormats = Object.keys(WEB_FETCH_FORMATS)
@@ -59,7 +125,22 @@ const webFetch = async (z, bundle) => {
         throw err;
     }
 
-    return response.data;
+    const output = formatOutput(response.data);
+
+    // Web Fetch returns the target's error page with its status, e.g. a 404 "Document not found", and
+    // passing it on would feed that page to the next steps as if it were the content.
+    const statusCode = output?.fetch?.httpStatusCode;
+    if (!isUnchecked(failOnErrorStatus) && Number.isInteger(statusCode) && (statusCode < 200 || statusCode >= 300)) {
+        const title = output.metadata?.title ? ` (page title: "${output.metadata.title}")` : '';
+        throw new z.errors.Error(
+            `${url} responded with HTTP status ${statusCode}${title}. `
+                + 'Check that the URL is correct, or set "Fail on error status" to No to return the response anyway.',
+            'ERROR_STATUS',
+            statusCode,
+        );
+    }
+
+    return output;
 };
 
 const FORMAT_FIELD_GROUP_KEY = 'outputFormats';
@@ -131,6 +212,16 @@ module.exports = {
                 key: 'headers',
                 required: false,
                 dict: true,
+                group: ADVANCED_FIELD_GROUP_KEY,
+            },
+            {
+                label: 'Fail on error status',
+                helpText: 'If **Yes**, the step fails when the website responds with an error status, e.g. 404 Not Found or '
+                    + '500 Internal Server Error. Set to **No** to return the response, e.g. the error page, and its status instead.',
+                key: 'failOnErrorStatus',
+                required: false,
+                type: 'boolean',
+                default: 'yes',
                 group: ADVANCED_FIELD_GROUP_KEY,
             },
         ],
