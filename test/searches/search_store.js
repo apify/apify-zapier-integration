@@ -88,6 +88,8 @@ describe('search apify store', () => {
         expect(actor.id).to.be.a('string');
         expect(actor.name).to.be.a('string');
         expect(actor.username).to.be.a('string');
+        // The API finds an Actor by ID or `username~name` only, never by a bare name.
+        expect(actor.actorSlug).to.be.eql(`${actor.username}~${actor.name}`);
         // `stats` stays nested, so Zapier resolves the `stats__*` output fields and shows their labels.
         expect(actor.stats.totalRuns).to.be.a('number');
         expect(actor.stats__totalRuns).to.be.eql(undefined);
@@ -98,6 +100,7 @@ describe('search apify store', () => {
 
         if (!TEST_USER_TOKEN) {
             expect(testResult.length).to.be.eql(2);
+            expect(actor.actorSlug).to.be.eql('harvestapi~linkedin-profile-scraper');
             expect(actor.stats).to.be.eql({
                 totalRuns: 16075561,
                 totalUsers: 48054,

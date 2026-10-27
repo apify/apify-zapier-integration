@@ -1167,6 +1167,7 @@ describe('create actor run', () => {
         expect(fields).to.have.lengthOf(1);
         expect(fields[0].type).to.be.eql('copy');
         expect(fields[0].helpText).to.match(new RegExp(`Actor "${actorId}" was not found`));
+        expect(fields[0].helpText).to.include('If you mapped it from Search Apify Store, map Actor slug or Actor ID instead.');
         scope?.done();
     }).timeout(30000);
 
