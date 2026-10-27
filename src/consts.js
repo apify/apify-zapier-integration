@@ -194,7 +194,7 @@ const SCRAPE_SINGLE_URL_RUN_SAMPLE = {
 };
 
 const ACTOR_RUN_OUTPUT_FIELDS = [
-    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'id', label: 'Run ID', type: 'string' },
     { key: 'actId', label: 'Actor ID', type: 'string' },
     { key: 'buildId', label: 'Build ID', type: 'string' },
     { key: 'buildNumber', label: 'Build number', type: 'string' },
@@ -215,7 +215,7 @@ const ACTOR_RUN_OUTPUT_FIELDS = [
 ];
 
 const SCRAPE_SINGLE_URL_RUN_OUTPUT_FIELDS = [
-    { key: 'id', label: 'ID', type: 'string' },
+    { key: 'id', label: 'Run ID', type: 'string' },
     { key: 'actId', label: 'Actor ID', type: 'string' },
     { key: 'buildId', label: 'Build ID', type: 'string' },
     { key: 'buildNumber', label: 'Build number', type: 'string' },
@@ -314,8 +314,6 @@ const RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS = [
 ];
 
 // Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
-// The `stats.*` popularity/recency signals are flattened to `stats__*` keys (matching the
-// dynamic-field convention used elsewhere) so Zapier renders them as flat output fields.
 const STORE_ACTOR_SAMPLE = {
     id: 'zdc3Pyhyz3m8vjDeM',
     name: 'web-scraper',
@@ -324,9 +322,11 @@ const STORE_ACTOR_SAMPLE = {
     username: 'apify',
     url: 'https://apify.com/apify/web-scraper',
     categories: ['DEVELOPER_TOOLS', 'AUTOMATION'],
-    stats__totalRuns: 3208782,
-    stats__totalUsers: 62598,
-    stats__lastRunStartedAt: '2026-07-10T09:41:39.937Z',
+    stats: {
+        totalRuns: 3208782,
+        totalUsers: 62598,
+        lastRunStartedAt: '2026-07-10T09:41:39.937Z',
+    },
 };
 
 const STORE_ACTOR_OUTPUT_FIELDS = [

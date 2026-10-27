@@ -52,7 +52,7 @@ const resumeActorRun = async (z, bundle) => {
 
 module.exports = {
     key: 'createActorRun',
-    noun: 'Actor Run',
+    noun: 'Run',
     display: {
         label: 'Run Actor',
         description: 'Runs an Apify Actor with your input. To run a configuration saved in Apify Console, use Run Task instead.',

@@ -64,7 +64,7 @@ const resumeRunActorAndFetchResults = async (z, bundle) => {
 
 module.exports = {
     key: 'runActorAndFetchResults',
-    noun: 'Actor Results',
+    noun: 'Run',
     display: {
         label: 'Run Actor and Fetch Results',
         description: 'Runs an Actor, waits for it to finish, and returns the items from its default dataset. '
