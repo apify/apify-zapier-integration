@@ -26,9 +26,9 @@ npx -p zapier-platform-cli zapier-platform validate --without-style
 
 `zapier-platform-cli` is not a dependency; CI installs it globally. CI (`test.yml`, PRs to `master`)
 runs validate, lint and tests twice: mocked, and E2E with a real token. `lint:fix` only covers `src/`.
-The E2E token is the `APIFY_TEST_USER_API_TOKEN` repo secret, which every PR run from a branch in
-this repo receives, so anyone who can push a branch can read it through a test change. Keep it on a
-dedicated test account with nothing else in it.
+The E2E token is `APIFY_TEST_USER_API_TOKEN`, an org secret shared with other Apify repos. Every PR
+run from a branch in this repo receives it, so anyone who can push a branch can read it through a
+test change. Never point the E2E job at a personal or production token instead.
 Node follows the Zapier runtime: `engines` is `22`, and `.nvmrc` pins the exact version CI uses.
 
 Each test decides per case: `if (!TEST_USER_TOKEN)` it sets up `nock('https://api.apify.com')`,
