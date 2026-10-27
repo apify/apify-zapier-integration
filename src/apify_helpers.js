@@ -14,6 +14,9 @@ const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers')
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 
+// A full-string Apify resource ID; anything else is treated as a resource name.
+const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
+
 // API wordings: "Actor was not found", "Actor was not found or access denied" (ID form),
 // "Actor with this name was not found" (username~name form). Anchored, because matching just
 // "actor" + "not found" would also swallow missing build and run errors.
@@ -21,8 +24,17 @@ const ACTOR_NOT_FOUND_MESSAGE_REGEX = /^actor (?:with this name )?was not found/
 
 const isActorNotFoundError = (err) => ACTOR_NOT_FOUND_MESSAGE_REGEX.test((err.message || '').toLowerCase());
 
-const getActorNotFoundMessage = (actorId) => `Actor "${actorId}" was not found or your Apify account cannot access it. `
-    + 'Check that the Actor ID or username~name is correct.';
+// Shown by Run Actor and Run Actor and Fetch Results, whose Actor value can come from anywhere. Mapping the bare
+// `name` from Search Apify Store is the common mistake, so the hint names it but stays conditional.
+const getActorNotFoundMessage = (actorId) => {
+    const message = `Actor "${actorId}" was not found or your Apify account cannot access it. `
+        + 'Check that the Actor ID or username~name is correct.';
+    const isBareName = !actorId.includes('~') && !looksLikeApifyId(actorId);
+    return isBareName
+        ? `${message} A name without the username is not enough. `
+            + 'If you mapped it from Search Apify Store, map Actor slug or Actor ID instead.'
+        : message;
+};
 
 /** Rethrows a generic "not found" API error with the Actor ID; other errors pass through. */
 const requestActorOrThrowNotFound = async (z, options, actorId) => {
@@ -79,9 +91,6 @@ const processInputField = (key, value, inputSchema) => {
             return value;
     }
 };
-
-// A full-string Apify resource ID; anything else is treated as a resource name.
-const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 const getDatasetPublicUrl = async (token, datasetIdOrName) => {
     const apifyClient = new ApifyClient({ token });

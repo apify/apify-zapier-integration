@@ -316,6 +316,7 @@ const RUN_ACTOR_AND_FETCH_RESULTS_OUTPUT_FIELDS = [
 
 // Single Apify Store item, curated to the fields an agent needs to pick and chain an Actor.
 const STORE_ACTOR_SAMPLE = {
+    actorSlug: 'apify~web-scraper',
     id: 'zdc3Pyhyz3m8vjDeM',
     name: 'web-scraper',
     title: 'Web Scraper',
@@ -331,8 +332,9 @@ const STORE_ACTOR_SAMPLE = {
 };
 
 const STORE_ACTOR_OUTPUT_FIELDS = [
-    { key: 'id', label: 'ID', type: 'string' },
-    { key: 'name', label: 'Name', type: 'string' },
+    { key: 'actorSlug', label: 'Actor slug', type: 'string' },
+    { key: 'id', label: 'Actor ID', type: 'string' },
+    { key: 'name', label: 'Actor name', type: 'string' },
     { key: 'title', label: 'Title', type: 'string' },
     { key: 'description', label: 'Description', type: 'string' },
     { key: 'username', label: 'Username', type: 'string' },
