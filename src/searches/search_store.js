@@ -73,7 +73,8 @@ module.exports = {
                 type: 'integer',
                 // Zapier field defaults must be strings, even for integer fields.
                 default: String(DEFAULT_STORE_SEARCH_LIMIT),
-                helpText: 'Maximum number of Actors to return. The default is 10. A short list is easier for an agent to choose from.',
+                helpText: 'Maximum number of Actors to return, 10 by default. A Zap uses only the first one '
+                    + 'unless **If multiple search results are found?** is set to return all. AI agents get all of them.',
             },
             {
                 label: 'Offset',

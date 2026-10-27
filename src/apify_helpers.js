@@ -776,7 +776,15 @@ const buildActorRunRequestOptions = async (z, bundle) => {
  */
 const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {}) => {
     const { actorId } = bundle.inputData;
-    if (!actorId) return []; // Actor not selected yet, no additional fields to load.
+    // Actor not selected yet, so tell the user where its input fields will appear.
+    if (!actorId) {
+        return [{
+            label: 'Actor input',
+            key: 'actorInputHint',
+            type: 'copy',
+            helpText: 'Select an Actor to see its input fields.',
+        }];
+    }
 
     const previousActorId = bundle.inputData[ACTOR_ID_REFERENCE_FIELD_KEY];
     const wasActorChanged = actorId !== previousActorId; // If Actor ID changed from the last input field generation.

@@ -47,6 +47,22 @@ describe('create actor run', () => {
         nock.cleanAll();
     });
 
+    it('defaults "Search Actors from" to Apify Store Actors, so a new account sees Actors to pick', () => {
+        const searchLocationField = App.creates.createActorRun.operation.inputFields.find(({ key }) => key === 'searchLocation');
+        expect(searchLocationField.default).to.be.eql(STORE_ACTORS_KEY);
+    });
+
+    it('shows a hint in place of the Actor input fields until an Actor is selected', async () => {
+        const fields = await appTester(App.triggers.getActorAdditionalFieldsTest.operation.perform, {
+            authData: { access_token: randomString() },
+            inputData: {},
+        });
+
+        expect(fields).to.have.lengthOf(1);
+        expect(fields[0].type).to.be.eql('copy');
+        expect(fields[0].helpText).to.include('Actor');
+    });
+
     it('load correctly recently used Actors without input in bundle', async () => {
         const getRealData = async () => {
             const { items } = await apifyClient.actors().list({

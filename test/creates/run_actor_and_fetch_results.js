@@ -8,7 +8,7 @@ const { ACTOR_JOB_STATUSES, WEBHOOK_EVENT_TYPES } = require('@apify/consts');
 const { TEST_USER_TOKEN, getMockRun, getMockActorDetails, mockDatasetPublicUrl, TEST_CALLBACK_URL,
     parseRunCallbackWebhookParam, performAndResume, randomString } = require('../helpers');
 const App = require('../../index');
-const { RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE, DEFAULT_SYNC_RUN_TIMEOUT_SECS } = require('../../src/consts');
+const { RUN_ACTOR_AND_FETCH_RESULTS_SAMPLE, DEFAULT_SYNC_RUN_TIMEOUT_SECS, STORE_ACTORS_KEY } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 
@@ -17,6 +17,19 @@ chai.use(chaiAsPromised);
 describe('run Actor and fetch results', () => {
     afterEach(async () => {
         nock.cleanAll();
+    });
+
+    it('defaults "Search Actors from" to Apify Store Actors, so a new account sees Actors to pick', () => {
+        const searchLocationField = App.creates.runActorAndFetchResults.operation.inputFields.find(({ key }) => key === 'searchLocation');
+        expect(searchLocationField.default).to.be.eql(STORE_ACTORS_KEY);
+    });
+
+    it('lists Limit and Fields before the Actor input fields, so a large input schema does not bury them', () => {
+        const { inputFields } = App.creates.runActorAndFetchResults.operation;
+        const actorInputIndex = inputFields.findIndex((field) => typeof field === 'function');
+
+        expect(inputFields.findIndex(({ key }) => key === 'limit')).to.be.below(actorInputIndex);
+        expect(inputFields.findIndex(({ key }) => key === 'fields')).to.be.below(actorInputIndex);
     });
 
     it('runs an Actor, waits for it and returns dataset items inline (mocked)', async function () {
