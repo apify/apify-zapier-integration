@@ -1,0 +1,22 @@
+# This file is distributed to each target repository by create-workflow-prs.sh from apify/integrations-team.
+# It calls the reusable workflow defined in apify/workflows.
+#
+# Needs the standard layout, once per repo: AGENTS.md a regular file holding the doc, CLAUDE.md a
+# regular file whose first line is exactly `@AGENTS.md`. Any other shape fails the run.
+
+name: Keep AGENTS.md accurate
+
+on:
+  pull_request:
+    # drafts are skipped in the actual workflow from apify/workflows
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-agents-md:
+    uses: apify/workflows/.github/workflows/agents-md-maintenance.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_MD_MAINTENANCE_ANTHROPIC_API_KEY }}
