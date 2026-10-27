@@ -88,16 +88,21 @@ describe('search apify store', () => {
         expect(actor.id).to.be.a('string');
         expect(actor.name).to.be.a('string');
         expect(actor.username).to.be.a('string');
-        expect(actor.stats__totalRuns).to.be.a('number');
+        // `stats` stays nested, so Zapier resolves the `stats__*` output fields and shows their labels.
+        expect(actor.stats.totalRuns).to.be.a('number');
+        expect(actor.stats__totalRuns).to.be.eql(undefined);
         // Non-curated fields must not leak through.
         expect(actor.pictureUrl).to.be.eql(undefined);
         expect(actor.currentPricingInfo).to.be.eql(undefined);
-        expect(actor.stats).to.be.eql(undefined);
+        expect(actor.stats).to.have.all.keys('totalRuns', 'totalUsers', 'lastRunStartedAt');
 
         if (!TEST_USER_TOKEN) {
             expect(testResult.length).to.be.eql(2);
-            expect(actor.stats__totalRuns).to.be.eql(16075561);
-            expect(actor.stats__totalUsers).to.be.eql(48054);
+            expect(actor.stats).to.be.eql({
+                totalRuns: 16075561,
+                totalUsers: 48054,
+                lastRunStartedAt: '2026-07-10T09:41:39.937Z',
+            });
         }
 
         scope?.done();

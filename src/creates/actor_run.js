@@ -2,7 +2,7 @@ const _ = require('lodash');
 const {
     ACTOR_RUN_SAMPLE,
     ACTOR_RUN_OUTPUT_FIELDS, ACTOR_SEARCH_SOURCES,
-    RECENTLY_USED_ACTORS_KEY,
+    STORE_ACTORS_KEY,
     DEFAULT_SYNC_RUN_TIMEOUT_SECS,
     OMIT_ACTOR_RUN_FIELDS,
 } = require('../consts');
@@ -52,7 +52,7 @@ const resumeActorRun = async (z, bundle) => {
 
 module.exports = {
     key: 'createActorRun',
-    noun: 'Actor Run',
+    noun: 'Run',
     display: {
         label: 'Run Actor',
         description: 'Runs an Apify Actor with your input. To run a configuration saved in Apify Console, use Run Task instead.',
@@ -66,7 +66,7 @@ module.exports = {
                 key: 'searchLocation',
                 required: true,
                 type: 'string',
-                default: RECENTLY_USED_ACTORS_KEY,
+                default: STORE_ACTORS_KEY,
                 choices: ACTOR_SEARCH_SOURCES,
                 altersDynamicFields: true,
             },

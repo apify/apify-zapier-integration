@@ -8,8 +8,9 @@ const { wrapRequestWithRetries } = require('../request_helpers');
 
 const DEFAULT_STORE_SEARCH_LIMIT = 10;
 
-// Top-level fields kept from each store item. `stats` popularity/recency signals are
-// flattened separately below into `stats__*` keys, so `stats` itself is not picked.
+// Deep property paths passed to `_.pick`. `stats` stays nested and trimmed to the popularity/recency
+// signals, because Zapier resolves `stats__*` output field keys as a path into `stats`, a literal
+// `stats__totalRuns` key would not get its label.
 const CURATED_STORE_ACTOR_FIELDS = [
     'id',
     'name',
@@ -18,23 +19,16 @@ const CURATED_STORE_ACTOR_FIELDS = [
     'username',
     'url',
     'categories',
+    'stats.totalRuns',
+    'stats.totalUsers',
+    'stats.lastRunStartedAt',
 ];
 
 /**
  * Curates a single Apify Store item down to the fields an agent needs to select
  * an Actor and chain it into Run Actor.
  */
-const curateStoreActor = (item) => {
-    const actor = _.pick(item, CURATED_STORE_ACTOR_FIELDS);
-    const stats = item.stats || {};
-
-    return {
-        ...actor,
-        stats__totalRuns: stats.totalRuns,
-        stats__totalUsers: stats.totalUsers,
-        stats__lastRunStartedAt: stats.lastRunStartedAt,
-    };
-};
+const curateStoreActor = (item) => _.pick(item, CURATED_STORE_ACTOR_FIELDS);
 
 const searchApifyStore = async (z, bundle) => {
     const { query, offset } = bundle.inputData;
@@ -56,7 +50,7 @@ const searchApifyStore = async (z, bundle) => {
 
 module.exports = {
     key: 'searchApifyStore',
-    noun: 'Actor',
+    noun: 'Store Actor',
     display: {
         label: 'Search Apify Store',
         description: 'Searches Apify Store for Actors that match a keyword or use case, e.g. "linkedin scraper" or "google maps". '
@@ -79,7 +73,8 @@ module.exports = {
                 type: 'integer',
                 // Zapier field defaults must be strings, even for integer fields.
                 default: String(DEFAULT_STORE_SEARCH_LIMIT),
-                helpText: 'Maximum number of Actors to return. The default is 10. A short list is easier for an agent to choose from.',
+                helpText: 'Maximum number of Actors to return, 10 by default. A Zap uses only the first one '
+                    + 'unless **If multiple search results are found?** is set to return all. AI agents get all of them.',
             },
             {
                 label: 'Offset',

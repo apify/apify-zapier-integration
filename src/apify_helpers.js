@@ -19,19 +19,17 @@ const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 // "actor" + "not found" would also swallow missing build and run errors.
 const ACTOR_NOT_FOUND_MESSAGE_REGEX = /^actor (?:with this name )?was not found/;
 
-/** Rethrows a generic "not found" API error with the Actor ID + console link; other errors pass through. */
+const isActorNotFoundError = (err) => ACTOR_NOT_FOUND_MESSAGE_REGEX.test((err.message || '').toLowerCase());
+
+const getActorNotFoundMessage = (actorId) => `Actor "${actorId}" was not found or your Apify account cannot access it. `
+    + 'Check that the Actor ID or username~name is correct.';
+
+/** Rethrows a generic "not found" API error with the Actor ID; other errors pass through. */
 const requestActorOrThrowNotFound = async (z, options, actorId) => {
     try {
         return await wrapRequestWithRetries(z.request, options);
     } catch (err) {
-        const message = (err.message || '').toLowerCase();
-        if (ACTOR_NOT_FOUND_MESSAGE_REGEX.test(message)) {
-            throw new Error(
-                `Actor "${actorId}" was not found. Check that the Actor ID or name is correct `
-                + 'and that your Apify account has access to it: '
-                + `https://console.apify.com/actors/${actorId}`,
-            );
-        }
+        if (isActorNotFoundError(err)) throw new Error(getActorNotFoundMessage(actorId));
         throw err;
     }
 };
@@ -778,14 +776,35 @@ const buildActorRunRequestOptions = async (z, bundle) => {
  */
 const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {}) => {
     const { actorId } = bundle.inputData;
-    if (!actorId) return []; // Actor not selected yet, no additional fields to load.
+    // Actor not selected yet, so tell the user where its input fields will appear.
+    if (!actorId) {
+        return [{
+            label: 'Actor input',
+            key: 'actorInputHint',
+            type: 'copy',
+            helpText: 'Select an Actor to see its input fields.',
+        }];
+    }
 
     const previousActorId = bundle.inputData[ACTOR_ID_REFERENCE_FIELD_KEY];
     const wasActorChanged = actorId !== previousActorId; // If Actor ID changed from the last input field generation.
 
-    const actorResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
-    });
+    let actorResponse;
+    try {
+        actorResponse = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
+        });
+    } catch (err) {
+        if (!isActorNotFoundError(err)) throw err;
+        // The Zap editor does not show errors thrown while loading fields, so the reason is shown as a read-only field.
+        // Running the step still fails with the same message, as it looks the Actor up again.
+        return [{
+            label: 'Actor not found',
+            key: 'actorNotFound',
+            type: 'copy',
+            helpText: getActorNotFoundMessage(actorId),
+        }];
+    }
 
     const actor = actorResponse.data;
     const { build: defaultBuild, timeoutSecs, memoryMbytes } = actor.defaultRunOptions;
