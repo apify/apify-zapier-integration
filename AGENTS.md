@@ -2,7 +2,9 @@
 
 Guidance for coding agents working in this repository. `CLAUDE.md` is only an `@AGENTS.md` pointer,
 so put instructions here and leave the pointer alone. `.github/workflows/agents-md-maintenance.yml`
-updates this file inside each PR that changes the code.
+checks this file on every non-draft PR from a branch in this repo and commits a fix when the PR made
+it wrong. It skips PRs from forks, from `[bot]` accounts and `apify-service-account`, and from
+branches starting with `release/`, `hotfix/` or `sync-`.
 
 ## Project
 
@@ -24,7 +26,10 @@ npx -p zapier-platform-cli zapier-platform validate --without-style
 
 `zapier-platform-cli` is not a dependency; CI installs it globally. CI (`test.yml`, PRs to `master`)
 runs validate, lint and tests twice: mocked, and E2E with a real token. `lint:fix` only covers `src/`.
-Node is pinned to 22 (`.nvmrc`, `engines`) because it follows the Zapier runtime.
+The E2E token is the `APIFY_TEST_USER_API_TOKEN` repo secret, which every PR run from a branch in
+this repo receives, so anyone who can push a branch can read it through a test change. Keep it on a
+dedicated test account with nothing else in it.
+Node follows the Zapier runtime: `engines` is `22`, and `.nvmrc` pins the exact version CI uses.
 
 Each test decides per case: `if (!TEST_USER_TOKEN)` it sets up `nock('https://api.apify.com')`,
 otherwise it hits the live API (`test/helpers` loads `.env` via `zapier.tools.env.inject()`). Keep
@@ -84,6 +89,10 @@ Synchronous runs don't block `perform`, since Zapier kills a step after 30 s
   [zapier-platform#1178](https://github.com/zapier/zapier-platform/issues/1178); the run side looks
   up both. Apify `prefill` maps to Zapier `default`, Apify `default` to `placeholder`. String-list
   editors use `placeholder`, never `default`: a list-field default becomes a row the user can't remove.
+- The Zap editor doesn't show errors thrown while it loads fields, so `getActorAdditionalFields`
+  reports problems as read-only `type: 'copy'` fields instead: "Select an Actor…" before an Actor is
+  picked, and the not-found message for an Actor the account can't access. Running the step looks
+  the Actor up again and throws the same message.
 - A hidden computed `referenceActorId` field detects when the user picks another Actor, so the
   build tag resets.
 - Dataset output fields are inferred from the first 10 items of the last successful run
@@ -109,6 +118,14 @@ envelope, mapped by `parseWebFetchError` *before* the generic 5xx handling: its 
 describe the target site and must not be retried. Its own 25 s request timeout surfaces as a
 node-fetch `request-timeout` error and is handled in the create. Each output format is a separate
 `format_<name>` boolean because a Zapier list-field default can't be deselected.
+
+- `validateUrl` rejects anything but one http(s) URL before calling the Actor. Zapier joins a mapped
+  line-item field with commas, and Web Fetch would fetch the first URL with the rest as its path.
+- `formatOutput` drops the proxy's `x-apify-unblocker-route` header and passes `metadata.jsonLd` as
+  one JSON string, because Zapier would flatten it into dozens of output fields.
+- "Fail on error status" defaults to Yes. Zaps created before the option existed have no value, so
+  the create treats only an explicit No (`isUnchecked`) as off. Use the same pattern for any new
+  option that defaults to Yes.
 
 ## Conventions and gotchas
 
