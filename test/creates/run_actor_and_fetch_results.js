@@ -330,8 +330,10 @@ describe('run Actor and fetch results', () => {
             .query(true)
             .reply(404, { error: { type: 'record-not-found', message: 'Actor was not found' } });
 
-        await expect(appTester(App.creates.runActorAndFetchResults.operation.perform, bundle))
-            .to.be.rejectedWith(new RegExp(`Actor "${missingActorId}" was not found`));
+        const err = await appTester(App.creates.runActorAndFetchResults.operation.perform, bundle).catch((e) => e);
+        expect(err.message).to.match(new RegExp(`Actor "${missingActorId}" was not found`));
+        // The value already has the username, so the bare-name hint would be misleading.
+        expect(err.message).to.not.include('Search Apify Store');
         scope.done();
     });
 
@@ -359,6 +361,7 @@ describe('run Actor and fetch results', () => {
         expect(fields[0].type).to.be.eql('copy');
         expect(fields[0].helpText).to.match(new RegExp(`Actor "${actorId}" was not found`));
         expect(fields[0].helpText).to.include('username~name');
+        expect(fields[0].helpText).to.include('If you mapped it from Search Apify Store, map Actor slug or Actor ID instead.');
         // A link to a missing Actor leads nowhere.
         expect(fields[0].helpText).to.not.include('console.apify.com');
         scope?.done();

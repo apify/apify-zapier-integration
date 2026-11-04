@@ -26,9 +26,14 @@ const CURATED_STORE_ACTOR_FIELDS = [
 
 /**
  * Curates a single Apify Store item down to the fields an agent needs to select
- * an Actor and chain it into Run Actor.
+ * an Actor and chain it into Run Actor. `actorSlug` is added because the API finds an Actor
+ * by ID or `username~name` only, so the bare `name` can't be passed to Run Actor.
  */
-const curateStoreActor = (item) => _.pick(item, CURATED_STORE_ACTOR_FIELDS);
+// `actorSlug` goes first, because the Zap editor lists result fields in the order of the data.
+const curateStoreActor = (item) => ({
+    actorSlug: `${item.username}~${item.name}`,
+    ..._.pick(item, CURATED_STORE_ACTOR_FIELDS),
+});
 
 const searchApifyStore = async (z, bundle) => {
     const { query, offset } = bundle.inputData;
@@ -54,7 +59,7 @@ module.exports = {
     display: {
         label: 'Search Apify Store',
         description: 'Searches Apify Store for Actors that match a keyword or use case, e.g. "linkedin scraper" or "google maps". '
-            + 'Returns the matching Actors with IDs you can pass to the Run Actor action.',
+            + 'Returns the matching Actors. To run one, map its Actor ID or Actor slug to the Actor field of Run Actor.',
     },
 
     operation: {
@@ -64,7 +69,7 @@ module.exports = {
                 key: 'query',
                 required: true,
                 type: 'string',
-                helpText: 'Keyword or use-case description to search the Apify Store for, e.g. `linkedin scraper`.',
+                helpText: 'Keyword or use-case description to search Apify Store for, e.g. `linkedin scraper`.',
             },
             {
                 label: 'Limit',
