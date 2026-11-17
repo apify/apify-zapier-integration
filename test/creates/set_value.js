@@ -131,4 +131,47 @@ describe('set key-value store value', () => {
             .to.be.rejectedWith(/does not exist/);
         scope.done();
     });
+
+    it('keeps a key with all allowed special characters as is in the record URL', async () => {
+        if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+        const storeId = 'aBcDeFgHiJkLmNoPq';
+        const key = "my-key_(1).v2!'x'";
+        const bundle = {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { storeIdOrName: storeId, key, value: JSON.stringify({ ok: true }) },
+        };
+
+        const scope = nock('https://api.apify.com');
+        scope.get(`/v2/key-value-stores/${storeId}`)
+            .reply(200, { data: getMockKVStore({ id: storeId }) });
+        // node-fetch sends "'" as %27 on the wire, as it did before the key was encoded.
+        scope.put(`/v2/key-value-stores/${storeId}/records/my-key_(1).v2!%27x%27`, { ok: true })
+            .reply(201);
+
+        const testResult = await appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle);
+
+        expect(testResult.keyValueStoreRecordUrl).to.equal(`https://api.apify.com/v2/key-value-stores/${storeId}/records/${key}`);
+        scope.done();
+    });
+
+    ['', '.', '..', 'a/b', 'a\\b', 'a?b', 'a#b', 'a%2Fb', 'a b', 'x'.repeat(257)].forEach((key) => {
+        it(`rejects the invalid record key ${JSON.stringify(key.length > 20 ? `${key.slice(0, 20)}…` : key)} without any request`, async () => {
+            if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+            const bundle = {
+                authData: { access_token: TEST_USER_TOKEN },
+                inputData: { storeIdOrName: 'my-store', key, value: JSON.stringify({ ok: true }) },
+            };
+
+            // No mocks and no network: any request, including the store lookup, fails with a different error.
+            nock.disableNetConnect();
+            try {
+                await expect(appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle))
+                    .to.be.rejectedWith(/Record key .* isn't valid/);
+            } finally {
+                nock.enableNetConnect();
+            }
+        });
+    });
 });

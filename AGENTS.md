@@ -109,6 +109,9 @@ Synchronous runs don't block `perform`, since Zapier kills a step after 30 s
 `~name`) and throws a user-facing error with a Console link if it's missing — used by Get Key-Value
 Store Record and Fetch Dataset Items. Set Key-Value Store Record instead uses
 `getOrCreateKeyValueStore`, which creates a store for an unknown *name* but throws for an unknown ID.
+Both check the record key with `validateKeyValueStoreRecordKey` (the `@apify/consts` key format, but
+not `.` or `..`) before any request. Build every record URL with `getKeyValueStoreRecordUrl`, which
+percent-encodes the key.
 
 ### Web Fetch
 
