@@ -61,7 +61,7 @@ module.exports = {
         type: 'hook',
         performSubscribe: (z, bundle) => subscribeWebhook(z, bundle, { actorTaskId: bundle.inputData.taskId }),
         performUnsubscribe: unsubscribeWebhook,
-        perform: getActorRun,
+        perform: (z, bundle) => getActorRun(z, bundle, { actorTaskId: bundle.inputData.taskId }),
         performList: getFallbackTaskActorRuns,
         sample: TASK_RUN_SAMPLE,
         outputFields: [

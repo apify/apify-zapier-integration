@@ -10,6 +10,7 @@ const { createAndBuildActor,
     apifyClient,
     TEST_USER_TOKEN,
     randomString,
+    randomApifyId,
     getMockRun,
     getMockWebhookResponse,
     mockDatasetPublicUrl,
@@ -122,7 +123,17 @@ describe('actor run finished trigger', () => {
     });
 
     it('perform should return actor run detail', async () => {
-        const runId = randomString();
+        let run;
+        let scope;
+        if (TEST_USER_TOKEN) {
+            run = await apifyClient.actor(testActorId).call({ waitSecs: 120 });
+        } else {
+            run = getMockRun({ id: randomApifyId(), actId: testActorId, defaultKeyValueStoreId: undefined, defaultDatasetId: undefined });
+            scope = nock('https://api.apify.com')
+                .get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+        }
+
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
@@ -130,9 +141,11 @@ describe('actor run finished trigger', () => {
             inputData: {
                 actorId: testActorId,
             },
-            cleanedRequest: { // Mock webhook payload
+            cleanedRequest: { // Mock webhook payload, only the run ID is used
                 resource: {
-                    id: runId,
+                    id: run.id,
+                    actId: testActorId,
+                    defaultDatasetId: randomApifyId(),
                 },
             },
         };
@@ -140,8 +153,56 @@ describe('actor run finished trigger', () => {
         const results = await appTester(App.triggers.actorRunFinished.operation.perform, bundle);
 
         expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
-    }).timeout(30_000);
+        expect(results[0].id).to.be.eql(run.id);
+        expect(results[0].actId).to.be.eql(testActorId);
+        scope?.done();
+    }).timeout(240_000);
+
+    it('perform should drop a run that does not match the subscription', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const run = getMockRun({ id: randomApifyId(), actId: randomApifyId() });
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run });
+
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                actorId: testActorId,
+            },
+            cleanedRequest: {
+                resource: { ...run, actId: testActorId },
+            },
+        };
+
+        const results = await appTester(App.triggers.actorRunFinished.operation.perform, bundle);
+
+        expect(results).to.be.eql([]);
+        scope.done();
+    });
+
+    it('perform should drop a hook without a valid run ID', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                actorId: testActorId,
+            },
+            cleanedRequest: {
+                resource: { id: '../datasets/abc' },
+            },
+        };
+
+        const results = await appTester(App.triggers.actorRunFinished.operation.perform, bundle);
+
+        expect(results).to.be.eql([]);
+    });
 
     it('performList should return actor runs', async () => {
         const runs = [];

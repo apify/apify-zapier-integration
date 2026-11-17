@@ -57,7 +57,7 @@ module.exports = {
         performSubscribe: (z, bundle) => subscribeWebhook(z, bundle, { actorId: bundle.inputData.actorId }),
         performUnsubscribe: unsubscribeWebhook,
         // Perform is called after each hit to the webhook API
-        perform: getActorRun,
+        perform: (z, bundle) => getActorRun(z, bundle, { actId: bundle.inputData.actorId }),
         // PerformList is used to get testing data for users in Zapier app
         performList: getFallbackActorRuns,
         // In cases where Zapier needs to show an example record to the user, but we are unable to get a live example

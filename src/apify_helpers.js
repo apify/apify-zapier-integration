@@ -318,9 +318,28 @@ const unsubscribeWebhook = async (z, bundle) => {
     return {};
 };
 
-// Gets actor run from bundle clean request and enriches it.
-const getActorRun = async (z, bundle) => {
-    const run = bundle.cleanedRequest.resource;
+/**
+ * Loads the run a finished-run trigger hook points at and enriches it. Only the run ID is read from the hook body;
+ * the run itself is re-fetched, and runs that don't match the subscription (e.g. `{ actId }` or `{ actorTaskId }`)
+ * are dropped.
+ */
+const getActorRun = async (z, bundle, subscription) => {
+    const runId = bundle.cleanedRequest?.resource?.id;
+    if (typeof runId !== 'string' || !looksLikeApifyId(runId)) return [];
+
+    let run;
+    try {
+        ({ data: run } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        }));
+    } catch (err) {
+        if (isNotFoundError(err)) return [];
+        throw err;
+    }
+
+    const matchesSubscription = Object.entries(subscription).every(([key, value]) => value && run[key] === value);
+    if (!matchesSubscription) return [];
+
     const enrichedRun = await enrichActorRun(z, bundle.authData.access_token, run);
     return [enrichedRun];
 };

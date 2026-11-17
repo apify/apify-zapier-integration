@@ -6,7 +6,7 @@ const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_TERMINAL_STATUSES } = require('@api
 const _ = require('lodash');
 const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
-    randomString, apifyClient, createWebScraperTask,
+    randomString, randomApifyId, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
     mockDatasetPublicUrl, waitForWebhookCount,
 } = require('../helpers');
@@ -117,7 +117,17 @@ describe('task run finished trigger', () => {
     });
 
     it('perform should return task run detail', async () => {
-        const runId = randomString();
+        let run;
+        let scope;
+        if (TEST_USER_TOKEN) {
+            run = await apifyClient.task(testTaskId).call({ waitSecs: 120 });
+        } else {
+            run = getMockTaskRun({ id: randomApifyId(), actorTaskId: testTaskId, defaultKeyValueStoreId: undefined, defaultDatasetId: undefined });
+            scope = nock('https://api.apify.com')
+                .get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+        }
+
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
@@ -125,9 +135,11 @@ describe('task run finished trigger', () => {
             inputData: {
                 taskId: testTaskId,
             },
-            cleanedRequest: { // Mock webhook payload
+            cleanedRequest: { // Mock webhook payload, only the run ID is used
                 resource: {
-                    id: runId,
+                    id: run.id,
+                    actorTaskId: testTaskId,
+                    defaultDatasetId: randomApifyId(),
                 },
             },
         };
@@ -135,7 +147,55 @@ describe('task run finished trigger', () => {
         const results = await appTester(App.triggers.taskRunFinished.operation.perform, bundle);
 
         expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
+        expect(results[0].id).to.be.eql(run.id);
+        expect(results[0].actorTaskId).to.be.eql(testTaskId);
+        scope?.done();
+    }).timeout(240_000);
+
+    it('perform should drop a run that does not match the subscription', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const run = getMockTaskRun({ id: randomApifyId(), actorTaskId: randomApifyId() });
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run });
+
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                taskId: testTaskId,
+            },
+            cleanedRequest: {
+                resource: { ...run, actorTaskId: testTaskId },
+            },
+        };
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.perform, bundle);
+
+        expect(results).to.be.eql([]);
+        scope.done();
+    });
+
+    it('perform should drop a hook without a valid run ID', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const bundle = {
+            authData: {
+                access_token: 'test-token',
+            },
+            inputData: {
+                taskId: testTaskId,
+            },
+            cleanedRequest: {
+                resource: { id: '../datasets/abc' },
+            },
+        };
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.perform, bundle);
+
+        expect(results).to.be.eql([]);
     });
 
     it('performList should return task runs', async () => {
