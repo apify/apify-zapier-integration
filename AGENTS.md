@@ -21,10 +21,11 @@ npm run lint                         # eslint ./src index.js
 npm test                             # mocha --recursive, Apify API mocked with nock
 TEST_USER_TOKEN=<token> npm test     # same suite against the live Apify API (E2E)
 GREP="actor run" npm run test:grep
-npx -p zapier-platform-cli zapier-platform validate --without-style
+npx zapier-platform validate --without-style
 ```
 
-`zapier-platform-cli` is not a dependency; CI installs it globally. CI (`test.yml`, PRs to `master`)
+`zapier-platform-cli` is a pinned devDependency; CI installs with `npm ci` and runs it from
+`node_modules/.bin`, never a global install. CI (`test.yml`, PRs to `master`)
 runs validate, lint and tests twice: mocked, and E2E with a real token. `lint:fix` only covers `src/`.
 The E2E token is `APIFY_TEST_USER_API_TOKEN`, an org secret shared with other Apify repos. Every PR
 run from a branch in this repo receives it, so anyone who can push a branch can read it through a
@@ -147,8 +148,10 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
   the release body to `CHANGELOG.md` under `## <version> / <date>`, commits, then
   `zapier-platform push` and `promote`. Don't bump the version or edit `CHANGELOG.md` by hand, and
   leave GitHub's `## What's Changed` heading out of the release body (it duplicates the heading).
-- Renovate (`renovate.json5`) opens weekly `chore:` PRs, groups `zapier-platform-core` and
-  `zapier-platform-schema` (keep them on the same version), and skips Node majors. The
+  Checkouts use `persist-credentials: false`, so the release commit is pushed with the service-account
+  token in the push URL, and `~/.zapierrc` (the deploy key) is written only right before `push`.
+- Renovate (`renovate.json5`) opens weekly `chore:` PRs, groups `zapier-platform-core`,
+  `zapier-platform-schema` and `zapier-platform-cli` (keep them on the same version), and skips Node majors. The
   `package.json` `overrides` entry (`zapier-platform-core` → `form-data`) clears an `npm audit`
   finding; check `npm audit` before removing it.
 - `.zapierapprc` adds `node_modules/axios/dist/*.js` to the build bundle via `includeInBuild`.
