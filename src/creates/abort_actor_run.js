@@ -4,19 +4,20 @@ const {
     ACTOR_RUN_OUTPUT_FIELDS,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, toApiPathSegment } = require('../request_helpers');
 const { getRunDatasetOutputFields } = require('../output_fields');
 
 // Aborting a run that already reached a terminal status is a no-op, the API returns it unchanged,
 // so a repeated abort is safe and needs no guard here.
 const abortActorRun = async (z, bundle) => {
     const { runId, gracefully } = bundle.inputData;
+    const abortUrl = `${APIFY_API_ENDPOINTS.actorRuns}/${toApiPathSegment(z, runId, 'Run')}/abort`;
 
     let abortResponse;
     try {
         // Only send `gracefully` when it is set, the API default is an immediate abort.
         abortResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}/abort`,
+            url: abortUrl,
             method: 'POST',
             params: gracefully ? { gracefully: true } : {},
         });

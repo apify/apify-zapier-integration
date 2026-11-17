@@ -58,6 +58,10 @@ All HTTP goes through `z.request`, so the app-wide middleware in `src/request_he
   `approvalUrl` appended.
 - Retries only happen where a call is wrapped in `wrapRequestWithRetries` (exponential back-off,
   3 attempts in total). Most calls are; a bare `z.request` is not retried.
+- Put an Actor, task, run or storage ID or name from step input into a URL path only through
+  `toApiPathSegment`. It throws a user-facing error before any request for a value with anything but
+  letters, digits and `~-_.`, or for `.` and `..`. Field and output-field loaders check
+  `isValidApiPathSegment` instead and fall back quietly, because the Zap editor hides their errors.
 
 Auth is OAuth2 with PKCE against Apify Console (`src/authentication.js`, `CLIENT_ID`/`CLIENT_SECRET`
 from env). `autoRefresh` is deliberately off: with it on, core turns every 401 into

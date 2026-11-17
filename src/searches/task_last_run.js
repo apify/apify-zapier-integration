@@ -6,16 +6,17 @@ const {
     ACTOR_RUN_STATUSES,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, toApiPathSegment } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const getLastTaskRun = async (z, bundle) => {
     const { taskId, status } = bundle.inputData;
+    const lastRunUrl = `${APIFY_API_ENDPOINTS.tasks}/${toApiPathSegment(z, taskId, 'Task')}/runs/last`;
     let lastTaskRunResponse;
 
     try {
         lastTaskRunResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs/last`,
+            url: lastRunUrl,
             params: status ? { status } : {},
         });
     } catch (err) {

@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { ACTOR_JOB_STATUSES } = require('@apify/consts');
 const { getDatasetItems } = require('./apify_helpers');
-const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, isValidApiPathSegment } = require('./request_helpers');
 const { APIFY_API_ENDPOINTS } = require('./consts');
 const { convertPlainObjectToFieldSchema } = require('./zapier_helpers');
 
@@ -30,8 +30,11 @@ const getDatasetItemsOutputFields = async (z, datasetId, actorId, token, keyPref
     return convertPlainObjectToFieldSchema(mergedItem, keyPrefix);
 };
 
+// The output field loaders below return the default fields, without a request, for a value that can't be an ID or name.
 const getActorDatasetOutputFields = async (z, bundle, keyPrefix = 'datasetItems[]') => {
     const { actorId } = bundle.inputData;
+    if (!isValidApiPathSegment(actorId)) return [];
+
     let lastSuccessDatasetItems;
     try {
         lastSuccessDatasetItems = await wrapRequestWithRetries(z.request, {
@@ -57,7 +60,7 @@ const getActorDatasetOutputFields = async (z, bundle, keyPrefix = 'datasetItems[
  */
 const getRunDatasetOutputFields = async (z, bundle) => {
     const { runId } = bundle.inputData;
-    if (!runId) return [];
+    if (!isValidApiPathSegment(runId)) return [];
 
     let runResponse;
     try {
@@ -79,6 +82,8 @@ const getRunDatasetOutputFields = async (z, bundle) => {
 
 const getTaskDatasetOutputFields = async (z, bundle) => {
     const { taskId } = bundle.inputData;
+    if (!isValidApiPathSegment(taskId)) return [];
+
     let lastSuccessDatasetItems;
     try {
         lastSuccessDatasetItems = await wrapRequestWithRetries(z.request, {

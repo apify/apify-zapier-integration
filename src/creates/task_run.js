@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, DEFAULT_SYNC_RUN_TIMEOUT_SECS,
     OMIT_ACTOR_RUN_FIELDS } = require('../consts');
 const { enrichActorRun, buildRunCallbackWebhookParam, getActorRunOnResume } = require('../apify_helpers');
-const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs } = require('../request_helpers');
+const { wrapRequestWithRetries, waitForRunToFinish, getRemainingTestStepWaitSecs, toApiPathSegment } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const RAW_INPUT_LABEL = 'Input JSON overrides';
@@ -10,7 +10,7 @@ const RAW_INPUT_LABEL = 'Input JSON overrides';
 const getSyncTaskRunTimeoutSecs = async (z, taskId) => {
     try {
         const { data: task } = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+            url: `${APIFY_API_ENDPOINTS.tasks}/${toApiPathSegment(z, taskId, 'Task')}`,
         });
 
         let timeoutSecs = task.options?.timeoutSecs;
@@ -33,7 +33,7 @@ const runTask = async (z, bundle) => {
     const { taskId, runSync, rawInput } = bundle.inputData;
 
     const requestOpts = {
-        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}/runs`,
+        url: `${APIFY_API_ENDPOINTS.tasks}/${toApiPathSegment(z, taskId, 'Task')}/runs`,
         method: 'POST',
     };
 
@@ -82,7 +82,7 @@ const getRawInputField = async (z, bundle) => {
     let helpText = 'JSON object that overrides the task input. Fields you leave out keep their saved values.';
 
     const { data: task } = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.tasks}/${taskId}`,
+        url: `${APIFY_API_ENDPOINTS.tasks}/${toApiPathSegment(z, taskId, 'Task')}`,
     });
     const { data: actor } = await wrapRequestWithRetries(z.request, {
         url: `${APIFY_API_ENDPOINTS.actors}/${task.actId}`,
