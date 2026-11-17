@@ -202,11 +202,12 @@ const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
 const API_PATH_SEGMENT_REGEX = /^[a-zA-Z0-9._~-]+$/;
 
 /**
- * Whether a resource ID or name from step input can be used as one segment of an API URL path.
- * "." and ".." use only allowed characters, but URLs resolve them as dot segments.
+ * Whether a value from step input can be used as one segment of an API URL path: a string that matches `regex`,
+ * by default an ID or name. "." and ".." are rejected even when `regex` allows them, because URLs resolve them
+ * as dot segments, even percent-encoded.
  */
-const isValidApiPathSegment = (value) => typeof value === 'string'
-    && API_PATH_SEGMENT_REGEX.test(value)
+const isValidApiPathSegment = (value, regex = API_PATH_SEGMENT_REGEX) => typeof value === 'string'
+    && regex.test(value)
     && value !== '.'
     && value !== '..';
 

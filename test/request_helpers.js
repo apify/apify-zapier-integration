@@ -7,6 +7,7 @@ const zapier = require('zapier-platform-core');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
+const { KEY_VALUE_STORE_KEY_REGEX } = require('@apify/consts');
 
 const { randomString, TEST_USER_TOKEN } = require('./helpers');
 const { waitForRunToFinish, getRemainingTestStepWaitSecs, isValidApiPathSegment } = require('../src/request_helpers');
@@ -181,6 +182,12 @@ describe('request helpers', () => {
         it('rejects anything else', () => {
             ['', '.', '..', 'a/b', '../acts', 'a\\b', 'a?b', 'a#b', 'a%2Fb', 'a b', '{{123__id}}', undefined, null, 123]
                 .forEach((value) => expect(isValidApiPathSegment(value), String(value)).to.be.eql(false));
+        });
+
+        it('checks against a given format, and still rejects "." and ".."', () => {
+            expect(isValidApiPathSegment("it's-(ok)!", KEY_VALUE_STORE_KEY_REGEX)).to.be.eql(true);
+            expect(isValidApiPathSegment('apify~web-scraper', KEY_VALUE_STORE_KEY_REGEX)).to.be.eql(false);
+            ['.', '..'].forEach((value) => expect(isValidApiPathSegment(value, KEY_VALUE_STORE_KEY_REGEX), value).to.be.eql(false));
         });
     });
 });

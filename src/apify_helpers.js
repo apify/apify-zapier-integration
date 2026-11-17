@@ -206,11 +206,10 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
 };
 
 /**
- * Throws a user-facing error for a record key the Apify API doesn't accept.
- * "." and ".." match the key format, but URLs treat them as dot segments, even percent-encoded.
+ * Throws a user-facing error for a record key the Apify API doesn't accept, or that a URL resolves as a dot segment.
  */
 const validateKeyValueStoreRecordKey = (z, key) => {
-    if (!KEY_VALUE_STORE_KEY_REGEX.test(key) || key === '.' || key === '..') {
+    if (!isValidApiPathSegment(key, KEY_VALUE_STORE_KEY_REGEX)) {
         throw new z.errors.Error(
             `Record key "${key}" isn't valid. Use 1 to 256 letters, digits or the characters !-_.'(), `
                 + 'and not just "." or "..".',
