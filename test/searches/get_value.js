@@ -342,4 +342,24 @@ describe('get key-value store value', () => {
 
         scope?.done();
     }).timeout(10000);
+
+    ['.', '..', 'a/b', 'a\\b', 'a?b', 'a%2Fb'].forEach((key) => {
+        it(`rejects the invalid record key ${JSON.stringify(key)} without any request`, async () => {
+            if (TEST_USER_TOKEN) return; // Only run with nock mocks
+
+            const bundle = {
+                authData: { access_token: TEST_USER_TOKEN },
+                inputData: { storeIdOrName: testStoreId, key },
+            };
+
+            // No mocks and no network: any request, including the store lookup, fails with a different error.
+            nock.disableNetConnect();
+            try {
+                await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+                    .to.be.rejectedWith(/Record key .* isn't valid/);
+            } finally {
+                nock.enableNetConnect();
+            }
+        });
+    });
 });

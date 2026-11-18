@@ -1,6 +1,8 @@
 const _ = require('lodash');
 const dayjs = require('dayjs');
-const { BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES, ACTOR_JOB_STATUSES, APIFY_ID_REGEX } = require('@apify/consts');
+const {
+    BUILD_TAG_LATEST, ACTOR_JOB_TERMINAL_STATUSES, ACTOR_JOB_STATUSES, APIFY_ID_REGEX, KEY_VALUE_STORE_KEY_REGEX,
+} = require('@apify/consts');
 const { ApifyClient } = require('apify-client');
 const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRAWLER_ID,
     OMIT_ACTOR_RUN_FIELDS, FETCH_DATASET_ITEMS_ITEMS_LIMIT, DATASET_ITEMS_INLINE_MAX_BYTES,
@@ -204,13 +206,33 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
 };
 
 /**
+ * Throws a user-facing error for a record key the Apify API doesn't accept.
+ * "." and ".." match the key format, but URLs treat them as dot segments, even percent-encoded.
+ */
+const validateKeyValueStoreRecordKey = (z, key) => {
+    if (!KEY_VALUE_STORE_KEY_REGEX.test(key) || key === '.' || key === '..') {
+        throw new z.errors.Error(
+            `Record key "${key}" isn't valid. Use 1 to 256 letters, digits or the characters !-_.'(), `
+                + 'and not just "." or "..".',
+            'INVALID_RECORD_KEY',
+            400,
+        );
+    }
+};
+
+/**
+ * API URL of a key-value store record. The key is percent-encoded so it always stays a single path segment.
+ */
+const getKeyValueStoreRecordUrl = (storeId, key) => `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${encodeURIComponent(key)}`;
+
+/**
  * Get values from key-value store, it skips all non json values.
  */
 const getValuesFromKeyValueStore = async (z, storeId, keys) => {
     const values = {};
 
     await Promise.all(keys.map((key) => {
-        const url = `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`;
+        const url = getKeyValueStoreRecordUrl(storeId, key);
         return z
             .request(url)
             .then((response) => {
@@ -949,6 +971,8 @@ module.exports = {
     requestActorOrThrowNotFound,
     getActorRunOnResume,
     getOrCreateKeyValueStore,
+    validateKeyValueStoreRecordKey,
+    getKeyValueStoreRecordUrl,
     findStorageOrThrow,
     getDatasetItems,
     getActorAdditionalFields,

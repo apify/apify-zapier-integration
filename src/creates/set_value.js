@@ -1,11 +1,13 @@
-const { APIFY_API_ENDPOINTS, KEY_VALUE_STORE_SAMPLE } = require('../consts');
+const { KEY_VALUE_STORE_SAMPLE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
-const { getOrCreateKeyValueStore } = require('../apify_helpers');
+const { getOrCreateKeyValueStore, validateKeyValueStoreRecordKey, getKeyValueStoreRecordUrl } = require('../apify_helpers');
 
 const setValue = async (z, bundle) => {
     const { storeIdOrName, key, value } = bundle.inputData;
+    // Before the store lookup, which creates a missing named store.
+    validateKeyValueStoreRecordKey(z, key);
     const store = await getOrCreateKeyValueStore(z, storeIdOrName);
-    const keyValueStoreRecordUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`;
+    const keyValueStoreRecordUrl = getKeyValueStoreRecordUrl(store.id, key);
 
     let valueObject;
     try {

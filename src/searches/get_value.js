@@ -1,5 +1,5 @@
 const { APIFY_API_ENDPOINTS } = require('../consts');
-const { findStorageOrThrow } = require('../apify_helpers');
+const { findStorageOrThrow, validateKeyValueStoreRecordKey, getKeyValueStoreRecordUrl } = require('../apify_helpers');
 const { wrapRequestWithRetries } = require('../request_helpers');
 
 const KEY_VALUE_STORE_LOOKUP = {
@@ -13,7 +13,7 @@ const stashFunction = async (z, bundle) => {
 
     try {
         const response = await z.request({
-            url: `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${key}`,
+            url: getKeyValueStoreRecordUrl(storeId, key),
             method: 'GET',
             raw: true,
         });
@@ -31,10 +31,11 @@ const stashFunction = async (z, bundle) => {
 
 const getValue = async (z, bundle) => {
     const { storeIdOrName, key } = bundle.inputData;
+    validateKeyValueStoreRecordKey(z, key);
     const store = await findStorageOrThrow(z, storeIdOrName, KEY_VALUE_STORE_LOOKUP);
 
     const sizeRequest = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,
+        url: getKeyValueStoreRecordUrl(store.id, key),
         method: 'HEAD',
     });
 
@@ -57,7 +58,7 @@ const getValue = async (z, bundle) => {
     // Maximum HTTP response payload = 20MB
     if (PARSEABLE_MIMES.some((pattern) => contentType.includes(pattern)) && contentLength < 20 * (1000 ** 2)) {
         const response = await z.request({
-            url: `${APIFY_API_ENDPOINTS.keyValueStores}/${store.id}/records/${key}`,
+            url: getKeyValueStoreRecordUrl(store.id, key),
             method: 'GET',
         });
         if (typeof response.data === 'object' && !Array.isArray(response.data) && response.data !== null) {
