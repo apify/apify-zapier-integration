@@ -124,13 +124,18 @@ const createDatasetUrls = async (datasetId, token, cleanParamName) => {
 };
 
 /**
+ * API URL of the items of a dataset. The ID is percent-encoded so it always stays a single path segment.
+ */
+const getDatasetItemsUrl = (datasetId) => `${APIFY_API_ENDPOINTS.datasets}/${encodeURIComponent(datasetId)}/items`;
+
+/**
  * Checks whether a dataset is too large to download inline by fetching a single item
  * and checking if that item alone would push the full download over the limit.
  * Returns null if the size is acceptable, or { singleItemMB, downloadItems } if the limit is exceeded.
  */
 const isTooLargeToDownload = async (z, datasetId, params) => {
     const sampleResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        url: getDatasetItemsUrl(datasetId),
         params: { ...params, limit: 1 },
     });
 
@@ -184,7 +189,7 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
     }
 
     const itemsResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        url: getDatasetItemsUrl(datasetId),
         params,
     });
 
@@ -220,9 +225,12 @@ const validateKeyValueStoreRecordKey = (z, key) => {
 };
 
 /**
- * API URL of a key-value store record. The key is percent-encoded so it always stays a single path segment.
+ * API URL of a key-value store record. The store ID and the key are percent-encoded so each always stays
+ * a single path segment.
  */
-const getKeyValueStoreRecordUrl = (storeId, key) => `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${encodeURIComponent(key)}`;
+const getKeyValueStoreRecordUrl = (storeId, key) => (
+    `${APIFY_API_ENDPOINTS.keyValueStores}/${encodeURIComponent(storeId)}/records/${encodeURIComponent(key)}`
+);
 
 /**
  * Get values from key-value store, it skips all non json values.

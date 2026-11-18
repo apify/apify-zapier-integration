@@ -9,7 +9,7 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { KEY_VALUE_STORE_KEY_REGEX } = require('@apify/consts');
 
-const { randomString, TEST_USER_TOKEN } = require('./helpers');
+const { randomString, TEST_USER_TOKEN, getMockDataset, getMockKVStore, mockDatasetPublicUrl } = require('./helpers');
 const { waitForRunToFinish, getRemainingTestStepWaitSecs, isValidApiPathSegment } = require('../src/request_helpers');
 const { TEST_STEP_RUN_WAIT_SECS } = require('../src/consts');
 
@@ -277,6 +277,63 @@ describe('resource IDs and names in request URLs', () => {
         const bundle = { authData, inputData: { actorId: '../users/me' } };
         expect(await appTester(App.searches.getActorDetails.operation.perform, bundle)).to.be.eql([]);
         scope.done();
+    });
+
+    // The lookup response is the only source of these IDs. They are still encoded, so a request can't leave its path.
+    describe('storage ID from the lookup response', () => {
+        const STORAGE_ID = 'abc/def?x=1';
+        const ENCODED_STORAGE_ID = 'abc%2Fdef%3Fx%3D1';
+
+        it('Get Key-Value Store Record percent-encodes it in the record URL', async () => {
+            const scope = nock('https://api.apify.com');
+            scope.get('/v2/key-value-stores/~my-store')
+                .reply(200, { data: getMockKVStore({ id: STORAGE_ID }) });
+            scope.head(`/v2/key-value-stores/${ENCODED_STORAGE_ID}/records/OUTPUT`)
+                .reply(404);
+
+            const bundle = { authData, inputData: { storeIdOrName: 'my-store', key: 'OUTPUT' } };
+            await expect(appTester(App.searches.keyValueStoreGetValue.operation.perform, bundle))
+                .to.be.rejectedWith(/No record found for key/);
+            expect(unmatchedRequests).to.be.eql([]);
+            scope.done();
+        });
+
+        it('Set Key-Value Store Record percent-encodes it in the record URL', async () => {
+            const scope = nock('https://api.apify.com');
+            scope.get('/v2/key-value-stores/my-store')
+                .reply(200, { data: getMockKVStore({ id: STORAGE_ID }) });
+            scope.put(`/v2/key-value-stores/${ENCODED_STORAGE_ID}/records/OUTPUT`)
+                .reply(201);
+
+            const bundle = { authData, inputData: { storeIdOrName: 'my-store', key: 'OUTPUT', value: '{}' } };
+            const result = await appTester(App.creates.keyValueStoreSetValue.operation.perform, bundle);
+
+            expect(result.keyValueStoreRecordUrl)
+                .to.be.eql(`https://api.apify.com/v2/key-value-stores/${ENCODED_STORAGE_ID}/records/OUTPUT`);
+            expect(unmatchedRequests).to.be.eql([]);
+            scope.done();
+        });
+
+        it('Fetch Dataset Items percent-encodes it in the items URL', async () => {
+            const items = [{ name: 'test' }];
+            const scope = nock('https://api.apify.com');
+            scope.get('/v2/datasets/~my-dataset')
+                .reply(200, { data: getMockDataset({ id: STORAGE_ID }) });
+            scope.get(`/v2/datasets/${ENCODED_STORAGE_ID}/items`)
+                .query(true)
+                .reply(200, items);
+            // The public file URLs come from apify-client, which builds its own URL.
+            scope.get('/v2/datasets/abc~def')
+                .query(true)
+                .reply(200, mockDatasetPublicUrl(STORAGE_ID));
+
+            const bundle = { authData, inputData: { datasetIdOrName: 'my-dataset' } };
+            const result = await appTester(App.searches.fetchDatasetItems.operation.perform, bundle);
+
+            expect(result[0].items).to.be.eql(items);
+            expect(unmatchedRequests).to.be.eql([]);
+            scope.done();
+        });
     });
 
     it('the Actor input fields show "Actor not found" for an invalid Actor without sending a request', async () => {
