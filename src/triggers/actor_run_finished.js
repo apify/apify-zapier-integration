@@ -1,14 +1,15 @@
 const { ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, ACTOR_RUN_SAMPLE, ACTOR_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATUSES } = require('../consts');
 const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun, getActorStatusesFromBundle } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, toApiPathSegment } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const getFallbackActorRuns = async (z, bundle) => {
     const statuses = getActorStatusesFromBundle(bundle) || ACTOR_JOB_TERMINAL_STATUSES;
+    const actorRunsUrl = `${APIFY_API_ENDPOINTS.actors}/${toApiPathSegment(z, bundle.inputData.actorId, 'Actor')}/runs`;
 
     const response = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs`,
+        url: actorRunsUrl,
         params: {
             limit: 100,
             desc: true,
@@ -21,7 +22,7 @@ const getFallbackActorRuns = async (z, bundle) => {
     return Promise.all(
         items.slice(0, 3).map(async ({ id }) => {
             const runResponse = await wrapRequestWithRetries(z.request, {
-                url: `${APIFY_API_ENDPOINTS.actors}/${bundle.inputData.actorId}/runs/${id}`,
+                url: `${actorRunsUrl}/${id}`,
             });
             return enrichActorRun(z, bundle.authData.access_token, runResponse.data);
         }),

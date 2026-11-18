@@ -4,7 +4,7 @@ const {
     ACTOR_OUTPUT_FIELDS,
     APIFY_API_ENDPOINTS,
 } = require('../consts');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, toApiPathSegment } = require('../request_helpers');
 
 // Deep property paths passed to `_.pick`. Nested objects (`stats`, `defaultRunOptions`) are
 // trimmed to the sub-fields we actually expose, so the output matches the declared output fields
@@ -37,11 +37,12 @@ const getActorDetails = async (z, bundle) => {
     // (e.g. `apify/web-scraper`) must have its `/` replaced with `~`. Plain Actor IDs pass through.
     // Trim and replace all slashes so stray whitespace or a trailing `/` can't malform the path.
     const normalizedActorId = actorId.trim().replaceAll('/', '~');
+    const actorUrl = `${APIFY_API_ENDPOINTS.actors}/${toApiPathSegment(z, normalizedActorId, 'Actor')}`;
 
     let actorResponse;
     try {
         actorResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${normalizedActorId}`,
+            url: actorUrl,
         });
     } catch (err) {
         if (err.message.includes('not found')) return [];

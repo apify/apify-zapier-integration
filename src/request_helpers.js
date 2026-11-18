@@ -198,9 +198,41 @@ const waitForRunToFinish = async (request, runId, timeoutSecs) => {
  */
 const isNotFoundError = (err) => (err?.message ?? '').includes('not found');
 
+// Apify IDs, `username~name` and `~name` only use these characters, and a URL path keeps all of them as they are.
+const API_PATH_SEGMENT_REGEX = /^[a-zA-Z0-9._~-]+$/;
+
+/**
+ * Whether a value from step input can be used as one segment of an API URL path: a string that matches `regex`,
+ * by default an ID or name. "." and ".." are rejected even when `regex` allows them, because URLs resolve them
+ * as dot segments, even percent-encoded.
+ */
+const isValidApiPathSegment = (value, regex = API_PATH_SEGMENT_REGEX) => typeof value === 'string'
+    && regex.test(value)
+    && value !== '.'
+    && value !== '..';
+
+/**
+ * Returns a resource ID or name from step input for use in an API URL path. Throws a user-facing error,
+ * before any request is sent, for a value that can't be an ID or name.
+ * @param label - The resource in the error message, e.g. `Actor`
+ */
+const toApiPathSegment = (z, value, label) => {
+    if (!isValidApiPathSegment(value)) {
+        throw new z.errors.Error(
+            `${label} "${value}" isn't a valid ID or name. Apify IDs and names contain only letters, digits `
+                + 'and the characters ~-_.',
+            'INVALID_RESOURCE_ID',
+            400,
+        );
+    }
+    return value;
+};
+
 module.exports = {
     getRemainingTestStepWaitSecs,
     isNotFoundError,
+    isValidApiPathSegment,
+    toApiPathSegment,
     parseDataApiObject,
     setApifyRequestHeaders,
     validateApiResponse,

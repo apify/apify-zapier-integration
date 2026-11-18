@@ -4,16 +4,17 @@ const {
     APIFY_API_ENDPOINTS,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, toApiPathSegment } = require('../request_helpers');
 const { getRunDatasetOutputFields } = require('../output_fields');
 
 const getActorRunById = async (z, bundle) => {
     const { runId } = bundle.inputData;
+    const runUrl = `${APIFY_API_ENDPOINTS.actorRuns}/${toApiPathSegment(z, runId, 'Run')}`;
     let runResponse;
 
     try {
         runResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+            url: runUrl,
         });
     } catch (err) {
         if (isNotFoundError(err)) return [];

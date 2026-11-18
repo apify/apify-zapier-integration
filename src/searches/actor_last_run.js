@@ -6,16 +6,17 @@ const {
     ACTOR_RUN_STATUSES,
 } = require('../consts');
 const { enrichActorRun } = require('../apify_helpers');
-const { wrapRequestWithRetries, isNotFoundError } = require('../request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, toApiPathSegment } = require('../request_helpers');
 const { getActorDatasetOutputFields } = require('../output_fields');
 
 const getLastActorRun = async (z, bundle) => {
     const { actorId, status } = bundle.inputData;
+    const lastRunUrl = `${APIFY_API_ENDPOINTS.actors}/${toApiPathSegment(z, actorId, 'Actor')}/runs/last`;
     let lastActorRunResponse;
 
     try {
         lastActorRunResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs/last`,
+            url: lastRunUrl,
             params: status ? { status } : {},
         });
     } catch (err) {

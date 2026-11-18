@@ -11,7 +11,7 @@ const { APIFY_API_ENDPOINTS, DEFAULT_KEY_VALUE_STORE_KEYS, LEGACY_PHANTOM_JS_CRA
     DATASET_MAX_SIZE_MARGIN,
     DEFAULT_SYNC_RUN_TIMEOUT_SECS,
 } = require('./consts');
-const { wrapRequestWithRetries, isNotFoundError } = require('./request_helpers');
+const { wrapRequestWithRetries, isNotFoundError, isValidApiPathSegment, toApiPathSegment } = require('./request_helpers');
 
 // Key of field to use internally to compute changes in fields.
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
@@ -124,13 +124,18 @@ const createDatasetUrls = async (datasetId, token, cleanParamName) => {
 };
 
 /**
+ * API URL of the items of a dataset. The ID is percent-encoded so it always stays a single path segment.
+ */
+const getDatasetItemsUrl = (datasetId) => `${APIFY_API_ENDPOINTS.datasets}/${encodeURIComponent(datasetId)}/items`;
+
+/**
  * Checks whether a dataset is too large to download inline by fetching a single item
  * and checking if that item alone would push the full download over the limit.
  * Returns null if the size is acceptable, or { singleItemMB, downloadItems } if the limit is exceeded.
  */
 const isTooLargeToDownload = async (z, datasetId, params) => {
     const sampleResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        url: getDatasetItemsUrl(datasetId),
         params: { ...params, limit: 1 },
     });
 
@@ -184,7 +189,7 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
     }
 
     const itemsResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.datasets}/${datasetId}/items`,
+        url: getDatasetItemsUrl(datasetId),
         params,
     });
 
@@ -206,11 +211,10 @@ const getDatasetItems = async (z, datasetId, token, params = {}, actorId, runFro
 };
 
 /**
- * Throws a user-facing error for a record key the Apify API doesn't accept.
- * "." and ".." match the key format, but URLs treat them as dot segments, even percent-encoded.
+ * Throws a user-facing error for a record key the Apify API doesn't accept, or that a URL resolves as a dot segment.
  */
 const validateKeyValueStoreRecordKey = (z, key) => {
-    if (!KEY_VALUE_STORE_KEY_REGEX.test(key) || key === '.' || key === '..') {
+    if (!isValidApiPathSegment(key, KEY_VALUE_STORE_KEY_REGEX)) {
         throw new z.errors.Error(
             `Record key "${key}" isn't valid. Use 1 to 256 letters, digits or the characters !-_.'(), `
                 + 'and not just "." or "..".',
@@ -221,9 +225,12 @@ const validateKeyValueStoreRecordKey = (z, key) => {
 };
 
 /**
- * API URL of a key-value store record. The key is percent-encoded so it always stays a single path segment.
+ * API URL of a key-value store record. The store ID and the key are percent-encoded so each always stays
+ * a single path segment.
  */
-const getKeyValueStoreRecordUrl = (storeId, key) => `${APIFY_API_ENDPOINTS.keyValueStores}/${storeId}/records/${encodeURIComponent(key)}`;
+const getKeyValueStoreRecordUrl = (storeId, key) => (
+    `${APIFY_API_ENDPOINTS.keyValueStores}/${encodeURIComponent(storeId)}/records/${encodeURIComponent(key)}`
+);
 
 /**
  * Get values from key-value store, it skips all non json values.
@@ -399,9 +406,10 @@ const toStorageLookupId = (idOrName) => (
  * @param options - API and Apify Console URLs of the storage type, and its label used in the error message
  */
 const findStorageOrThrow = async (z, storageIdOrName, { apiUrl, consoleUrl, label }) => {
+    const storageUrl = `${apiUrl}/${toStorageLookupId(toApiPathSegment(z, storageIdOrName, label))}`;
     try {
         const storageResponse = await wrapRequestWithRetries(z.request, {
-            url: `${apiUrl}/${toStorageLookupId(storageIdOrName)}`,
+            url: storageUrl,
             method: 'GET',
         });
         return storageResponse.data;
@@ -422,11 +430,12 @@ const findStorageOrThrow = async (z, storageIdOrName, { apiUrl, consoleUrl, labe
  * @param storeIdOrName - Key-value store ID or name
  */
 const getOrCreateKeyValueStore = async (z, storeIdOrName) => {
+    const storeUrl = `${APIFY_API_ENDPOINTS.keyValueStores}/${toApiPathSegment(z, storeIdOrName, 'Key-value store')}`;
     let store;
     // The first try to get store by ID.
     try {
         const storeResponse = await wrapRequestWithRetries(z.request, {
-            url: `${APIFY_API_ENDPOINTS.keyValueStores}/${storeIdOrName}`,
+            url: storeUrl,
             method: 'GET',
         });
         store = storeResponse.data;
@@ -744,9 +753,10 @@ const maybeGetInputSchemaFromActor = async (z, actor, buildTag) => {
 // Shared by every create that runs an Actor, so each only has to add its own webhook/timeout handling on top.
 const buildActorRunRequestOptions = async (z, bundle) => {
     const { actorId, inputBody, inputContentType, build, timeoutSecs, memoryMbytes } = bundle.inputData;
+    const actorUrl = `${APIFY_API_ENDPOINTS.actors}/${toApiPathSegment(z, actorId, 'Actor')}`;
 
     const requestOpts = {
-        url: `${APIFY_API_ENDPOINTS.actors}/${actorId}/runs`,
+        url: `${actorUrl}/runs`,
         method: 'POST',
         params: {
             build,
@@ -771,7 +781,7 @@ const buildActorRunRequestOptions = async (z, bundle) => {
         requestOpts.body = inputBody;
     } else {
         const actorResponse = await requestActorOrThrowNotFound(z, {
-            url: `${APIFY_API_ENDPOINTS.actors}/${actorId}`,
+            url: actorUrl,
         }, actorId);
         const inputSchema = await maybeGetInputSchemaFromActor(z, actorResponse.data, build);
         if (inputSchema) {
@@ -820,6 +830,17 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
     const previousActorId = bundle.inputData[ACTOR_ID_REFERENCE_FIELD_KEY];
     const wasActorChanged = actorId !== previousActorId; // If Actor ID changed from the last input field generation.
 
+    // The Zap editor does not show errors thrown while loading fields, so the reason is shown as a read-only field.
+    // Running the step still fails, as it checks and looks the Actor up again.
+    const actorNotFoundFields = [{
+        label: 'Actor not found',
+        key: 'actorNotFound',
+        type: 'copy',
+        helpText: getActorNotFoundMessage(actorId),
+    }];
+    // A value that can't be an ID or username~name can't be looked up.
+    if (!isValidApiPathSegment(actorId)) return actorNotFoundFields;
+
     let actorResponse;
     try {
         actorResponse = await wrapRequestWithRetries(z.request, {
@@ -827,14 +848,7 @@ const getActorAdditionalFields = async (z, bundle, { hasSyncField = true } = {})
         });
     } catch (err) {
         if (!isActorNotFoundError(err)) throw err;
-        // The Zap editor does not show errors thrown while loading fields, so the reason is shown as a read-only field.
-        // Running the step still fails with the same message, as it looks the Actor up again.
-        return [{
-            label: 'Actor not found',
-            key: 'actorNotFound',
-            type: 'copy',
-            helpText: getActorNotFoundMessage(actorId),
-        }];
+        return actorNotFoundFields;
     }
 
     const actor = actorResponse.data;

@@ -58,6 +58,12 @@ All HTTP goes through `z.request`, so the app-wide middleware in `src/request_he
   `approvalUrl` appended.
 - Retries only happen where a call is wrapped in `wrapRequestWithRetries` (exponential back-off,
   3 attempts in total). Most calls are; a bare `z.request` is not retried.
+- Put a value from step input into a URL path only after `isValidApiPathSegment` accepts it: it must
+  match the allowed characters and can't be `.` or `..`. Actor, task, run and storage IDs or names go
+  through `toApiPathSegment` (letters, digits and `~-_.`), record keys through
+  `validateKeyValueStoreRecordKey` (the `@apify/consts` key format, see Storages). Both throw a
+  user-facing error before any request. Field and output-field loaders call `isValidApiPathSegment`
+  directly and fall back quietly, because the Zap editor hides their errors.
 
 Auth is OAuth2 with PKCE against Apify Console (`src/authentication.js`, `CLIENT_ID`/`CLIENT_SECRET`
 from env). `autoRefresh` is deliberately off: with it on, core turns every 401 into
@@ -109,9 +115,10 @@ Synchronous runs don't block `perform`, since Zapier kills a step after 30 s
 `~name`) and throws a user-facing error with a Console link if it's missing — used by Get Key-Value
 Store Record and Fetch Dataset Items. Set Key-Value Store Record instead uses
 `getOrCreateKeyValueStore`, which creates a store for an unknown *name* but throws for an unknown ID.
-Both check the record key with `validateKeyValueStoreRecordKey` (the `@apify/consts` key format, but
-not `.` or `..`) before any request. Build every record URL with `getKeyValueStoreRecordUrl`, which
-percent-encodes the key.
+Both check the record key with `validateKeyValueStoreRecordKey` before the store lookup, so Set never
+creates a store for an invalid key. Build every record URL with `getKeyValueStoreRecordUrl` and every
+dataset items URL with `getDatasetItemsUrl`. They percent-encode the storage ID, which comes from the
+lookup response, and the record key.
 
 ### Web Fetch
 

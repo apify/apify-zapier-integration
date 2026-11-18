@@ -1,14 +1,15 @@
 const { ACTOR_JOB_TERMINAL_STATUSES } = require('@apify/consts');
 const { APIFY_API_ENDPOINTS, TASK_RUN_SAMPLE, TASK_RUN_OUTPUT_FIELDS, ACTOR_RUN_TERMINAL_STATUSES } = require('../consts');
 const { enrichActorRun, subscribeWebhook, unsubscribeWebhook, getActorRun, getActorStatusesFromBundle } = require('../apify_helpers');
-const { wrapRequestWithRetries } = require('../request_helpers');
+const { wrapRequestWithRetries, toApiPathSegment } = require('../request_helpers');
 const { getTaskDatasetOutputFields } = require('../output_fields');
 
 const getFallbackTaskActorRuns = async (z, bundle) => {
     const statuses = getActorStatusesFromBundle(bundle) || ACTOR_JOB_TERMINAL_STATUSES;
+    const taskUrl = `${APIFY_API_ENDPOINTS.tasks}/${toApiPathSegment(z, bundle.inputData.taskId, 'Task')}`;
 
     const response = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}/runs`,
+        url: `${taskUrl}/runs`,
         params: {
             limit: 100,
             desc: true,
@@ -18,7 +19,7 @@ const getFallbackTaskActorRuns = async (z, bundle) => {
 
     // NOTE: We need to get actId, because simple run object from list doesn't have it.
     const taskDetailResponse = await wrapRequestWithRetries(z.request, {
-        url: `${APIFY_API_ENDPOINTS.tasks}/${bundle.inputData.taskId}`,
+        url: taskUrl,
     });
 
     const { items } = response.data;
