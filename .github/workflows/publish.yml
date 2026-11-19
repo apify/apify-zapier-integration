@@ -10,13 +10,13 @@ jobs:
             contents: write
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
               with:
                   token: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
                   persist-credentials: false
 
             - name: Set up Node.js
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
               with:
                   node-version-file: '.nvmrc'
 

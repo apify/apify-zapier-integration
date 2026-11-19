@@ -5,6 +5,7 @@
 		'config:recommended',
 		// Dependency bumps are `chore:`, never `fix:`.
 		':semanticCommitTypeAll(chore)',
+		'helpers:pinGitHubActionDigests',
 	],
 	semanticCommits: 'enabled',
 
@@ -28,6 +29,11 @@
 	},
 
 	packageRules: [
+		{
+			matchManagers: ['github-actions'],
+			matchPackageNames: ['apify/**'],
+			pinDigests: false,
+		},
 		{
 			// The runtime, its schema validator and the CLI must stay on the same version.
 			groupName: 'zapier-platform',
