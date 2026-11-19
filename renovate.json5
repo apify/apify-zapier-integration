@@ -29,9 +29,9 @@
 
 	packageRules: [
 		{
-			// The runtime and its schema validator must stay on the same version.
+			// The runtime, its schema validator and the CLI must stay on the same version.
 			groupName: 'zapier-platform',
-			matchPackageNames: ['zapier-platform-core', 'zapier-platform-schema'],
+			matchPackageNames: ['zapier-platform-core', 'zapier-platform-schema', 'zapier-platform-cli'],
 		},
 		{
 			// Node is pinned to what the Zapier runtime supports (.nvmrc, engines.node);
