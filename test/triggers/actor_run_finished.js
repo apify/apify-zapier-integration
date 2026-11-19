@@ -10,6 +10,7 @@ const { createAndBuildActor,
     apifyClient,
     TEST_USER_TOKEN,
     randomString,
+    randomApifyId,
     getMockRun,
     getMockWebhookResponse,
     mockDatasetPublicUrl,
@@ -122,7 +123,18 @@ describe('actor run finished trigger', () => {
     });
 
     it('perform should return actor run detail', async () => {
-        const runId = randomString();
+        let run;
+        let scope;
+        if (TEST_USER_TOKEN) {
+            run = await apifyClient.actor(testActorId).call({ waitSecs: 120 });
+        } else {
+            // No storages, so the run needs no further mocks.
+            run = { id: randomString(), actId: testActorId, status: 'SUCCEEDED' };
+            scope = nock('https://api.apify.com')
+                .get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+        }
+
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
@@ -132,7 +144,7 @@ describe('actor run finished trigger', () => {
             },
             cleanedRequest: { // Mock webhook payload
                 resource: {
-                    id: runId,
+                    id: run.id,
                 },
             },
         };
@@ -140,8 +152,74 @@ describe('actor run finished trigger', () => {
         const results = await appTester(App.triggers.actorRunFinished.operation.perform, bundle);
 
         expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
-    }).timeout(30_000);
+        expect(results[0].id).to.be.eql(run.id);
+        scope?.done();
+    }).timeout(240000);
+
+    it('perform reads the run from the API, not from the hook request', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const actorId = randomApifyId();
+        const run = { id: randomString(), actId: actorId, status: 'SUCCEEDED' };
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run });
+
+        const results = await appTester(App.triggers.actorRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { actorId },
+            cleanedRequest: {
+                resource: {
+                    id: run.id,
+                    status: 'FAILED',
+                    defaultDatasetId: randomString(),
+                    defaultKeyValueStoreId: randomString(),
+                },
+            },
+        });
+
+        // Nock fails the test on a request for the storages named in the hook request.
+        expect(results.length).to.be.eql(1);
+        expect(results[0].status).to.be.eql('SUCCEEDED');
+        expect(results[0]).to.not.have.any.keys('defaultDatasetId', 'defaultKeyValueStoreId', 'datasetItems');
+        scope.done();
+    });
+
+    it('perform skips a run of another Actor', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const run = { id: randomString(), actId: randomApifyId(), status: 'SUCCEEDED' };
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run });
+
+        const results = await appTester(App.triggers.actorRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { actorId: randomApifyId() },
+            cleanedRequest: { resource: { id: run.id } },
+        });
+
+        expect(results).to.be.eql([]);
+        scope.done();
+    });
+
+    it('perform skips a run that does not exist', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const runId = randomString();
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${runId}`)
+            .reply(404, { error: { type: 'record-not-found', message: 'Actor run was not found' } });
+
+        const results = await appTester(App.triggers.actorRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { actorId: randomApifyId() },
+            cleanedRequest: { resource: { id: runId } },
+        });
+
+        expect(results).to.be.eql([]);
+        scope.done();
+    });
 
     it('performList should return actor runs', async () => {
         const runs = [];
