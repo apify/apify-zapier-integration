@@ -162,6 +162,6 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
   leave GitHub's `## What's Changed` heading out of the release body (it duplicates the heading).
 - Renovate (`renovate.json5`) opens weekly `chore:` PRs, groups `zapier-platform-core`,
   `zapier-platform-schema` and `zapier-platform-cli` (keep them on the same version), and skips Node
-  majors. The `package.json` `overrides` entry (`zapier-platform-core` → `form-data`) clears an
-  `npm audit` finding; check `npm audit` before removing it.
+  majors. The `package.json` `overrides` (`zapier-platform-core` → `form-data`, `simple-git`, `tar`)
+  clear `npm audit` findings; check `npm audit` before removing one.
 - `.zapierapprc` adds `node_modules/axios/dist/*.js` to the build bundle via `includeInBuild`.
