@@ -38,6 +38,8 @@
   "overrides": {
     "zapier-platform-core": {
       "form-data": "^4.0.6"
-    }
+    },
+    "simple-git": "4.0.2",
+    "tar": "7.5.23"
   }
 }
