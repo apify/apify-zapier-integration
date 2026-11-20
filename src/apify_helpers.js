@@ -347,9 +347,30 @@ const unsubscribeWebhook = async (z, bundle) => {
     return {};
 };
 
-// Gets actor run from bundle clean request and enriches it.
+/**
+ * Gets the run a finished-run hook reports and enriches it. Only the run ID is taken from the hook request:
+ * the run is loaded from the API, so the storages read below are the ones that run really has, and a run of
+ * another Actor or task than the watched one is skipped.
+ */
 const getActorRun = async (z, bundle) => {
-    const run = bundle.cleanedRequest.resource;
+    const runId = bundle.cleanedRequest?.resource?.id;
+    if (!isValidApiPathSegment(runId)) return [];
+
+    let run;
+    try {
+        ({ data: run } = await wrapRequestWithRetries(z.request, {
+            url: `${APIFY_API_ENDPOINTS.actorRuns}/${runId}`,
+        }));
+    } catch (err) {
+        if (isNotFoundError(err)) return [];
+        throw err;
+    }
+
+    // A name instead of an ID can't be compared with the run, which only has IDs.
+    const { actorId, taskId } = bundle.inputData || {};
+    if (actorId && looksLikeApifyId(actorId) && run.actId !== actorId) return [];
+    if (taskId && looksLikeApifyId(taskId) && run.actorTaskId !== taskId) return [];
+
     const enrichedRun = await enrichActorRun(z, bundle.authData.access_token, run);
     return [enrichedRun];
 };

@@ -6,7 +6,7 @@ const { WEBHOOK_EVENT_TYPE_GROUPS, ACTOR_JOB_TERMINAL_STATUSES } = require('@api
 const _ = require('lodash');
 const { TASK_RUN_SAMPLE } = require('../../src/consts');
 const {
-    randomString, apifyClient, createWebScraperTask,
+    randomString, randomApifyId, apifyClient, createWebScraperTask,
     TEST_USER_TOKEN, createLegacyCrawlerTask, getMockWebhookResponse, getMockTaskRun,
     mockDatasetPublicUrl, waitForWebhookCount,
 } = require('../helpers');
@@ -117,7 +117,18 @@ describe('task run finished trigger', () => {
     });
 
     it('perform should return task run detail', async () => {
-        const runId = randomString();
+        let run;
+        let scope;
+        if (TEST_USER_TOKEN) {
+            run = await apifyClient.task(testTaskId).call({ waitSecs: 120 });
+        } else {
+            // No storages, so the run needs no further mocks.
+            run = { id: randomString(), actId: randomString(), actorTaskId: testTaskId, status: 'SUCCEEDED' };
+            scope = nock('https://api.apify.com')
+                .get(`/v2/actor-runs/${run.id}`)
+                .reply(200, { data: run });
+        }
+
         const bundle = {
             authData: {
                 access_token: TEST_USER_TOKEN,
@@ -127,7 +138,7 @@ describe('task run finished trigger', () => {
             },
             cleanedRequest: { // Mock webhook payload
                 resource: {
-                    id: runId,
+                    id: run.id,
                 },
             },
         };
@@ -135,7 +146,26 @@ describe('task run finished trigger', () => {
         const results = await appTester(App.triggers.taskRunFinished.operation.perform, bundle);
 
         expect(results.length).to.be.eql(1);
-        expect(results[0].id).to.be.eql(bundle.cleanedRequest.resource.id);
+        expect(results[0].id).to.be.eql(run.id);
+        scope?.done();
+    }).timeout(240000);
+
+    it('perform skips a run of another task', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const run = { id: randomString(), actId: randomApifyId(), actorTaskId: randomApifyId(), status: 'SUCCEEDED' };
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run });
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { taskId: randomApifyId() },
+            cleanedRequest: { resource: { id: run.id } },
+        });
+
+        expect(results).to.be.eql([]);
+        scope.done();
     });
 
     it('performList should return task runs', async () => {
