@@ -1,3 +1,24 @@
+## 5.1.0 / 2026-11-20
+**✨ New features**
+* **Search Apify Store** now returns an **Actor slug** (`username~name`, e.g. `compass~crawler-google-places`). You can map it into **Run Actor** or **Run Actor and Fetch Results**. The **ID** and **Name** labels are now **Actor ID** and **Actor name**. Their keys didn't change, so existing Zaps keep working. (#197)
+
+**🚀 Improvements**
+* If you map an Actor name without its username (e.g. from **Search Apify Store**), **Run Actor** and **Run Actor and Fetch Results** now tell you to map **Actor slug** or **Actor ID** instead. (#197)
+* **Set Key-Value Store Record** and **Get Key-Value Store Record** check the record key before sending any request. An invalid key fails right away with a clear message, and **Set** no longer creates a new store for it. (#201)
+* Actor, task, run, dataset and key-value store IDs and names are checked before they go into a request URL. An invalid value fails right away with a clear message instead of being sent to the API. (#202)
+* **Finished Actor Run** and **Finished Task Run** now load the finished run from the Apify API instead of using the run data sent with the webhook. A run of a different Actor or task, or a run that doesn't exist, returns no result. (#207)
+
+**⚠️ Behavior changes**
+* A step that receives an invalid ID or name (e.g. one containing `/`, `?` or `#`) now fails with an error. Before, the value was sent to the API as it was, and searches returned an empty result. (#202)
+
+**🔧 Maintenance**
+* Fixed Dependabot alerts in `follow-redirects` and `serialize-javascript` (#199), pinned GitHub Actions to commit SHAs (#205), pinned `zapier-platform-cli` and improved how CI handles secrets (#206), moved the agent docs to `AGENTS.md` (#190), and linked the README to the Console create-API-token form (#200).
+
+**Contributors:** @FilipMasar (first contribution 🎉), @jakcinmarina, @drobnikj, @JanHranicky, @protoss70, @jirimoravcik
+
+**Full Changelog**: https://github.com/apify/apify-zapier-integration/compare/v5.0.0...v5.1.0
+
+
 ## 5.0.0 / 2026-10-27
 **✨ New actions**
   * **Web Fetch**: fetch any web page and get its content as Markdown, cleaned HTML or plain text. It's fast, needs no Actor setup, and replaces **Scrape Single URL**.
