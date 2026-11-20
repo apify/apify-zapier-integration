@@ -13,25 +13,18 @@ jobs:
               uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
               with:
                   token: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
-
+                  persist-credentials: false
 
             - name: Set up Node.js
               uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
               with:
                   node-version-file: '.nvmrc'
 
-            - name: Install Zapier CLI
-              run: npm install -g zapier-platform-cli
-
-            - name: Create .zapierrc file
-              run: |
-                  echo '{ "deployKey": "${{ secrets.APIFY_ZAPIER_DEPLOY_KEY }}" }' > ~/.zapierrc
-
             - name: Install dependencies
-              run: npm install --no-audit
+              run: npm ci --no-audit
 
             - name: Validate Zapier app
-              run: zapier-platform validate --without-style
+              run: ./node_modules/.bin/zapier-platform validate --without-style
 
             - name: Run lint
               run: npm run lint
@@ -94,7 +87,7 @@ jobs:
                       echo "Target branch for push: $TARGET_BRANCH"
                       git commit -m "chore(release): set version to ${{ env.VERSION }}"
                       echo "Pushing changes to $TARGET_BRANCH"
-                      git push origin HEAD:"refs/heads/$TARGET_BRANCH"
+                      git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:"refs/heads/$TARGET_BRANCH"
                   else
                       echo "No changes to commit."
                   fi
@@ -102,7 +95,11 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
 
             - name: Push Zapier app
-              run: zapier-platform push
+              run: ./node_modules/.bin/zapier-platform push
+              env:
+                  ZAPIER_DEPLOY_KEY: ${{ secrets.APIFY_ZAPIER_DEPLOY_KEY }}
 
             - name: Promote new version
-              run: zapier-platform promote --yes ${{ env.VERSION }}
+              run: ./node_modules/.bin/zapier-platform promote --yes ${{ env.VERSION }}
+              env:
+                  ZAPIER_DEPLOY_KEY: ${{ secrets.APIFY_ZAPIER_DEPLOY_KEY }}

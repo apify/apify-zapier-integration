@@ -21,11 +21,12 @@ npm run lint                         # eslint ./src index.js
 npm test                             # mocha --recursive, Apify API mocked with nock
 TEST_USER_TOKEN=<token> npm test     # same suite against the live Apify API (E2E)
 GREP="actor run" npm run test:grep
-npx -p zapier-platform-cli zapier-platform validate --without-style
+npx zapier-platform validate --without-style
 ```
 
-`zapier-platform-cli` is not a dependency; CI installs it globally. CI (`test.yml`, PRs to `master`)
-runs validate, lint and tests twice: mocked, and E2E with a real token. `lint:fix` only covers `src/`.
+`zapier-platform-cli` is a pinned devDependency; CI runs it from `node_modules` after `npm ci`.
+CI (`test.yml`, PRs to `master`) runs validate, lint and tests twice: mocked, and E2E with a real
+token. `lint:fix` only covers `src/`.
 The E2E token is `APIFY_TEST_USER_API_TOKEN`, an org secret shared with other Apify repos. Every PR
 run from a branch in this repo receives it, so anyone who can push a branch can read it through a
 test change. Never point the E2E job at a personal or production token instead.
@@ -155,10 +156,12 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
 - Style: Airbnb base, 4-space indent, 150-char lines, `arrow-parens: always`, final newline.
 - **Releases** are a GitHub Release: `publish.yml` sets `package.json` to the tag version, prepends
   the release body to `CHANGELOG.md` under `## <version> / <date>`, commits, then
-  `zapier-platform push` and `promote`. Don't bump the version or edit `CHANGELOG.md` by hand, and
+  `zapier-platform push` and `promote`. Only those two steps get the deploy key, as the
+  `ZAPIER_DEPLOY_KEY` env var (no `~/.zapierrc`). Checkout doesn't persist credentials, so the commit
+  step pushes with an explicit token URL. Don't bump the version or edit `CHANGELOG.md` by hand, and
   leave GitHub's `## What's Changed` heading out of the release body (it duplicates the heading).
-- Renovate (`renovate.json5`) opens weekly `chore:` PRs, groups `zapier-platform-core` and
-  `zapier-platform-schema` (keep them on the same version), and skips Node majors. The
-  `package.json` `overrides` entry (`zapier-platform-core` → `form-data`) clears an `npm audit`
-  finding; check `npm audit` before removing it.
+- Renovate (`renovate.json5`) opens weekly `chore:` PRs, groups `zapier-platform-core`,
+  `zapier-platform-schema` and `zapier-platform-cli` (keep them on the same version), and skips Node
+  majors. The `package.json` `overrides` (`zapier-platform-core` → `form-data`, `simple-git`, `tar`)
+  clear `npm audit` findings; check `npm audit` before removing one.
 - `.zapierapprc` adds `node_modules/axios/dist/*.js` to the build bundle via `includeInBuild`.
