@@ -49,10 +49,8 @@ All HTTP goes through `z.request`, so the app-wide middleware in `src/request_he
   for any `https://*.apify.actor` host (Web Fetch and other Server Actors). Add a host there if a new
   endpoint needs the token.
 - `parseDataApiObject` unwraps the API's `{ data: ... }` envelope into `response.data`.
-- Both response middlewares return a response untouched when its request sets
-  `serverActorRequest: true`. A Server Actor request may be charged, so its errors must be neither
-  retried nor reworded as Apify API errors; `src/server_actor.js` maps the Actor's own status and
-  body instead.
+- Both response middlewares return a Server Actor response (`request.serverActorRequest`) untouched;
+  see [Server Actors](#server-actors).
 - `validateApiResponse` is the single place for user-facing API errors. Order matters: a 404 on a
   key-value store `/records/` GET/HEAD is let through (callers check `status === 404`); Web Fetch
   errors are mapped next; then 5xx throws `RetryableError`; other ≥300 statuses are matched on
@@ -142,6 +140,33 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
 - "Fail on error status" defaults to Yes. Zaps created before the option existed have no value, so
   the create treats only an explicit No (`isUnchecked`) as off. Use the same pattern for any new
   option that defaults to Yes.
+
+### Server Actors
+
+**Send Server Actor Request** (`src/creates/send_server_actor_request.js`, built on
+`src/server_actor.js`) sends one HTTP request to an Actor's `standbyUrl` and returns
+`{ status, contentType, body }` without starting a run. Every request may be charged, so it's sent
+exactly once:
+
+- No `wrapRequestWithRetries`, no `RetryableError`, and no error text that suggests trying again.
+  The Apify API lookups before it may be retried; nothing is charged yet.
+- The request sets `serverActorRequest: true`, and the response middleware skips responses with
+  that flag. Skip by the flag, not by host: Web Fetch is on `*.apify.actor` too and needs its error
+  mapping. It also sets `raw: true` (read `response.buffer()`; `response.content` throws),
+  `throwForThrottlingEarly: false` (otherwise core throws `ThrottledError` on a 429, and Zapier
+  retried that about every 65 s, each time paid), `redirect: 'manual'` and `skipThrowForStatus`.
+- The Actor's own 429 is thrown without a status (only the message says 429), so Zapier can't read
+  it as throttling and run the step again.
+- One `AbortSignal` gives the request what's left of the 25 s budget
+  (`SERVER_ACTOR_STEP_BUDGET_MILLIS`) after the lookups. Don't use `timeout` instead: node-fetch
+  restarts it for the body. Running out throws `HaltedError`, the only error Autoreplay never
+  replays.
+- The token goes only to `https://*.apify.actor`. The host comes from the Actor's `standbyUrl`, and
+  **Path** refuses a path with a host or scheme.
+- The Actor field becomes the `/v2/acts/<id>` path segment, so `parseActorReference` accepts only an
+  ID or `username~name` that `isValidApiPathSegment` allows.
+- Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
+  live call: each one costs money. They shorten the budget through `requestTiming`.
 
 ## Conventions and gotchas
 

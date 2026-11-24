@@ -1,7 +1,12 @@
 /* eslint-env mocha */
 const { expect } = require('chai');
 
-const { decodeResponseBody, getErrorFromBody } = require('../src/server_actor');
+const {
+    decodeResponseBody,
+    getErrorFromBody,
+    getServerActorOrigin,
+    parseActorReference,
+} = require('../src/server_actor');
 
 describe('server actor', () => {
     describe('decodeResponseBody', () => {
@@ -54,6 +59,50 @@ describe('server actor', () => {
             expect(getErrorFromBody('x'.repeat(5000)).message).to.have.lengthOf(1000);
             expect(getErrorFromBody(null)).to.eql({});
             expect(getErrorFromBody(['a'])).to.eql({});
+        });
+    });
+
+    describe('parseActorReference', () => {
+        it('takes an ID or a name as it is, trimmed', () => {
+            expect(parseActorReference(' a6Sqhlnt4touIHTub ')).to.equal('a6Sqhlnt4touIHTub');
+            expect(parseActorReference('apify~web-fetch')).to.equal('apify~web-fetch');
+            expect(parseActorReference('')).to.equal('');
+            expect(parseActorReference(undefined)).to.equal('');
+        });
+
+        it('rejects values that are not an ID or name, as they go into the API URL path', () => {
+            // URLs resolve "." and ".." as dot segments: /v2/acts/.. would be /v2/.
+            [
+                '.',
+                '..',
+                ' .. ',
+                'apify/web-fetch',
+                'apify/web-fetch/x',
+                '/web-fetch',
+                'apify web-fetch',
+                'apify~web-fetch?x=1',
+                '%2e%2e',
+                'https://apify.com/apify/web-fetch',
+            ].forEach((value) => expect(parseActorReference(value), value).to.equal(undefined));
+        });
+    });
+
+    describe('getServerActorOrigin', () => {
+        it('returns the origin of an https *.apify.actor standby URL', () => {
+            expect(getServerActorOrigin({ actorStandby: { isEnabled: true }, standbyUrl: 'https://web-fetch.apify.actor/' }))
+                .to.equal('https://web-fetch.apify.actor');
+        });
+
+        it('rejects an Actor without a server interface, or with a URL that would take the token elsewhere', () => {
+            [
+                { standbyUrl: 'https://web-fetch.apify.actor' },
+                { actorStandby: { isEnabled: false }, standbyUrl: 'https://web-fetch.apify.actor' },
+                { actorStandby: { isEnabled: true } },
+                { actorStandby: { isEnabled: true }, standbyUrl: 'http://web-fetch.apify.actor' },
+                { actorStandby: { isEnabled: true }, standbyUrl: 'https://web-fetch.apify.actor.example.com' },
+                { actorStandby: { isEnabled: true }, standbyUrl: 'https://example.com' },
+                { actorStandby: { isEnabled: true }, standbyUrl: 'not a url' },
+            ].forEach((actor) => expect(getServerActorOrigin(actor), JSON.stringify(actor)).to.equal(undefined));
         });
     });
 });

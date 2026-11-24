@@ -14,6 +14,7 @@ const actorRunCreate = require('./src/creates/actor_run');
 const runActorAndFetchResultsCreate = require('./src/creates/run_actor_and_fetch_results');
 const scrapeSingleUrlCreate = require('./src/creates/scrape_single_url');
 const webFetchCreate = require('./src/creates/web_fetch');
+const sendServerActorRequestCreate = require('./src/creates/send_server_actor_request');
 const setValueCreate = require('./src/creates/set_value');
 const abortActorRunCreate = require('./src/creates/abort_actor_run');
 const taskLastRunSearch = require('./src/searches/task_last_run');
@@ -80,6 +81,7 @@ const App = {
         [setValueCreate.key]: setValueCreate,
         [scrapeSingleUrlCreate.key]: scrapeSingleUrlCreate,
         [webFetchCreate.key]: webFetchCreate,
+        [sendServerActorRequestCreate.key]: sendServerActorRequestCreate,
         [abortActorRunCreate.key]: abortActorRunCreate,
     },
 };

@@ -48,6 +48,25 @@ const WEB_FETCH_TIMEOUT_MILLIS = 25000;
 
 // Outside api.apify.com, only https hosts ending with this receive the Apify token.
 const APIFY_ACTOR_HOST_SUFFIX = '.apify.actor';
+// Zapier kills a step at 30 s. The Actor and OpenAPI lookups count against the same budget.
+const SERVER_ACTOR_STEP_BUDGET_MILLIS = 25000;
+// With less time than this left after the lookups, the request isn't sent at all.
+const SERVER_ACTOR_MIN_REQUEST_MILLIS = 1000;
+
+const SEND_SERVER_ACTOR_REQUEST_SAMPLE = {
+    status: 200,
+    contentType: 'application/json',
+    body: {
+        url: 'https://www.example.com',
+        markdown: '## Example Domain\n\nThis domain is for use in illustrative examples in documents.',
+    },
+};
+
+const SEND_SERVER_ACTOR_REQUEST_OUTPUT_FIELDS = [
+    { key: 'status', label: 'HTTP status', type: 'integer' },
+    { key: 'contentType', label: 'Content type', type: 'string' },
+    { key: 'body', label: 'Response body' },
+];
 
 const ACTOR_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
@@ -552,6 +571,10 @@ module.exports = {
     WEB_FETCH_SAMPLE,
     WEB_FETCH_OUTPUT_FIELDS,
     APIFY_ACTOR_HOST_SUFFIX,
+    SERVER_ACTOR_STEP_BUDGET_MILLIS,
+    SERVER_ACTOR_MIN_REQUEST_MILLIS,
+    SEND_SERVER_ACTOR_REQUEST_SAMPLE,
+    SEND_SERVER_ACTOR_REQUEST_OUTPUT_FIELDS,
     ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     ACTOR_RUN_STATUSES,
