@@ -24,7 +24,7 @@ const CHARGED = 'The request may still have been charged.';
 const MESSAGES = {
     selectActor: 'Select a Server Actor to see its endpoints. An Actor mapped from an earlier step can only use **Custom path**.',
     noActor: 'Choose a Server Actor.',
-    invalidActor: 'Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.',
+    invalidActor: 'Enter the Actor as an ID, as username~name, or as its Apify Store URL, e.g. https://apify.com/apify/web-fetch.',
     noServerInterface: 'This Actor has no server interface. Use **Run Actor** to start a run instead.',
     mcpOnly: 'This Actor is an MCP server for AI assistants and has no HTTP endpoints Zapier can send requests to. '
         + 'Connect it to an MCP client, or use **Run Actor** to start a run instead.',
@@ -420,15 +420,35 @@ const getServerActorOrigin = (actor) => {
     }
 };
 
+const APIFY_STORE_HOSTS = ['apify.com', 'www.apify.com'];
+const APIFY_CONSOLE_HOST = 'console.apify.com';
+
+/** The Actor from an Apify Store or Console URL, or `undefined` for any other URL. */
+const parseActorUrl = (text) => {
+    let url;
+    try {
+        url = new URL(text);
+    } catch (err) {
+        return undefined;
+    }
+    const [first, second] = url.pathname.split('/').filter(Boolean);
+    if (APIFY_STORE_HOSTS.includes(url.hostname) && first && second) return `${first}~${second}`;
+    if (url.hostname === APIFY_CONSOLE_HOST && first === 'actors' && second && second !== 'tasks') return second;
+    return undefined;
+};
+
 /**
- * The Actor ID from the Actor field: an ID or `username~name`, trimmed. Returns `''` when the field is empty, and
- * `undefined` for a value that can't be an ID or name.
+ * The Actor ID from the Actor field. It takes an ID or `username~name` as they are, `username/name` as
+ * `username~name`, an Apify Store URL (`https://apify.com/<username>/<name>`) and an Apify Console URL
+ * (`https://console.apify.com/actors/<id>/...`). Returns `''` when the field is empty, and `undefined` for any other
+ * URL or a value that can't be an ID or name.
  */
 const parseActorReference = (value) => {
     const text = typeof value === 'string' ? value.trim() : '';
     if (!text) return '';
+    const actorId = /^[a-z][a-z\d+.-]*:\/\//i.test(text) ? parseActorUrl(text) : text.replace(/^([^/]+)\/([^/]+)$/, '$1~$2');
     // The ID becomes a segment of the API URL path, where "." and ".." would be resolved as dot segments.
-    return isValidApiPathSegment(text) ? text : undefined;
+    return isValidApiPathSegment(actorId) ? actorId : undefined;
 };
 
 const getActorUrl = (actorId) => `${APIFY_API_ENDPOINTS.actors}/${encodeURIComponent(actorId)}`;

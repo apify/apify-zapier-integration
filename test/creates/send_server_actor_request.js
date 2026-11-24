@@ -90,11 +90,23 @@ describe('send server actor request', () => {
             expect(getKeys(fields)).to.eql(['serverActorNotice', 'endpoint', 'customMethod', 'customPath', 'customQuery', 'customBody']);
         });
 
+        it('takes an Apify Store URL, and explains what to enter for another URL', async () => {
+            const scope = mockActorLookup({ actorId: 'apify~web-fetch' });
+            const [endpointField] = await getInputFields({ actorId: 'https://apify.com/apify/web-fetch' });
+            expect(endpointField.key).to.equal('endpoint');
+            expect(scope.isDone()).to.equal(true);
+
+            const [notice] = await getInputFields({ actorId: 'https://example.com/apify/web-fetch' });
+            expect(notice.helpText).to.equal('Enter the Actor as an ID, as username~name, or as its Apify Store URL, '
+                + 'e.g. https://apify.com/apify/web-fetch.');
+        });
+
         it('explains what to enter for "." or ".." without looking the Actor up', async () => {
             // Nothing is mocked and net connect is off, so a lookup would show "Couldn't load the Actor's endpoints" instead.
             for (const actorId of ['.', '..']) {
                 const fields = await getInputFields({ actorId });
-                expect(fields.map(({ helpText }) => helpText), actorId).to.eql(['Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.']);
+                expect(fields.map(({ helpText }) => helpText), actorId).to.eql(['Enter the Actor as an ID, as username~name, or as its '
+                    + 'Apify Store URL, e.g. https://apify.com/apify/web-fetch.']);
             }
         });
 
@@ -349,11 +361,23 @@ describe('send server actor request', () => {
             expect(error).to.include({ message: 'Choose an endpoint.', code: 'InvalidInput' });
         });
 
+        it('sends a request to an Actor given by its Apify Store URL, and refuses another URL before any lookup', async () => {
+            mockActorLookup({ actorId: 'apify~web-fetch' });
+            const actor = mockServerActor();
+            await appTester(perform, getBundle({ actorId: 'https://apify.com/apify/web-fetch', endpoint: 'GET /', customQuery: { url: 'https://a.b' } }));
+            expect(actor.getCallCount()).to.equal(1);
+
+            const error = await performAndGetError({ actorId: 'https://example.com/apify/web-fetch', endpoint: 'GET /' });
+            expect(error).to.include({ code: 'InvalidInput', message: 'Enter the Actor as an ID, as username~name, or as its Apify Store URL, '
+                + 'e.g. https://apify.com/apify/web-fetch.' });
+        });
+
         it('refuses "." and ".." as the Actor before any request, as /v2/acts/.. would be /v2/', async () => {
             // Nothing is mocked and net connect is off, so any request would fail with a different error.
             for (const actorId of ['.', '..', ' .. ', 'apify/web-fetch/..']) {
                 const error = await performAndGetError({ actorId, endpoint: '__custom__', customPath: '/' });
-                expect(error, actorId).to.include({ code: 'InvalidInput', message: 'Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.' });
+                expect(error, actorId).to.include({ code: 'InvalidInput', message: 'Enter the Actor as an ID, as username~name, or as its '
+                    + 'Apify Store URL, e.g. https://apify.com/apify/web-fetch.' });
             }
         });
 
@@ -388,6 +412,12 @@ describe('send server actor request', () => {
             const notFound = await performAndGetError({ actorId: 'nobody~nothing', endpoint: '__custom__', customPath: '/' });
             expect(notFound).to.include({ code: 'NotFound', status: 404 });
             expect(notFound.message).to.match(/^Actor "nobody~nothing" was not found/);
+
+            // username/name is looked up as username~name, and it names the user, so the hint about a bare name doesn't apply.
+            nock('https://api.apify.com').get('/v2/acts/nobody~nothing').reply(404, { error: { message: 'Actor with this name was not found' } });
+            const slashNotFound = await performAndGetError({ actorId: 'nobody/nothing', endpoint: '__custom__', customPath: '/' });
+            expect(slashNotFound.message).to.equal('Actor "nobody~nothing" was not found or your Apify account cannot access it. '
+                + 'Check that the Actor ID or username~name is correct.');
 
             expect(actor.getCallCount()).to.equal(0);
         });

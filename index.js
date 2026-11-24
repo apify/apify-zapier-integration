@@ -7,6 +7,7 @@ const tasksTrigger = require('./src/triggers/tasks');
 const actorRunFinishedTrigger = require('./src/triggers/actor_run_finished');
 const actorsTrigger = require('./src/triggers/actors');
 const actorsWithStoreTrigger = require('./src/triggers/actors_with_store');
+const serverActorsTrigger = require('./src/triggers/server_actors');
 const getActorAdditionalFieldsTest = require('./src/triggers/actor_additional_fields');
 const getActorDatasetOutputFieldsTest = require('./src/triggers/actor_dataset_additional_output_fields');
 const taskRunCreate = require('./src/creates/task_run');
@@ -56,6 +57,7 @@ const App = {
         [getActorAdditionalFieldsTest.key]: getActorAdditionalFieldsTest,
         [getActorDatasetOutputFieldsTest.key]: getActorDatasetOutputFieldsTest,
         [actorsWithStoreTrigger.key]: actorsWithStoreTrigger,
+        [serverActorsTrigger.key]: serverActorsTrigger,
     },
 
     hydrators: {
