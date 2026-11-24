@@ -1,6 +1,7 @@
 const { RetryableError, retryWithExpBackoff } = require('@apify/utilities');
 const {
     ACTOR_RUN_TERMINAL_STATUSES,
+    APIFY_ACTOR_HOST_SUFFIX,
     APIFY_API_ENDPOINTS,
     TEST_STEP_RUN_WAIT_SECS,
     WEB_FETCH_STANDBY_HOST,
@@ -9,15 +10,25 @@ const {
 const GENERIC_UNHANDLED_ERROR_MESSAGE = 'Oops, Apify API encountered an internal server error. Please report this issue to support@apify.com';
 
 /**
+ * Send Server Actor Request marks its request with `serverActorRequest: true`. Core passes the flag on to the
+ * afterResponse middleware as `response.request.serverActorRequest`, and the response middleware below leaves those
+ * responses alone, so the Actor's own status and body reach the create.
+ */
+const isServerActorRequest = (request) => Boolean(request && request.serverActorRequest);
+
+/**
  * Middleware includes the API token on all outbound requests.
  * It runs before each request is sent out, allowing you to make tweaks to the request in a centralized spot.
  */
 const setApifyRequestHeaders = (request, z, bundle) => {
-    // Standby Actors, e.g. Web Fetch, are served from their own host, but they authenticate with
-    // the same Apify token and are attributed with the same integration platform header.
-    const APIFY_HOSTS = ['api.apify.com', WEB_FETCH_STANDBY_HOST];
+    // Standby Actors, e.g. Web Fetch and every other Server Actor, are served from their own `*.apify.actor` host,
+    // but they authenticate with the same Apify token and are attributed with the same integration platform header.
+    // The token never goes to any other host.
+    const APIFY_HOSTS = ['api.apify.com'];
+    const url = new URL(request.url);
+    const isApifyActorHost = url.protocol === 'https:' && url.hostname.endsWith(APIFY_ACTOR_HOST_SUFFIX);
 
-    if (APIFY_HOSTS.includes(new URL(request.url).host)) {
+    if (APIFY_HOSTS.includes(url.host) || isApifyActorHost) {
         if (bundle.authData.access_token) {
             request.headers.Authorization = `Bearer ${bundle.authData.access_token}`;
         }
@@ -31,6 +42,9 @@ const setApifyRequestHeaders = (request, z, bundle) => {
  * Middleware Parses nested data object into response.data
  */
 const parseDataApiObject = (response) => {
+    // A Server Actor's body is its own, not an Apify API envelope. It is read raw, so `data` isn't set anyway.
+    if (isServerActorRequest(response.request)) return response;
+
     const { data: responseData } = response;
     if (!responseData) return response;
     response.data = responseData.data
@@ -65,6 +79,13 @@ const parseWebFetchError = (response) => {
  * It uses RetryableError to retry bad responses from Apify API.
  */
 const validateApiResponse = (response, z) => {
+    /**
+     * NOTE: Server Actor requests may be charged, so their errors must neither be retried (RetryableError) nor
+     * reworded as Apify API errors. The create maps the Actor's status and body itself. Reading `response.content`
+     * would also throw, because the request is sent with `raw: true`.
+     */
+    if (isServerActorRequest(response.request)) return response;
+
     /**
      * NOTE: In case key-value store records request we can skip 404 error
      */

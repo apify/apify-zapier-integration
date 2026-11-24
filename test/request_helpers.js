@@ -9,8 +9,16 @@ const chaiAsPromised = require('chai-as-promised');
 const nock = require('nock');
 const { KEY_VALUE_STORE_KEY_REGEX } = require('@apify/consts');
 
+const { RetryableError } = require('@apify/utilities');
 const { randomString, TEST_USER_TOKEN, getMockDataset, getMockKVStore, mockDatasetPublicUrl } = require('./helpers');
-const { waitForRunToFinish, getRemainingTestStepWaitSecs, isValidApiPathSegment } = require('../src/request_helpers');
+const {
+    waitForRunToFinish,
+    getRemainingTestStepWaitSecs,
+    isValidApiPathSegment,
+    parseDataApiObject,
+    setApifyRequestHeaders,
+    validateApiResponse,
+} = require('../src/request_helpers');
 const { TEST_STEP_RUN_WAIT_SECS } = require('../src/consts');
 
 chai.use(chaiAsPromised);
@@ -101,6 +109,65 @@ describe('request helpers', () => {
             await expect(promise).to.be.rejectedWith(message);
 
             scope.done();
+        });
+    });
+
+    // Send Server Actor Request shares this middleware with every other request in the app, Web Fetch included.
+    describe('Server Actor requests', () => {
+        const z = { errors: zapier.errors };
+        const bundle = { authData: { access_token: 'test-token' } };
+
+        const getHeaders = (url) => setApifyRequestHeaders({ url, headers: {} }, z, bundle).headers;
+
+        // A raw response, as Send Server Actor Request reads it: `content` throws when read.
+        const getResponse = ({ url = 'https://web-fetch.apify.actor/', status, data, serverActorRequest }) => {
+            const response = {
+                status,
+                data,
+                request: { url, method: 'GET', serverActorRequest },
+            };
+            Object.defineProperty(response, 'content', {
+                get: () => {
+                    if (serverActorRequest) throw new Error('response.content must not be read for a raw response');
+                    return JSON.stringify(data);
+                },
+            });
+            return response;
+        };
+
+        it('sends the token to api.apify.com and https *.apify.actor hosts only', () => {
+            ['https://api.apify.com/v2/acts', 'https://web-fetch.apify.actor/', 'https://some-actor.apify.actor/search?q=1'].forEach((url) => {
+                expect(getHeaders(url), url).to.eql({ Authorization: 'Bearer test-token', 'x-apify-integration-platform': 'zapier' });
+            });
+            [
+                'http://some-actor.apify.actor/',
+                'http://web-fetch.apify.actor/',
+                'https://apify.actor/',
+                'https://some-actor.apify.actor.example.com/',
+                'https://example.com/?host=some-actor.apify.actor',
+            ].forEach((url) => expect(getHeaders(url), url).to.eql({}));
+        });
+
+        it('leaves a Server Actor response alone, whatever its status', () => {
+            [200, 302, 404, 429, 500, 502, 503, 504].forEach((status) => {
+                const data = { data: { error: { type: 'some-error', message: 'Some error' } } };
+                const response = getResponse({ status, data, serverActorRequest: true });
+
+                expect(validateApiResponse(parseDataApiObject(response), z), String(status)).to.equal(response);
+                expect(response.data).to.equal(data);
+                expect(response).to.not.have.property('skipThrowForStatus');
+            });
+        });
+
+        it('still maps Web Fetch errors and retries Apify API errors when the request isn\'t marked', () => {
+            const webFetchError = getResponse({ status: 502, data: { code: 'UPSTREAM_FETCH_ERROR', error: 'The website is down' } });
+            expect(() => validateApiResponse(webFetchError, z)).to.throw(zapier.errors.Error, 'The website is down');
+
+            const apiError = getResponse({ url: 'https://api.apify.com/v2/acts/x', status: 500, data: {} });
+            expect(() => validateApiResponse(apiError, z)).to.throw(RetryableError);
+
+            const notFound = getResponse({ url: 'https://api.apify.com/v2/acts/x', status: 404, data: { error: { message: 'Actor was not found' } } });
+            expect(() => validateApiResponse(notFound, z)).to.throw(Error, 'Actor was not found');
         });
     });
 
