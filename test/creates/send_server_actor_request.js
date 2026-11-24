@@ -9,7 +9,10 @@ const App = require('../../index');
 const { requestTiming } = require('../../src/server_actor');
 const { SERVER_ACTOR_STEP_BUDGET_MILLIS, SERVER_ACTOR_MIN_REQUEST_MILLIS } = require('../../src/consts');
 const {
+    ITEMS_OPENAPI,
     MOCKED_TOKEN,
+    WEB_FETCH_ACTOR_ID,
+    WEB_FETCH_OPENAPI,
     WEB_FETCH_ORIGIN,
     getBundle,
     getMockServerActor,
@@ -48,7 +51,7 @@ const performAndGetError = async (inputData) => {
 };
 
 // What the error and response tests send. Their mocked Actor answers any query.
-const SIMPLE_REQUEST = { customMethod: 'GET', customPath: '/', customQuery: { url: 'https://example.com' } };
+const SIMPLE_REQUEST = { endpoint: 'GET /', customQuery: { url: 'https://example.com' } };
 
 // A message must never suggest sending a possibly charged request again.
 const expectNoRetryAdvice = ({ message }) => expect(message).to.not.match(/try again|retry|later/i);
@@ -70,41 +73,212 @@ describe('send server actor request', () => {
     });
 
     describe('input fields', () => {
-        it('asks for the method, the path, the query parameters and the body after the Actor', async () => {
+        it('asks for an Actor first, and offers only Custom path until there is one, without any request', async () => {
+            const fields = await getInputFields({ actorId: '' });
+
+            expect(getKeys(fields)).to.eql(['serverActorNotice', 'endpoint']);
+            expect(fields[0].helpText).to.equal('Select a Server Actor to see its endpoints. '
+                + 'An Actor mapped from an earlier step can only use **Custom path**.');
+            expect(fields[1].choices.map(({ value }) => value)).to.eql(['__custom__']);
+            expect(fields[1].dependsOn).to.eql(['actorId']);
+        });
+
+        it('shows the Custom path fields when the editor passes no Actor, as it does for a mapped one', async () => {
+            // While the editor loads fields, a mapped Actor is missing from inputData, and inputDataRaw is empty.
+            const fields = await getInputFields({ actorId: undefined, endpoint: '__custom__' });
+
+            expect(getKeys(fields)).to.eql(['serverActorNotice', 'endpoint', 'customMethod', 'customPath', 'customQuery', 'customBody']);
+        });
+
+        it('explains what to enter for "." or ".." without looking the Actor up', async () => {
+            // Nothing is mocked and net connect is off, so a lookup would show "Couldn't load the Actor's endpoints" instead.
+            for (const actorId of ['.', '..']) {
+                const fields = await getInputFields({ actorId });
+                expect(fields.map(({ helpText }) => helpText), actorId).to.eql(['Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.']);
+            }
+        });
+
+        it('lists the documented endpoints and Custom path, and resets the endpoint when the Actor changes', async () => {
+            const scope = mockActorLookup();
+
             const fields = await getInputFields({});
 
-            expect(getKeys(fields)).to.eql(['customMethod', 'customPath', 'customQuery', 'customBody']);
+            expect(getKeys(fields)).to.eql(['endpoint']);
+            const [endpointField] = fields;
+            expect(endpointField).to.include({ required: true, altersDynamicFields: true });
+            expect(endpointField.dependsOn).to.eql(['actorId']);
+            expect(endpointField.choices).to.eql([
+                { value: 'GET /', label: 'GET / - Fetch a URL', sample: 'GET /' },
+                { value: 'POST /', label: 'POST / - Fetch a URL', sample: 'POST /' },
+                { value: '__custom__', label: 'Custom path', sample: '__custom__' },
+            ]);
+            expect(scope.isDone()).to.equal(true);
+        });
+
+        it('reads an OpenAPI document that the build returns as a JSON string', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: JSON.stringify(WEB_FETCH_OPENAPI) } });
+
+            const [endpointField] = await getInputFields({});
+
+            expect(endpointField.choices.map(({ value }) => value)).to.eql(['GET /', 'POST /', '__custom__']);
+        });
+
+        it('adds the endpoint\'s query parameters, and its body except for GET', async () => {
+            mockActorLookup();
+            const getFields = await getInputFields({ endpoint: 'GET /' });
+            mockActorLookup();
+            const postFields = await getInputFields({ endpoint: 'POST /' });
+
+            expect(getKeys(getFields)).to.eql(['endpoint', 'customQuery']);
+            expect(getFields[1].helpText).to.equal('The endpoint\'s query parameters, and the values of path placeholders such as `{itemId}`.');
+            expect(getKeys(postFields)).to.eql(['endpoint', 'customQuery', 'customBody']);
+        });
+
+        it('adds the Custom path fields', async () => {
+            mockActorLookup();
+
+            const fields = await getInputFields({ endpoint: '__custom__' });
+
+            expect(getKeys(fields)).to.eql(['endpoint', 'customMethod', 'customPath', 'customQuery', 'customBody']);
+        });
+
+        it('offers only Custom path and links the README when the Actor documents no endpoints', async () => {
+            mockActorLookup({ actorDefinition: {} });
+
+            const fields = await getInputFields({});
+
+            expect(getKeys(fields)).to.eql(['serverActorNotice', 'endpoint']);
+            expect(fields[0].helpText).to.include(`(https://console.apify.com/actors/${WEB_FETCH_ACTOR_ID}/information/latest/readme)`);
+            expect(fields[1].choices.map(({ value }) => value)).to.eql(['__custom__']);
+        });
+
+        it('shows only a message for an Actor without a server interface', async () => {
+            const scope = mockActorLookup({ actor: getMockServerActor({ actorStandby: { isEnabled: false } }), withBuild: false });
+
+            const fields = await getInputFields({});
+
+            expect(fields).to.have.lengthOf(1);
+            expect(fields[0].helpText).to.equal('This Actor has no server interface. Use **Run Actor** to start a run instead.');
+            expect(scope.isDone()).to.equal(true);
+        });
+
+        it('shows only a message for an MCP-only Actor, with no endpoint list and no Custom path', async () => {
+            mockActorLookup({ actorDefinition: { webServerMcpPath: '/mcp' } });
+            const withoutOpenApi = await getInputFields({});
+            mockActorLookup({ actorDefinition: { webServerMcpPath: '/mcp', webServerSchema: { paths: { '/mcp': { post: {} } } } } });
+            const withMcpPathOnly = await getInputFields({ endpoint: '__custom__' });
+
+            [withoutOpenApi, withMcpPathOnly].forEach((fields) => {
+                expect(getKeys(fields)).to.eql(['serverActorNotice']);
+                expect(fields[0].helpText).to.match(/^This Actor is an MCP server for AI assistants/);
+            });
+        });
+
+        it('shows the not-found message for an Actor the account can\'t access', async () => {
+            nock('https://api.apify.com')
+                .get('/v2/acts/someone~private-actor')
+                .reply(404, { error: { type: 'record-not-found', message: 'Actor was not found' } });
+
+            const fields = await getInputFields({ actorId: 'someone~private-actor' });
+
+            expect(fields).to.have.lengthOf(1);
+            expect(fields[0].helpText).to.match(/^Actor "someone~private-actor" was not found or your Apify account cannot access it\./);
+        });
+
+        it('flags a saved endpoint that the Actor no longer has', async () => {
+            mockActorLookup();
+
+            const fields = await getInputFields({ endpoint: 'POST /search_[x]' });
+
+            expect(getKeys(fields)).to.eql(['endpoint', 'endpointNotice']);
+            expect(fields[1].helpText).to.equal('The endpoint "POST /search\\_\\[x\\]" isn\'t in this Actor\'s OpenAPI definition. '
+                + 'Choose the endpoint again, or use **Custom path**.');
+        });
+
+        it('shows why the endpoints could not be loaded', async () => {
+            nock('https://api.apify.com')
+                .get(`/v2/acts/${WEB_FETCH_ACTOR_ID}`)
+                .reply(200, { data: getMockServerActor() })
+                .get(`/v2/acts/${WEB_FETCH_ACTOR_ID}/builds/default`)
+                .reply(403, { error: { type: 'insufficient-permissions', message: 'You do not have permission' } });
+
+            const fields = await getInputFields({});
+
+            expect(fields).to.eql([{
+                key: 'serverActorNotice',
+                label: 'Server Actor',
+                type: 'copy',
+                helpText: 'Couldn\'t load the Actor\'s endpoints: You do not have permission',
+            }]);
+        });
+
+        it('shows the message of an Apify API error that is a z.errors.Error, not its JSON', async () => {
+            nock('https://api.apify.com')
+                .get(`/v2/acts/${WEB_FETCH_ACTOR_ID}`)
+                .reply(401, { error: { type: 'token-not-found', message: 'User was not found or authentication token is not valid' } });
+
+            const [notice] = await getInputFields({});
+
+            expect(notice.helpText).to.equal('Couldn\'t load the Actor\'s endpoints: User was not found or authentication token is not valid');
         });
     });
 
     describe('request', () => {
-        it('sends the request to the Actor\'s server with the token and returns the response', async () => {
+        it('sends a documented endpoint\'s request to the Actor\'s server with the token and returns the response', async () => {
             const apiScope = mockActorLookup();
             const responseBody = { url: 'https://example.com', markdown: '# Example' };
             const actor = mockServerActor({ body: responseBody });
 
             const result = await appTester(perform, getBundle({
-                customMethod: 'GET',
-                customPath: '/',
+                endpoint: 'GET /',
                 customQuery: { url: 'https://example.com/?a=1&b=2', formats: 'markdown,links' },
+                // A GET sends no body.
+                customBody: '{"url":"https://other.example.com"}',
             }));
 
             expect(result).to.eql({ status: 200, contentType: 'application/json', body: responseBody });
             expect(actor.getCallCount()).to.equal(1);
-            const [{ url, headers }] = actor.requests;
+            const [{ url, headers, body }] = actor.requests;
             expect(url.searchParams.get('url')).to.equal('https://example.com/?a=1&b=2');
             expect(url.searchParams.get('formats')).to.equal('markdown,links');
+            expect(body).to.equal('');
             expect(headers.authorization).to.equal(`Bearer ${MOCKED_TOKEN}`);
             expect(headers['x-apify-integration-platform']).to.equal('zapier');
             expect(apiScope.isDone()).to.equal(true);
             expect(actor.scope.isDone()).to.equal(true);
         });
 
-        it('sends the query parameters after the query string in the path, and the JSON body', async () => {
+        it('fills path placeholders from the query parameters and sends the JSON body', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+            const actor = mockServerActor({ method: 'POST', path: '/items/a%2Fb%20c' });
+
+            await appTester(perform, getBundle({
+                endpoint: 'POST /items/{itemId}',
+                customQuery: { itemId: 'a/b c', limit: '5' },
+                customBody: '{"name":"Lamp"}',
+            }));
+
+            const [{ url, body }] = actor.requests;
+            expect(url.search).to.equal('?limit=5');
+            expect(body).to.eql({ name: 'Lamp' });
+        });
+
+        it('uses the endpoint\'s method and path, not the ones left over from Custom path', async () => {
+            mockActorLookup();
+            const actor = mockServerActor();
+
+            await appTester(perform, getBundle({ ...SIMPLE_REQUEST, customMethod: 'DELETE', customPath: '/admin' }));
+
+            const [{ url }] = actor.requests;
+            expect(`${url.pathname}${url.search}`).to.equal('/?url=https%3A%2F%2Fexample.com');
+        });
+
+        it('sends a Custom path request with its query after the one in the path', async () => {
             mockActorLookup();
             const actor = mockServerActor({ method: 'POST', path: '/search' });
 
             await appTester(perform, getBundle({
+                endpoint: '__custom__',
                 customMethod: 'post',
                 customPath: 'search?lang=en',
                 customQuery: { q: 'red lamps', '': 'blank row' },
@@ -116,22 +290,22 @@ describe('send server actor request', () => {
             expect(body).to.eql({ limit: 2 });
         });
 
-        it('sends a GET without a body', async () => {
+        it('sends a Custom path GET without a body', async () => {
             mockActorLookup();
             const actor = mockServerActor({ path: '/status' });
 
-            await appTester(perform, getBundle({ customMethod: 'GET', customPath: '/status', customBody: '{"a":1}' }));
+            await appTester(perform, getBundle({ endpoint: '__custom__', customMethod: 'GET', customPath: '/status', customBody: '{"a":1}' }));
 
             expect(actor.requests[0].body).to.equal('');
             expect(actor.requests[0].headers).to.not.have.property('content-type');
         });
 
-        it('refuses a path that names another host, without sending anything', async () => {
+        it('refuses a Custom path that names another host, without sending anything', async () => {
             const actor = mockServerActor({ path: '/other.example.com/steal' });
 
             await Promise.all(['//other.example.com/steal', 'https://other.example.com/steal'].map(async (customPath) => {
                 mockActorLookup();
-                const error = await performAndGetError({ customMethod: 'GET', customPath });
+                const error = await performAndGetError({ endpoint: '__custom__', customMethod: 'GET', customPath });
                 expect(error).to.include({ name: 'AppError', code: 'InvalidInput', status: 400 });
                 expect(error.message).to.include('must be a path on the Actor\'s server');
             }));
@@ -143,34 +317,75 @@ describe('send server actor request', () => {
             const actor = mockServerActor({ method: 'POST', path: '/' });
 
             mockActorLookup();
-            const error = await performAndGetError({ customMethod: 'POST', customPath: '/', customBody: '"text"' });
+            const error = await performAndGetError({ endpoint: '__custom__', customMethod: 'POST', customPath: '/', customBody: '"text"' });
             expect(error.message).to.equal('"Body (JSON)" must be a JSON object or array.');
 
             expect(actor.getCallCount()).to.equal(0);
         });
 
+        it('refuses a path parameter of "." or "..", which would send the request to another endpoint', async () => {
+            // `/items/..` resolves to `/`, and `/items/.` to `/items/`.
+            const otherEndpoints = [mockServerActor({ method: 'POST', path: '/' }), mockServerActor({ method: 'POST', path: '/items/' })];
+
+            await Promise.all(['..', '.'].map(async (itemId) => {
+                mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+                const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { itemId } });
+                expect(error).to.include({ code: 'InvalidInput', message: `The path parameter "itemId" can't be "${itemId}".` });
+            }));
+
+            otherEndpoints.forEach((endpoint) => expect(endpoint.getCallCount()).to.equal(0));
+        });
+
+        it('asks for a path parameter that isn\'t in the query parameters', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+
+            const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { limit: '5' } });
+
+            expect(error).to.include({ code: 'InvalidInput', message: 'Add the path parameter "itemId" to Query parameters.' });
+        });
+
+        it('fails without an endpoint before looking anything up', async () => {
+            const error = await performAndGetError({ endpoint: '' });
+            expect(error).to.include({ message: 'Choose an endpoint.', code: 'InvalidInput' });
+        });
+
         it('refuses "." and ".." as the Actor before any request, as /v2/acts/.. would be /v2/', async () => {
             // Nothing is mocked and net connect is off, so any request would fail with a different error.
             for (const actorId of ['.', '..', ' .. ', 'apify/web-fetch/..']) {
-                const error = await performAndGetError({ actorId, customPath: '/' });
+                const error = await performAndGetError({ actorId, endpoint: '__custom__', customPath: '/' });
                 expect(error, actorId).to.include({ code: 'InvalidInput', message: 'Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.' });
             }
         });
 
-        it('refuses an Actor without a server interface and an unknown Actor without sending anything', async () => {
+        it('refuses an endpoint that is not in the Actor\'s current OpenAPI definition', async () => {
+            const actor = mockServerActor({ method: 'POST', path: '/items/1' });
+            mockActorLookup();
+
+            const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { itemId: '1' } });
+
+            expect(error.message).to.equal('The endpoint "POST /items/{itemId}" isn\'t in this Actor\'s OpenAPI definition. '
+                + 'Choose the endpoint again, or use Custom path.');
+            expect(actor.getCallCount()).to.equal(0);
+        });
+
+        it('refuses an Actor without a server interface, an MCP-only Actor and an unknown Actor without sending anything', async () => {
             const actor = mockServerActor();
 
-            mockActorLookup({ actor: getMockServerActor({ actorStandby: { isEnabled: false } }) });
-            const noServer = await performAndGetError({ customPath: '/' });
+            mockActorLookup({ actor: getMockServerActor({ actorStandby: { isEnabled: false } }), withBuild: false });
+            const noServer = await performAndGetError({ endpoint: '__custom__', customPath: '/' });
             expect(noServer.message).to.equal('This Actor has no server interface. Use Run Actor to start a run instead.');
 
             // A standby URL outside *.apify.actor would receive the token, so it doesn't count as a server interface.
-            mockActorLookup({ actor: getMockServerActor({ standbyUrl: 'https://web-fetch.example.com' }) });
-            const foreignHost = await performAndGetError({ customPath: '/' });
+            mockActorLookup({ actor: getMockServerActor({ standbyUrl: 'https://web-fetch.example.com' }), withBuild: false });
+            const foreignHost = await performAndGetError({ endpoint: '__custom__', customPath: '/' });
             expect(foreignHost.message).to.equal(noServer.message);
 
+            mockActorLookup({ actorDefinition: { webServerMcpPath: '/mcp' } });
+            const mcpOnly = await performAndGetError({ endpoint: '__custom__', customPath: '/mcp' });
+            expect(mcpOnly.message).to.match(/^This Actor is an MCP server for AI assistants/);
+
             nock('https://api.apify.com').get('/v2/acts/nobody~nothing').reply(404, { error: { message: 'Actor was not found' } });
-            const notFound = await performAndGetError({ actorId: 'nobody~nothing', customPath: '/' });
+            const notFound = await performAndGetError({ actorId: 'nobody~nothing', endpoint: '__custom__', customPath: '/' });
             expect(notFound).to.include({ code: 'NotFound', status: 404 });
             expect(notFound.message).to.match(/^Actor "nobody~nothing" was not found/);
 

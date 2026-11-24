@@ -3,12 +3,85 @@ const { expect } = require('chai');
 
 const {
     decodeResponseBody,
+    escapeMarkdown,
     getErrorFromBody,
     getServerActorOrigin,
     parseActorReference,
+    parseEndpointValue,
+    parseOpenApiDocument,
+    parseOpenApiEndpoints,
 } = require('../src/server_actor');
+const { ITEMS_OPENAPI, WEB_FETCH_OPENAPI } = require('./helpers/server_actor');
 
 describe('server actor', () => {
+    describe('parseOpenApiDocument', () => {
+        it('takes webServerSchema as an object or as a JSON string', () => {
+            expect(parseOpenApiDocument(WEB_FETCH_OPENAPI)).to.equal(WEB_FETCH_OPENAPI);
+            expect(parseOpenApiDocument(JSON.stringify(WEB_FETCH_OPENAPI))).to.eql(WEB_FETCH_OPENAPI);
+        });
+
+        it('returns undefined for anything that is not a JSON object', () => {
+            [undefined, null, '', 'not json', '[1, 2]', 42, ['a']].forEach((value) => {
+                expect(parseOpenApiDocument(value)).to.equal(undefined);
+            });
+        });
+    });
+
+    describe('parseOpenApiEndpoints', () => {
+        it('lists Web Fetch\'s endpoints with their summaries', () => {
+            expect(parseOpenApiEndpoints(WEB_FETCH_OPENAPI)).to.eql([
+                { value: 'GET /', label: 'GET / - Fetch a URL', method: 'GET', path: '/' },
+                { value: 'POST /', label: 'POST / - Fetch a URL', method: 'POST', path: '/' },
+            ]);
+        });
+
+        it('hides utility paths and labels an endpoint by the first line of its description', () => {
+            expect(parseOpenApiEndpoints(ITEMS_OPENAPI).map(({ label }) => label)).to.eql([
+                'POST /items/{itemId} - Update an item',
+                'GET /items/{itemId}/notes/{noteId} - Get a note.',
+                'POST /batch - Create items in a batch',
+            ]);
+        });
+
+        it('cuts a long summary', () => {
+            const document = { paths: { '/': { get: { summary: 'x'.repeat(200) } } } };
+            const [{ label }] = parseOpenApiEndpoints(document);
+            expect(label).to.have.lengthOf('GET / - '.length + 80);
+            expect(label.endsWith('…')).to.equal(true);
+        });
+
+        it('returns no endpoints without paths', () => {
+            expect(parseOpenApiEndpoints(undefined)).to.eql([]);
+            expect(parseOpenApiEndpoints({ openapi: '3.0.0' })).to.eql([]);
+        });
+    });
+
+    describe('parseEndpointValue', () => {
+        it('splits a value into the method and path', () => {
+            expect(parseEndpointValue('POST /items/{itemId}')).to.eql({ method: 'POST', path: '/items/{itemId}' });
+        });
+
+        it('rejects anything else', () => {
+            ['', 'GET', 'get /', 'HEAD /', 'GET items', 'GET / x', '__custom__'].forEach((value) => {
+                expect(parseEndpointValue(value), value).to.equal(undefined);
+            });
+        });
+    });
+
+    describe('escapeMarkdown', () => {
+        it('escapes what would turn the Actor\'s text into links, images or HTML', () => {
+            expect(escapeMarkdown('The item\'s [name](https://example.com) with *emphasis* and <b>HTML</b>.'))
+                .to.equal('The item\'s \\[name\\]\\(https://example.com\\) with \\*emphasis\\* and \\<b\\>HTML\\</b\\>.');
+
+            // Backticks are escaped too. Renderers pair backtick runs in their own way (run lengths, table cells), so
+            // text left alone as inline code could end up outside a code span, as a link.
+            expect(escapeMarkdown('Use `snake_case` keys, not [links](https://x.y).'))
+                .to.equal('Use \\`snake\\_case\\` keys, not \\[links\\]\\(https://x.y\\).');
+            expect(escapeMarkdown('`` ` ``[Reconnect your account](https://evil.example)`'))
+                .to.equal('\\`\\` \\` \\`\\`\\[Reconnect your account\\]\\(https://evil.example\\)\\`');
+        });
+    });
+
     describe('decodeResponseBody', () => {
         it('parses JSON, also without a content type and for +json types', () => {
             expect(decodeResponseBody(Buffer.from('{"a":1}'), 'application/json')).to.eql({ body: { a: 1 } });

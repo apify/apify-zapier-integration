@@ -9,20 +9,26 @@ const { isActorNotFoundError } = require('./apify_helpers');
 
 /**
  * Server Actors answer HTTP requests at their `standbyUrl` instead of starting a run (the API keeps the old "standby"
- * names). This module backs the Send Server Actor Request create: it looks the Actor up, builds the request, sends it
- * and decodes the response.
+ * names). This module backs the Send Server Actor Request create: it finds out what an Actor's server offers, lists the
+ * endpoints of its OpenAPI document, builds the request, sends it and decodes the response.
  *
  * Every request to a Server Actor may be charged, so it is sent exactly once: no wrapRequestWithRetries, no
  * RetryableError, no redirects, no Zapier throttle retry on a 429, and no message that suggests trying again.
+ *
+ * The OpenAPI parsing is pure, so it is unit-testable without `z`.
  */
 
 const CHARGED = 'The request may still have been charged.';
 
-// Messages for the user, in Markdown. Errors use them through toPlainText().
+// Markdown, for the read-only `copy` fields of the form. Errors use the same text through toPlainText().
 const MESSAGES = {
+    selectActor: 'Select a Server Actor to see its endpoints. An Actor mapped from an earlier step can only use **Custom path**.',
     noActor: 'Choose a Server Actor.',
     invalidActor: 'Enter the Actor as an ID or as username~name, e.g. apify~web-fetch.',
     noServerInterface: 'This Actor has no server interface. Use **Run Actor** to start a run instead.',
+    mcpOnly: 'This Actor is an MCP server for AI assistants and has no HTTP endpoints Zapier can send requests to. '
+        + 'Connect it to an MCP client, or use **Run Actor** to start a run instead.',
+    noEndpoint: 'Choose an endpoint.',
     timeout: 'The Actor didn\'t answer in time. Zapier stops a step after 30 seconds, so this action supports only Server Actors '
         + `that answer within about ${SERVER_ACTOR_STEP_BUDGET_MILLIS / 1000} seconds. ${CHARGED}`,
     lookupTooSlow: 'Looking up the Actor on Apify took too long, so the request wasn\'t sent to the Actor and nothing was charged.',
@@ -30,13 +36,47 @@ const MESSAGES = {
 
 const toPlainText = (markdown) => markdown.replace(/\*\*/g, '');
 
+/** An error's message for the user. A z.errors.Error keeps its message, code and status as JSON. */
+const getErrorMessage = (err) => {
+    if (err && err.name === 'AppError') {
+        try {
+            return JSON.parse(err.message).message;
+        } catch (parseError) {
+            // Not JSON after all, used as it is.
+        }
+    }
+    return String((err && err.message) || err);
+};
+
+const getStaleEndpointMessage = (endpointValue) => `The endpoint "${endpointValue}" isn't in this Actor's OpenAPI definition. `
+    + 'Choose the endpoint again, or use **Custom path**.';
+
+const getNoOpenApiMessage = (actorId) => 'This Actor doesn\'t document its endpoints. Choose **Custom path**, and find the method '
+    + `and path in the Actor's [README](https://console.apify.com/actors/${encodeURIComponent(actorId)}/information/latest/readme).`;
+
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
+// Paths Actors expose for the platform or for docs, not for callers.
+const HIDDEN_PATHS = new Set([
+    '/health',
+    '/healthz',
+    '/openapi.json',
+    '/openapi.yaml',
+    '/docs',
+    '/favicon.ico',
+    '/robots.txt',
+    '/mcp',
+    '/sse',
+]);
+
 const HELP_TEXT_MAX_LENGTH = 1000;
+const ENDPOINT_SUMMARY_MAX_LENGTH = 80;
 
 /** Keys are a contract with saved Zaps, never rename them. */
+const CUSTOM_ENDPOINT = '__custom__';
 const FIELD_KEYS = {
     actorId: 'actorId',
+    endpoint: 'endpoint',
     customMethod: 'customMethod',
     customPath: 'customPath',
     customQuery: 'customQuery',
@@ -48,6 +88,55 @@ const isObject = (value) => typeof value === 'object' && value !== null && !Arra
 const isBlank = (value) => value === undefined || value === null || (typeof value === 'string' && !value.trim());
 
 const truncate = (text, maxLength) => (text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text);
+
+// The Actor's author controls summaries and descriptions, and Zapier renders `helpText` as Markdown, so this text must
+// not turn into links, images or HTML. Backticks are escaped too, so inline code shows as plain text: renderers pair
+// backtick runs in their own way (run lengths, table cells), and text left alone as code could end up a link.
+const MARKDOWN_SPECIAL_CHARS = /[\\`*_[\]()!<>]/g;
+
+const escapeMarkdown = (text) => String(text).replace(MARKDOWN_SPECIAL_CHARS, '\\$&');
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* OpenAPI document (pure)                                                                                            */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+/** Parses `webServerSchema`, which the API returns as an object or, for some builds, as a JSON string. */
+const parseOpenApiDocument = (schema) => {
+    if (isObject(schema)) return schema;
+    if (typeof schema !== 'string') return undefined;
+    try {
+        const parsed = JSON.parse(schema);
+        return isObject(parsed) ? parsed : undefined;
+    } catch (err) {
+        return undefined;
+    }
+};
+
+/** The endpoints of an OpenAPI document, e.g. `{ value: 'POST /search', label: 'POST /search - Search', method, path }`. */
+const parseOpenApiEndpoints = (document) => {
+    const paths = document && document.paths;
+    if (!isObject(paths)) return [];
+
+    return Object.entries(paths)
+        .filter(([path, pathItem]) => !HIDDEN_PATHS.has(path) && isObject(pathItem))
+        .flatMap(([path, pathItem]) => HTTP_METHODS
+            .filter((method) => isObject(pathItem[method.toLowerCase()]))
+            .map((method) => {
+                const operation = pathItem[method.toLowerCase()];
+                const value = `${method} ${path}`;
+                const summary = [operation.summary, operation.description].find((text) => typeof text === 'string' && text.trim());
+                // Labels aren't rendered as Markdown, so the summary stays plain text.
+                const label = summary ? `${value} - ${truncate(summary.trim().split(/\r?\n/)[0], ENDPOINT_SUMMARY_MAX_LENGTH)}` : value;
+                return { value, label, method, path };
+            }));
+};
+
+/** Splits an endpoint value like `POST /items/{id}` into its method and path. */
+const parseEndpointValue = (value) => {
+    const match = /^([A-Z]+) (\/\S*)$/.exec(String(value || '').trim());
+    if (!match || !HTTP_METHODS.includes(match[1])) return undefined;
+    return { method: match[1], path: match[2] };
+};
 
 /* ------------------------------------------------------------------------------------------------------------------ */
 /* Request                                                                                                            */
@@ -95,6 +184,30 @@ const buildCustomRequest = (z, inputData) => {
     }
 
     return { method, path, query, body };
+};
+
+/**
+ * A documented endpoint's request: its method and path, the values of path placeholders such as `{itemId}` taken from
+ * **Query parameters**, the other query parameters, and the JSON body. Only `customQuery` and `customBody` are read, so
+ * a method or path left over from Custom path isn't used.
+ */
+const buildEndpointRequest = (z, { method, path }, inputData) => {
+    const rawQuery = inputData[FIELD_KEYS.customQuery];
+    const query = isObject(rawQuery) ? { ...rawQuery } : rawQuery;
+    const filledPath = path.replace(/\{([^}]+)\}/g, (placeholder, name) => {
+        if (!isObject(query) || isBlank(query[name])) throw invalidInput(z, `Add the path parameter "${name}" to **Query parameters**.`);
+        const value = String(query[name]);
+        delete query[name];
+        // The URL would resolve `.` and `..` as path segments and send the request to another endpoint.
+        if (value === '.' || value === '..') throw invalidInput(z, `The path parameter "${name}" can't be "${value}".`);
+        return encodeURIComponent(value);
+    });
+    return buildCustomRequest(z, {
+        [FIELD_KEYS.customMethod]: method,
+        [FIELD_KEYS.customPath]: filledPath,
+        [FIELD_KEYS.customQuery]: query,
+        [FIELD_KEYS.customBody]: inputData[FIELD_KEYS.customBody],
+    });
 };
 
 const toQueryText = (value) => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
@@ -321,10 +434,11 @@ const parseActorReference = (value) => {
 const getActorUrl = (actorId) => `${APIFY_API_ENDPOINTS.actors}/${encodeURIComponent(actorId)}`;
 
 /**
- * Looks up the Actor and its server, from GET /v2/acts/{id}:
+ * Looks up the Actor and what its server offers, from GET /v2/acts/{id} and its default build:
  * - `notFound`: the Actor doesn't exist, or the account can't access it.
  * - `noServer`: no server interface.
- * - `rest`: everything else, with the origin of its server.
+ * - `mcpOnly`: the build sets `webServerMcpPath`, and its OpenAPI document, if any, lists no endpoints. Not called.
+ * - `rest`: everything else, with the OpenAPI document and its endpoints, which may be none.
  */
 const getServerActorInterface = async (z, actorId) => {
     let actor;
@@ -338,21 +452,36 @@ const getServerActorInterface = async (z, actorId) => {
     const origin = getServerActorOrigin(actor);
     if (!origin) return { type: 'noServer', actor };
 
-    return { type: 'rest', actor, origin };
+    const { data: build } = await wrapRequestWithRetries(z.request, { url: `${getActorUrl(actor.id || actorId)}/builds/default` });
+    const definition = build && isObject(build.actorDefinition) ? build.actorDefinition : {};
+    const document = parseOpenApiDocument(definition.webServerSchema);
+    const endpoints = parseOpenApiEndpoints(document);
+    if (!endpoints.length && definition.webServerMcpPath) return { type: 'mcpOnly', actor };
+
+    return { type: 'rest', actor, origin, document, endpoints };
 };
 
 module.exports = {
+    CUSTOM_ENDPOINT,
     FIELD_KEYS,
     HTTP_METHODS,
     MESSAGES,
     buildCustomRequest,
+    buildEndpointRequest,
     buildRequestUrl,
     decodeResponseBody,
+    escapeMarkdown,
     getErrorFromBody,
+    getErrorMessage,
+    getNoOpenApiMessage,
     getServerActorInterface,
     getServerActorOrigin,
+    getStaleEndpointMessage,
     invalidInput,
     parseActorReference,
+    parseEndpointValue,
+    parseOpenApiDocument,
+    parseOpenApiEndpoints,
     requestTiming,
     sendServerActorRequest,
     toResult,
