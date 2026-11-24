@@ -9,13 +9,13 @@ const { isActorNotFoundError } = require('./apify_helpers');
 
 /**
  * Server Actors answer HTTP requests at their `standbyUrl` instead of starting a run (the API keeps the old "standby"
- * names). This module backs the Send Server Actor Request create: it finds out what an Actor's server offers, lists the
- * endpoints of its OpenAPI document, builds the request, sends it and decodes the response.
+ * names). This module backs the Send Server Actor Request create: it finds out what an Actor's server offers, turns its
+ * OpenAPI document into Zapier input fields, builds the request from them, sends it and decodes the response.
  *
  * Every request to a Server Actor may be charged, so it is sent exactly once: no wrapRequestWithRetries, no
  * RetryableError, no redirects, no Zapier throttle retry on a 429, and no message that suggests trying again.
  *
- * The OpenAPI parsing is pure, so it is unit-testable without `z`.
+ * The OpenAPI parsing and field mapping are pure, so they are unit-testable without `z`.
  */
 
 const CHARGED = 'The request may still have been charged.';
@@ -29,6 +29,7 @@ const MESSAGES = {
     mcpOnly: 'This Actor is an MCP server for AI assistants and has no HTTP endpoints Zapier can send requests to. '
         + 'Connect it to an MCP client, or use **Run Actor** to start a run instead.',
     noEndpoint: 'Choose an endpoint.',
+    noParameters: 'This endpoint takes no parameters.',
     timeout: 'The Actor didn\'t answer in time. Zapier stops a step after 30 seconds, so this action supports only Server Actors '
         + `that answer within about ${SERVER_ACTOR_STEP_BUDGET_MILLIS / 1000} seconds. ${CHARGED}`,
     lookupTooSlow: 'Looking up the Actor on Apify took too long, so the request wasn\'t sent to the Actor and nothing was charged.',
@@ -69,19 +70,29 @@ const HIDDEN_PATHS = new Set([
     '/sse',
 ]);
 
+// At most this many `$ref`s are followed in a chain. Past it, and where a ref repeats in its own chain (a cycle), only
+// the target's own keywords are kept (see toShallowSchema).
+const MAX_REF_DEPTH = 10;
 const HELP_TEXT_MAX_LENGTH = 1000;
+const PLACEHOLDER_MAX_LENGTH = 1000;
 const ENDPOINT_SUMMARY_MAX_LENGTH = 80;
 
-/** Keys are a contract with saved Zaps, never rename them. */
+/**
+ * Keys are a contract with saved Zaps, never rename them. The typed parameters of a documented endpoint are keyed by
+ * where the value goes and its name, e.g. `query_limit`. `perform` routes values with the entries the fields were built
+ * from (getEndpointEntries), never by parsing the keys.
+ */
 const CUSTOM_ENDPOINT = '__custom__';
 const FIELD_KEYS = {
     actorId: 'actorId',
     endpoint: 'endpoint',
+    wholeBody: 'bodyJson',
     customMethod: 'customMethod',
     customPath: 'customPath',
     customQuery: 'customQuery',
     customBody: 'customBody',
 };
+const PARAMETER_KEY_PREFIXES = { path: 'path_', query: 'query_', body: 'body_' };
 
 const isObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -95,6 +106,19 @@ const truncate = (text, maxLength) => (text.length > maxLength ? `${text.slice(0
 const MARKDOWN_SPECIAL_CHARS = /[\\`*_[\]()!<>]/g;
 
 const escapeMarkdown = (text) => String(text).replace(MARKDOWN_SPECIAL_CHARS, '\\$&');
+
+/** Escapes `text` and cuts it to `maxLength`. The text is cut before escaping, so no escape sequence is cut in half. */
+const escapeMarkdownWithin = (text, maxLength) => {
+    let chars = Array.from(String(text));
+    let escaped = escapeMarkdown(chars.join(''));
+    if (escaped.length <= maxLength) return escaped;
+    while (chars.length && escaped.length > maxLength - 1) {
+        // Escaping at most doubles the length, so cutting half the excess always makes progress.
+        chars = chars.slice(0, chars.length - Math.max(1, Math.ceil((escaped.length - (maxLength - 1)) / 2)));
+        escaped = escapeMarkdown(chars.join(''));
+    }
+    return `${escaped}…`;
+};
 
 /* ------------------------------------------------------------------------------------------------------------------ */
 /* OpenAPI document (pure)                                                                                            */
@@ -110,6 +134,53 @@ const parseOpenApiDocument = (schema) => {
     } catch (err) {
         return undefined;
     }
+};
+
+/** Resolves a local JSON pointer such as `#/components/schemas/FetchRequest/properties/url`. */
+const resolvePointer = (document, ref) => {
+    if (!ref.startsWith('#/')) return undefined;
+    try {
+        return ref
+            .slice(2)
+            .split('/')
+            .map((part) => decodeURIComponent(part).replace(/~1/g, '/').replace(/~0/g, '~'))
+            .reduce((node, key) => (isObject(node) ? node[key] : undefined), document);
+    } catch (err) {
+        // A malformed percent-encoding in the pointer.
+        return undefined;
+    }
+};
+
+const isFlatValue = (value) => !isObject(value) && !(Array.isArray(value) && value.some((item) => typeof item === 'object' && item !== null));
+
+/**
+ * What a ref that is cut short (a cycle, or past MAX_REF_DEPTH) leaves: the target's own keywords, such as `type` and
+ * `description`, without anything nested, so a field built from it still gets the right kind. The cache below shares a
+ * schema between all its uses, including where it was cut, so `{}` would turn e.g. an object into a string field.
+ */
+const toShallowSchema = (target) => (isObject(target)
+    ? Object.fromEntries(Object.entries(target).filter(([key, value]) => key !== '$ref' && isFlatValue(value)))
+    : {});
+
+/**
+ * Returns `node` with its local `$ref`s resolved. Unresolvable or remote refs become `{}`. Each ref is resolved once
+ * per call and its result shared, so the work stays proportional to the document: without that, a small document
+ * whose schemas each reference the next one many times would expand into billions of nodes and freeze the step.
+ * The shared results must not be mutated.
+ */
+const resolveRefs = (document, node, refs = [], resolved = new Map()) => {
+    if (Array.isArray(node)) return node.map((item) => resolveRefs(document, item, refs, resolved));
+    if (!isObject(node)) return node;
+    if (typeof node.$ref === 'string') {
+        const ref = node.$ref;
+        if (refs.length >= MAX_REF_DEPTH || refs.includes(ref)) return toShallowSchema(resolvePointer(document, ref));
+        if (!resolved.has(ref)) {
+            const target = resolvePointer(document, ref);
+            resolved.set(ref, target === undefined ? {} : resolveRefs(document, target, [...refs, ref], resolved));
+        }
+        return resolved.get(ref);
+    }
+    return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, resolveRefs(document, value, refs, resolved)]));
 };
 
 /** The endpoints of an OpenAPI document, e.g. `{ value: 'POST /search', label: 'POST /search - Search', method, path }`. */
@@ -138,12 +209,324 @@ const parseEndpointValue = (value) => {
     return { method: match[1], path: match[2] };
 };
 
+/** Finds an endpoint's operation, with path-level and operation-level parameters merged and `$ref`s resolved. */
+const getEndpointOperation = (document, method, path) => {
+    const paths = document && document.paths;
+    if (!isObject(paths)) return undefined;
+    const pathItem = resolveRefs(document, paths[path]);
+    if (!isObject(pathItem)) return undefined;
+    const operation = pathItem[method.toLowerCase()];
+    if (!isObject(operation)) return undefined;
+
+    // Operation-level parameters override path-level ones with the same name and location.
+    const parameters = new Map();
+    [pathItem.parameters, operation.parameters]
+        .filter(Array.isArray)
+        .flat()
+        .filter((parameter) => isObject(parameter) && typeof parameter.name === 'string' && parameter.name && typeof parameter.in === 'string')
+        .forEach((parameter) => parameters.set(`${parameter.in}:${parameter.name}`, parameter));
+
+    const requestBody = isObject(operation.requestBody) ? operation.requestBody : {};
+    const content = isObject(requestBody.content) ? requestBody.content : {};
+    const jsonContentType = Object.keys(content).find((type) => /[/+]json\b/i.test(type));
+    const jsonContent = jsonContentType && isObject(content[jsonContentType]) ? content[jsonContentType] : {};
+
+    return {
+        parameters: [...parameters.values()],
+        bodySchema: isObject(jsonContent.schema) ? jsonContent.schema : undefined,
+        bodyExample: jsonContent.example,
+        bodyRequired: requestBody.required === true,
+    };
+};
+
+/* ------------------------------------------------------------------------------------------------------------------ */
+/* Schema → Zapier field (pure)                                                                                       */
+/* ------------------------------------------------------------------------------------------------------------------ */
+
+/**
+ * Reads nullable and wrapped schemas as the type they allow: `type: ['string', 'null']` (OpenAPI 3.1), `anyOf` or
+ * `oneOf` with one schema besides `{ type: 'null' }` (e.g. pydantic's `Optional[str]`), and an `allOf` of one schema.
+ * Keywords next to the wrapper, such as `description` and `default`, win over the wrapped schema's.
+ */
+const normalizeSchema = (schema) => {
+    if (!isObject(schema)) return {};
+    if (Array.isArray(schema.type)) {
+        const { type, ...rest } = schema;
+        const types = type.filter((item) => item !== 'null');
+        return types.length === 1 ? { ...rest, type: types[0] } : rest;
+    }
+    if (schema.type !== undefined) return schema;
+
+    const { anyOf, oneOf, allOf, ...rest } = schema;
+    const variants = (anyOf || oneOf || []).filter((variant) => !(isObject(variant) && variant.type === 'null'));
+    if (variants.length === 1 && isObject(variants[0])) return { ...normalizeSchema(variants[0]), ...rest };
+    if (Array.isArray(allOf) && allOf.length === 1 && isObject(allOf[0])) return { ...normalizeSchema(allOf[0]), ...rest };
+    return schema;
+};
+
+const SCALAR_KINDS = { string: 'string', integer: 'integer', number: 'number', boolean: 'boolean' };
+
+const getEnumChoices = (schema) => {
+    if (!Array.isArray(schema.enum)) return undefined;
+    const choices = [...new Set(schema.enum
+        .filter((value) => ['string', 'number', 'boolean'].includes(typeof value))
+        .map(String)
+        .filter((value) => value.trim()))];
+    return choices.length ? choices : undefined;
+};
+
+/**
+ * How a schema is edited in Zapier and converted back in `perform`: a scalar, a `list` of scalars, a `dict` of
+ * key-value pairs with scalar or untyped values, or `json` text for anything else that is an object or array.
+ */
+const getFieldKind = (schema) => {
+    const scalarKind = SCALAR_KINDS[schema.type];
+    if (scalarKind) return { kind: scalarKind, choices: scalarKind === 'boolean' ? undefined : getEnumChoices(schema) };
+
+    if (schema.type === 'array') {
+        const items = normalizeSchema(schema.items);
+        const itemKind = SCALAR_KINDS[items.type];
+        if (itemKind && itemKind !== 'boolean') return { kind: 'list', itemKind, choices: getEnumChoices(items) };
+        return { kind: 'json' };
+    }
+
+    const hasProperties = isObject(schema.properties) && Object.keys(schema.properties).length > 0;
+    if (schema.type === 'object' || hasProperties || schema.additionalProperties) {
+        if (hasProperties || !schema.additionalProperties) return { kind: 'json' };
+        // Key-value pairs hold text, so values that are objects or arrays need JSON.
+        const values = normalizeSchema(schema.additionalProperties);
+        if (values.type === undefined) return { kind: 'dict' };
+        const valueKind = SCALAR_KINDS[values.type];
+        return valueKind ? { kind: 'dict', valueKind } : { kind: 'json' };
+    }
+
+    return { kind: 'string', choices: getEnumChoices(schema) };
+};
+
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null);
+
+/**
+ * Where a value goes and how it's typed. The input fields and the request are both built from these entries, so a
+ * value can only end up where the field shown for it says.
+ */
+const createEntry = (location, name, rawSchema, { required, description, example, explode } = {}) => {
+    const schema = normalizeSchema(rawSchema);
+    const examples = Array.isArray(schema.examples) ? schema.examples : [];
+    return {
+        key: location === 'wholeBody' ? FIELD_KEYS.wholeBody : `${PARAMETER_KEY_PREFIXES[location]}${name}`,
+        label: location === 'wholeBody' ? 'Body (JSON)' : name,
+        location,
+        name,
+        required: Boolean(required),
+        // OpenAPI's default for query arrays is `explode: true`, i.e. `?a=1&a=2`. `false` means `?a=1,2`.
+        explode: explode !== false,
+        schema,
+        description: [description, schema.description].find((text) => typeof text === 'string' && text.trim()),
+        // A default goes into `placeholder`, never `default`: Zapier would save today's default into the Zap.
+        placeholderValue: firstDefined(schema.default, example, schema.example, examples[0]),
+        ...getFieldKind(schema),
+    };
+};
+
+/**
+ * The typed entries of an endpoint: path and query parameters, then the JSON body's top-level properties, or one
+ * whole-body entry when the body isn't an object with properties. `undefined` when the endpoint isn't in the document.
+ */
+const getEndpointEntries = (document, method, path) => {
+    const operation = getEndpointOperation(document, method, path);
+    if (!operation) return undefined;
+
+    // A placeholder such as `{itemId}` needs a value even when the document doesn't declare it.
+    const declared = new Set(operation.parameters.filter((parameter) => parameter.in === 'path').map(({ name }) => name));
+    const undeclared = [...new Set([...path.matchAll(/\{([^}]+)\}/g)].map(([, name]) => name))]
+        .filter((name) => !declared.has(name))
+        .map((name) => ({ name, in: 'path' }));
+
+    const entries = [...undeclared, ...operation.parameters]
+        .filter((parameter) => parameter.in === 'path' || parameter.in === 'query')
+        .map((parameter) => createEntry(parameter.in, parameter.name, parameter.schema, {
+            // Path parameters are always required.
+            required: parameter.in === 'path' || parameter.required === true,
+            description: parameter.description,
+            example: parameter.example,
+            explode: parameter.explode,
+        }));
+
+    if (method !== 'GET' && operation.bodySchema) {
+        const bodySchema = normalizeSchema(operation.bodySchema);
+        const properties = isObject(bodySchema.properties) ? Object.entries(bodySchema.properties).filter(([name]) => name) : [];
+        if (properties.length) {
+            const requiredNames = new Set(Array.isArray(bodySchema.required) ? bodySchema.required : []);
+            properties.forEach(([name, schema]) => entries.push(createEntry('body', name, schema, { required: requiredNames.has(name) })));
+        } else {
+            // A body without properties is edited as JSON, whatever its schema says.
+            entries.push({
+                ...createEntry('wholeBody', 'body', bodySchema, { required: operation.bodyRequired, example: operation.bodyExample }),
+                kind: 'json',
+                choices: undefined,
+            });
+        }
+    }
+
+    // Add the location to a label only when a parameter and a body property, or two parameters, share a name.
+    const nameCounts = entries.reduce((counts, { name }) => counts.set(name, (counts.get(name) || 0) + 1), new Map());
+    return entries.map((entry) => (entry.location !== 'wholeBody' && nameCounts.get(entry.name) > 1
+        ? { ...entry, label: `${entry.name} (${entry.location})` }
+        : entry));
+};
+
+const JSON_HINTS = { array: 'Enter a JSON array.', object: 'Enter a JSON object.' };
+const NUMBER_HINTS = {
+    integer: { one: 'Enter a whole number.', list: 'Enter whole numbers.', dict: 'Enter whole numbers as the values.' },
+    number: { one: 'Enter a number.', list: 'Enter numbers.', dict: 'Enter numbers as the values.' },
+};
+
+const getHint = (entry) => {
+    if (entry.kind === 'json') return JSON_HINTS[entry.schema.type] || 'Enter JSON.';
+    if (entry.kind === 'dict') {
+        return entry.valueKind === 'boolean' ? 'Enter true or false as the values.' : NUMBER_HINTS[entry.valueKind]?.dict || '';
+    }
+    const numberHints = NUMBER_HINTS[entry.kind === 'list' ? entry.itemKind : entry.kind];
+    if (numberHints) return entry.kind === 'list' ? numberHints.list : numberHints.one;
+    return '';
+};
+
+/**
+ * Numbers are text fields. Zapier turns text in an `integer` or `number` field into 0 before `perform` sees it, which
+ * would send a value nobody entered. As text, an invalid number reaches `convertFieldValue` and fails before sending.
+ */
+const toFieldType = (kind) => (kind === 'integer' || kind === 'number' ? 'string' : kind);
+
+const toPlaceholder = (entry) => {
+    const value = entry.placeholderValue;
+    if (value === undefined || value === null) return undefined;
+    let text;
+    if (['string', 'number', 'boolean'].includes(typeof value)) text = String(value);
+    else if (entry.kind === 'list' && Array.isArray(value)) text = value.join(', ');
+    else text = JSON.stringify(value);
+    text = text.trim();
+    return text ? truncate(text, PLACEHOLDER_MAX_LENGTH) : undefined;
+};
+
+/** The Zapier input field for an entry. */
+const toInputField = (entry) => {
+    const field = { key: entry.key, label: entry.label, required: entry.required };
+
+    if (entry.kind === 'list') {
+        field.type = toFieldType(entry.itemKind);
+        field.list = true;
+    } else if (entry.kind === 'dict') {
+        field.dict = true;
+    } else {
+        field.type = entry.kind === 'json' ? 'text' : toFieldType(entry.kind);
+    }
+    if (entry.choices) field.choices = entry.choices;
+
+    const placeholder = toPlaceholder(entry);
+    if (placeholder) field.placeholder = placeholder;
+
+    // A list of choices already says what to enter.
+    const hint = entry.choices ? '' : getHint(entry);
+    const descriptionMaxLength = HELP_TEXT_MAX_LENGTH - (hint ? hint.length + 1 : 0);
+    const helpText = [entry.description && escapeMarkdownWithin(entry.description.trim(), descriptionMaxLength), hint]
+        .filter(Boolean)
+        .join(' ');
+    if (helpText) field.helpText = helpText;
+
+    return field;
+};
+
+/** The typed input fields of a documented endpoint, or `undefined` when the endpoint isn't in the document. */
+const getEndpointInputFields = (document, method, path) => {
+    const entries = getEndpointEntries(document, method, path);
+    return entries && entries.map(toInputField);
+};
+
 /* ------------------------------------------------------------------------------------------------------------------ */
 /* Request                                                                                                            */
 /* ------------------------------------------------------------------------------------------------------------------ */
 
 // Nothing has been sent when these are thrown, so nothing was charged.
 const invalidInput = (z, message) => new z.errors.Error(toPlainText(message), 'InvalidInput', 400);
+
+const TRUE_VALUES = ['true', 'yes'];
+const FALSE_VALUES = ['false', 'no'];
+
+const convertScalar = (z, kind, value, label) => {
+    if (kind === 'integer' || kind === 'number') {
+        const number = typeof value === 'number' ? value : Number(String(value).trim());
+        if (!Number.isFinite(number)) throw invalidInput(z, `"${label}" must be a number, but it is "${value}".`);
+        if (kind === 'integer' && !Number.isInteger(number)) throw invalidInput(z, `"${label}" must be a whole number, but it is "${value}".`);
+        return number;
+    }
+    if (kind === 'boolean') {
+        if (typeof value === 'boolean') return value;
+        const text = String(value).trim().toLowerCase();
+        if (TRUE_VALUES.includes(text)) return true;
+        if (FALSE_VALUES.includes(text)) return false;
+        throw invalidInput(z, `"${label}" must be true or false, but it is "${value}".`);
+    }
+    // A mapped number or boolean, e.g. for a string ID. Servers such as pydantic don't take it as a string.
+    return ['number', 'boolean'].includes(typeof value) ? String(value) : value;
+};
+
+/** Converts a field value back to what the schema expects. `undefined` means the field is left out of the request. */
+const convertFieldValue = (z, entry, value) => {
+    if (isBlank(value)) return undefined;
+
+    if (entry.kind === 'list') {
+        const items = (Array.isArray(value) ? value : [value])
+            .filter((item) => !isBlank(item))
+            .map((item) => convertScalar(z, entry.itemKind, item, entry.label));
+        return items.length ? items : undefined;
+    }
+    if (entry.kind === 'dict') {
+        if (!isObject(value)) throw invalidInput(z, `"${entry.label}" must be a set of key-value pairs.`);
+        // Zapier keeps the blank rows of a dict field. A blank number or true/false is left out, never sent as 0.
+        const isTyped = entry.valueKind && entry.valueKind !== 'string';
+        const pairs = Object.entries(value)
+            .filter(([key, item]) => key.trim() && !(isTyped && isBlank(item)))
+            .map(([key, item]) => [key, entry.valueKind ? convertScalar(z, entry.valueKind, item, `${entry.label}.${key}`) : item]);
+        return pairs.length ? Object.fromEntries(pairs) : undefined;
+    }
+    if (entry.kind === 'json') {
+        if (typeof value !== 'string') return value;
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            throw invalidInput(z, `"${entry.label}" isn't valid JSON: ${err.message}`);
+        }
+    }
+    return convertScalar(z, entry.kind, value, entry.label);
+};
+
+/**
+ * A documented endpoint's request, from its typed field values. Only the keys of `entries` are read: Zapier keeps the
+ * values of other endpoints and of Custom path under "Extra Fields" and sends them, and they must not leak in.
+ */
+const buildEndpointRequest = (z, { method, path }, entries, inputData) => {
+    const pathValues = new Map();
+    const query = [];
+    let body;
+    entries.forEach((entry) => {
+        const value = convertFieldValue(z, entry, inputData[entry.key]);
+        if (value === undefined) return;
+        if (entry.location === 'path') pathValues.set(entry.name, value);
+        else if (entry.location === 'query') query.push({ name: entry.name, value, explode: entry.explode });
+        else if (entry.location === 'wholeBody') body = value;
+        else body = { ...body, [entry.name]: value };
+    });
+
+    const filledPath = path.replace(/\{([^}]+)\}/g, (placeholder, name) => {
+        if (!pathValues.has(name)) throw invalidInput(z, `Fill in the path parameter "${name}".`);
+        const value = String(pathValues.get(name));
+        // The URL would resolve `.` and `..` as path segments and send the request to another endpoint.
+        if (value === '.' || value === '..') throw invalidInput(z, `The path parameter "${name}" can't be "${value}".`);
+        return encodeURIComponent(value);
+    });
+
+    return { method, path: filledPath, query, body: method === 'GET' ? undefined : body ?? {} };
+};
 
 const parseJsonBody = (z, value, label) => {
     let body = value;
@@ -184,30 +567,6 @@ const buildCustomRequest = (z, inputData) => {
     }
 
     return { method, path, query, body };
-};
-
-/**
- * A documented endpoint's request: its method and path, the values of path placeholders such as `{itemId}` taken from
- * **Query parameters**, the other query parameters, and the JSON body. Only `customQuery` and `customBody` are read, so
- * a method or path left over from Custom path isn't used.
- */
-const buildEndpointRequest = (z, { method, path }, inputData) => {
-    const rawQuery = inputData[FIELD_KEYS.customQuery];
-    const query = isObject(rawQuery) ? { ...rawQuery } : rawQuery;
-    const filledPath = path.replace(/\{([^}]+)\}/g, (placeholder, name) => {
-        if (!isObject(query) || isBlank(query[name])) throw invalidInput(z, `Add the path parameter "${name}" to **Query parameters**.`);
-        const value = String(query[name]);
-        delete query[name];
-        // The URL would resolve `.` and `..` as path segments and send the request to another endpoint.
-        if (value === '.' || value === '..') throw invalidInput(z, `The path parameter "${name}" can't be "${value}".`);
-        return encodeURIComponent(value);
-    });
-    return buildCustomRequest(z, {
-        [FIELD_KEYS.customMethod]: method,
-        [FIELD_KEYS.customPath]: filledPath,
-        [FIELD_KEYS.customQuery]: query,
-        [FIELD_KEYS.customBody]: inputData[FIELD_KEYS.customBody],
-    });
 };
 
 const toQueryText = (value) => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
@@ -491,6 +850,8 @@ module.exports = {
     buildRequestUrl,
     decodeResponseBody,
     escapeMarkdown,
+    getEndpointEntries,
+    getEndpointInputFields,
     getErrorFromBody,
     getErrorMessage,
     getNoOpenApiMessage,
@@ -503,6 +864,7 @@ module.exports = {
     parseOpenApiDocument,
     parseOpenApiEndpoints,
     requestTiming,
+    resolveRefs,
     sendServerActorRequest,
     toResult,
 };

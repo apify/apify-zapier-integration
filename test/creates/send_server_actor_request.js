@@ -50,9 +50,6 @@ const performAndGetError = async (inputData) => {
     throw new Error('Expected the step to fail');
 };
 
-// What the error and response tests send. Their mocked Actor answers any query.
-const SIMPLE_REQUEST = { endpoint: 'GET /', customQuery: { url: 'https://example.com' } };
-
 // A message must never suggest sending a possibly charged request again.
 const expectNoRetryAdvice = ({ message }) => expect(message).to.not.match(/try again|retry|later/i);
 
@@ -135,15 +132,13 @@ describe('send server actor request', () => {
             expect(endpointField.choices.map(({ value }) => value)).to.eql(['GET /', 'POST /', '__custom__']);
         });
 
-        it('adds the endpoint\'s query parameters, and its body except for GET', async () => {
+        it('adds the typed fields of the chosen endpoint', async () => {
             mockActorLookup();
-            const getFields = await getInputFields({ endpoint: 'GET /' });
-            mockActorLookup();
-            const postFields = await getInputFields({ endpoint: 'POST /' });
 
-            expect(getKeys(getFields)).to.eql(['endpoint', 'customQuery']);
-            expect(getFields[1].helpText).to.equal('The endpoint\'s query parameters, and the values of path placeholders such as `{itemId}`.');
-            expect(getKeys(postFields)).to.eql(['endpoint', 'customQuery', 'customBody']);
+            const fields = await getInputFields({ endpoint: 'GET /' });
+
+            expect(getKeys(fields)).to.eql(['endpoint', 'query_url', 'query_formats', 'query_unwrap', 'query_headers', 'query_wait']);
+            fields.forEach((field) => expect(field, field.key).to.not.have.property('default'));
         });
 
         it('adds the Custom path fields', async () => {
@@ -152,6 +147,15 @@ describe('send server actor request', () => {
             const fields = await getInputFields({ endpoint: '__custom__' });
 
             expect(getKeys(fields)).to.eql(['endpoint', 'customMethod', 'customPath', 'customQuery', 'customBody']);
+        });
+
+        it('says when the chosen endpoint takes no parameters', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: { paths: { '/ping': { get: { summary: 'Ping' } } } } } });
+
+            const fields = await getInputFields({ endpoint: 'GET /ping' });
+
+            expect(getKeys(fields)).to.eql(['endpoint', 'endpointNotice']);
+            expect(fields[1].helpText).to.equal('This endpoint takes no parameters.');
         });
 
         it('offers only Custom path and links the README when the Actor documents no endpoints', async () => {
@@ -236,53 +240,135 @@ describe('send server actor request', () => {
     });
 
     describe('request', () => {
-        it('sends a documented endpoint\'s request to the Actor\'s server with the token and returns the response', async () => {
+        it('sends a typed GET to the Actor\'s server with the token and returns the response', async () => {
             const apiScope = mockActorLookup();
             const responseBody = { url: 'https://example.com', markdown: '# Example' };
             const actor = mockServerActor({ body: responseBody });
 
             const result = await appTester(perform, getBundle({
                 endpoint: 'GET /',
-                customQuery: { url: 'https://example.com/?a=1&b=2', formats: 'markdown,links' },
-                // A GET sends no body.
-                customBody: '{"url":"https://other.example.com"}',
+                query_url: 'https://example.com/?a=1&b=2',
+                // `explode: false`, so the list is sent comma-joined.
+                query_formats: ['markdown', 'links'],
+                query_unwrap: 'false',
+                query_wait: '500',
             }));
 
             expect(result).to.eql({ status: 200, contentType: 'application/json', body: responseBody });
             expect(actor.getCallCount()).to.equal(1);
-            const [{ url, headers, body }] = actor.requests;
+            const [{ url, headers }] = actor.requests;
             expect(url.searchParams.get('url')).to.equal('https://example.com/?a=1&b=2');
-            expect(url.searchParams.get('formats')).to.equal('markdown,links');
-            expect(body).to.equal('');
+            expect(url.search).to.include('formats=markdown%2Clinks');
+            expect(url.searchParams.get('unwrap')).to.equal('false');
+            expect(url.searchParams.get('wait')).to.equal('500');
             expect(headers.authorization).to.equal(`Bearer ${MOCKED_TOKEN}`);
             expect(headers['x-apify-integration-platform']).to.equal('zapier');
             expect(apiScope.isDone()).to.equal(true);
             expect(actor.scope.isDone()).to.equal(true);
         });
 
-        it('fills path placeholders from the query parameters and sends the JSON body', async () => {
+        it('fills path parameters, repeats array query parameters and sends typed body properties', async () => {
             mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
             const actor = mockServerActor({ method: 'POST', path: '/items/a%2Fb%20c' });
 
             await appTester(perform, getBundle({
                 endpoint: 'POST /items/{itemId}',
-                customQuery: { itemId: 'a/b c', limit: '5' },
-                customBody: '{"name":"Lamp"}',
+                path_itemId: 'a/b c',
+                query_limit: '5',
+                query_tags: ['x', '', 'y'],
+                query_mode: 'fast',
+                body_name: 'Lamp',
+                body_count: '3',
+                body_ratio: 1.5,
+                body_active: 'no',
+                body_limit: 7,
+                body_ids: ['1', '2'],
+                body_labels: { room: 'kitchen', '': 'blank row' },
+                // Converted to the type of additionalProperties; a blank number is left out, not sent as 0.
+                body_weights: { a: '1.5', b: 2, c: '', '': '9' },
+                body_meta: '{"color":"red"}',
+            }));
+
+            expect(actor.getCallCount()).to.equal(1);
+            const [{ url, headers, body }] = actor.requests;
+            expect(url.search).to.equal('?limit=5&tags=x&tags=y&mode=fast');
+            expect(headers['content-type']).to.equal('application/json');
+            expect(body).to.eql({
+                name: 'Lamp',
+                count: 3,
+                ratio: 1.5,
+                active: false,
+                limit: 7,
+                ids: [1, 2],
+                labels: { room: 'kitchen' },
+                weights: { a: 1.5, b: 2 },
+                meta: { color: 'red' },
+            });
+        });
+
+        it('sends a mapped number or boolean in a string field as a string', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+            const actor = mockServerActor({ method: 'POST', path: '/items/42' });
+
+            await appTester(perform, getBundle({ endpoint: 'POST /items/{itemId}', path_itemId: 42, body_name: 123, body_note: true }));
+
+            expect(actor.requests[0].body).to.eql({ name: '123', note: 'true' });
+        });
+
+        it('leaves empty fields out of the request', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+            const actor = mockServerActor({ method: 'POST', path: '/items/1' });
+
+            await appTester(perform, getBundle({
+                endpoint: 'POST /items/{itemId}',
+                path_itemId: '1',
+                query_limit: '',
+                query_tags: [],
+                body_name: 'Lamp',
+                body_count: '  ',
+                body_active: null,
+                body_ids: [''],
+                body_labels: { '': '' },
+                body_meta: '',
             }));
 
             const [{ url, body }] = actor.requests;
-            expect(url.search).to.equal('?limit=5');
+            expect(url.search).to.equal('');
             expect(body).to.eql({ name: 'Lamp' });
         });
 
-        it('uses the endpoint\'s method and path, not the ones left over from Custom path', async () => {
+        it('sends only the chosen endpoint\'s fields, not the values Zapier keeps under Extra Fields', async () => {
             mockActorLookup();
             const actor = mockServerActor();
 
-            await appTester(perform, getBundle({ ...SIMPLE_REQUEST, customMethod: 'DELETE', customPath: '/admin' }));
+            await appTester(perform, getBundle({
+                endpoint: 'GET /',
+                query_url: 'https://example.com',
+                // Left over from POST /, from Custom path, and from another Actor's endpoint.
+                body_url: 'https://other.example.com',
+                bodyJson: '{"url":"https://other.example.com"}',
+                customMethod: 'DELETE',
+                customPath: '/admin',
+                customQuery: { token: 'x' },
+                customBody: '{"drop":true}',
+                query_limit: '100',
+                path_itemId: '1',
+            }));
 
-            const [{ url }] = actor.requests;
+            const [{ url, body }] = actor.requests;
             expect(`${url.pathname}${url.search}`).to.equal('/?url=https%3A%2F%2Fexample.com');
+            expect(body).to.equal('');
+        });
+
+        it('sends the whole body from the JSON field, and {} when it is empty', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+            const actor = mockServerActor({ method: 'POST', path: '/batch' });
+            await appTester(perform, getBundle({ endpoint: 'POST /batch', bodyJson: '[{"name":"Lamp"}]' }));
+
+            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+            await appTester(perform, getBundle({ endpoint: 'POST /batch' }));
+
+            expect(actor.requests.map(({ body }) => body)).to.eql([[{ name: 'Lamp' }], {}]);
         });
 
         it('sends a Custom path request with its query after the one in the path', async () => {
@@ -295,6 +381,9 @@ describe('send server actor request', () => {
                 customPath: 'search?lang=en',
                 customQuery: { q: 'red lamps', '': 'blank row' },
                 customBody: '{"limit":2}',
+                // Left over from a documented endpoint.
+                query_url: 'https://example.com',
+                body_url: 'https://example.com',
             }));
 
             const [{ url, body }] = actor.requests;
@@ -326,7 +415,22 @@ describe('send server actor request', () => {
         });
 
         it('refuses invalid values before sending anything', async () => {
-            const actor = mockServerActor({ method: 'POST', path: '/' });
+            const actor = mockServerActor({ method: 'POST', path: '/items/1' });
+            const cases = [
+                [{ body_name: 'Lamp', body_count: 'three' }, '"count" must be a number, but it is "three".'],
+                [{ body_name: 'Lamp', body_count: '2.5' }, '"count" must be a whole number, but it is "2.5".'],
+                [{ body_name: 'Lamp', body_active: 'maybe' }, '"active" must be true or false, but it is "maybe".'],
+                [{ body_name: 'Lamp', body_meta: '{color' }, '"meta" isn\'t valid JSON'],
+                [{ body_name: 'Lamp', body_weights: { a: 'heavy' } }, '"weights.a" must be a number, but it is "heavy".'],
+                [{ body_name: 'Lamp', path_itemId: '' }, 'Fill in the path parameter "itemId".'],
+            ];
+
+            await Promise.all(cases.map(async ([inputData, message]) => {
+                mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
+                const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', path_itemId: '1', ...inputData });
+                expect(error).to.include({ name: 'AppError', code: 'InvalidInput' });
+                expect(error.message).to.include(message);
+            }));
 
             mockActorLookup();
             const error = await performAndGetError({ endpoint: '__custom__', customMethod: 'POST', customPath: '/', customBody: '"text"' });
@@ -341,19 +445,11 @@ describe('send server actor request', () => {
 
             await Promise.all(['..', '.'].map(async (itemId) => {
                 mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
-                const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { itemId } });
+                const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', path_itemId: itemId, body_name: 'Lamp' });
                 expect(error).to.include({ code: 'InvalidInput', message: `The path parameter "itemId" can't be "${itemId}".` });
             }));
 
             otherEndpoints.forEach((endpoint) => expect(endpoint.getCallCount()).to.equal(0));
-        });
-
-        it('asks for a path parameter that isn\'t in the query parameters', async () => {
-            mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
-
-            const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { limit: '5' } });
-
-            expect(error).to.include({ code: 'InvalidInput', message: 'Add the path parameter "itemId" to Query parameters.' });
         });
 
         it('fails without an endpoint before looking anything up', async () => {
@@ -364,7 +460,7 @@ describe('send server actor request', () => {
         it('sends a request to an Actor given by its Apify Store URL, and refuses another URL before any lookup', async () => {
             mockActorLookup({ actorId: 'apify~web-fetch' });
             const actor = mockServerActor();
-            await appTester(perform, getBundle({ actorId: 'https://apify.com/apify/web-fetch', endpoint: 'GET /', customQuery: { url: 'https://a.b' } }));
+            await appTester(perform, getBundle({ actorId: 'https://apify.com/apify/web-fetch', endpoint: 'GET /', query_url: 'https://a.b' }));
             expect(actor.getCallCount()).to.equal(1);
 
             const error = await performAndGetError({ actorId: 'https://example.com/apify/web-fetch', endpoint: 'GET /' });
@@ -385,7 +481,7 @@ describe('send server actor request', () => {
             const actor = mockServerActor({ method: 'POST', path: '/items/1' });
             mockActorLookup();
 
-            const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', customQuery: { itemId: '1' } });
+            const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', path_itemId: '1' });
 
             expect(error.message).to.equal('The endpoint "POST /items/{itemId}" isn\'t in this Actor\'s OpenAPI definition. '
                 + 'Choose the endpoint again, or use Custom path.');
@@ -431,7 +527,7 @@ describe('send server actor request', () => {
                     headers: { 'Content-Type': 'application/json' },
                 });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 // Zapier could read an error with status 429 as throttling and run the step again, sending a paid request twice.
                 expect(error).to.include({ name: 'AppError', message: 'The Actor answered with status 429: Too many requests.' });
@@ -455,7 +551,7 @@ describe('send server actor request', () => {
                         headers: { 'Content-Type': typeof body === 'string' ? 'text/plain' : 'application/json' },
                     });
 
-                    const error = await performAndGetError(SIMPLE_REQUEST);
+                    const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                     // A z.errors.Error: not core's ThrottledError (retried about every 65 s) and not a RetryableError.
                     expect(error).to.include({ name: 'AppError', message, status });
@@ -473,7 +569,7 @@ describe('send server actor request', () => {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' },
                 });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error).to.include({ message: 'The Actor answered with status 404: Page not found | Apify.', status: 404 });
             });
@@ -482,7 +578,7 @@ describe('send server actor request', () => {
                 mockActorLookup();
                 mockServerActor({ status: 502, body: '', headers: {} });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error).to.include({
                     message: 'The Actor answered with status 502. The request may still have been charged.',
@@ -494,7 +590,7 @@ describe('send server actor request', () => {
                 mockActorLookup();
                 const actor = mockServerActor({ status: 504, body: { error: 'Fetching the page timed out', code: 'FETCH_TIMEOUT' } });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error).to.include({
                     message: 'The Actor didn\'t answer in time. The request may still have been charged. '
@@ -509,7 +605,7 @@ describe('send server actor request', () => {
                 mockActorLookup();
                 mockServerActor({ status: 401, body: { error: { type: 'api-token-missing', message: 'API token is missing' } } });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error).to.include({ code: 'AuthenticationError', status: 401, message: 'The Actor answered with status 401: API token is missing.' });
             });
@@ -519,7 +615,7 @@ describe('send server actor request', () => {
                 const actor = mockServerActor({ status: 302, body: '', headers: { Location: 'https://other.example.com/steal' } });
                 const elsewhere = nock('https://other.example.com').get('/steal').reply(200, 'stolen').persist();
 
-                const result = await appTester(perform, getBundle(SIMPLE_REQUEST));
+                const result = await appTester(perform, getBundle({ endpoint: 'GET /', query_url: 'https://example.com' }));
 
                 expect(result).to.eql({ status: 302, contentType: null, body: null });
                 expect(actor.getCallCount()).to.equal(1);
@@ -532,7 +628,7 @@ describe('send server actor request', () => {
                 mockActorLookup();
                 const actor = mockServerActor({ delayConnectionMillis: 3000 });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 // HaltedError is the only error Autoreplay never replays.
                 expect(error.name).to.equal('HaltedError');
@@ -549,7 +645,7 @@ describe('send server actor request', () => {
                 mockActorLookup();
                 mockServerActor({ delayBodyMillis: 3000 });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error.name).to.equal('HaltedError');
             }).timeout(5000);
@@ -561,7 +657,7 @@ describe('send server actor request', () => {
                 mockActorLookup({ delayMillis: 700 });
                 const actor = mockServerActor({ delayConnectionMillis: 700 });
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error.name).to.equal('HaltedError');
                 expect(actor.getCallCount()).to.equal(1);
@@ -573,7 +669,7 @@ describe('send server actor request', () => {
                 mockActorLookup({ delayMillis: 400 });
                 const actor = mockServerActor();
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error).to.include({
                     name: 'AppError',
@@ -588,7 +684,7 @@ describe('send server actor request', () => {
                 // like on a refused connection. (nock's replyWithError never settles with node-fetch 2.)
                 mockActorLookup();
 
-                const error = await performAndGetError(SIMPLE_REQUEST);
+                const error = await performAndGetError({ endpoint: 'GET /', query_url: 'https://example.com' });
 
                 expect(error.code).to.equal('RequestFailed');
                 expect(error.message).to.match(new RegExp(`^The request to the Actor failed: request to ${WEB_FETCH_ORIGIN}/\\?url=.* failed, `
@@ -601,7 +697,7 @@ describe('send server actor request', () => {
             const sendWithResponse = async (body, headers) => {
                 mockActorLookup();
                 mockServerActor({ body, headers });
-                return appTester(perform, getBundle(SIMPLE_REQUEST));
+                return appTester(perform, getBundle({ endpoint: 'GET /', query_url: 'https://example.com' }));
             };
 
             it('keeps text that isn\'t JSON as a string', async () => {

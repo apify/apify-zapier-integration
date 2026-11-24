@@ -9,6 +9,8 @@ const {
     buildEndpointRequest,
     buildRequestUrl,
     escapeMarkdown,
+    getEndpointEntries,
+    getEndpointInputFields,
     getErrorMessage,
     getNoOpenApiMessage,
     getServerActorInterface,
@@ -80,17 +82,8 @@ const CUSTOM_PATH_FIELDS = [
     },
 ];
 
-// A documented endpoint's query parameters and body, entered like Custom path's.
-const getEndpointParameterFields = (method) => [
-    {
-        ...CUSTOM_PATH_FIELDS[2],
-        helpText: 'The endpoint\'s query parameters, and the values of path placeholders such as `{itemId}`.',
-    },
-    ...(method === 'GET' ? [] : [CUSTOM_PATH_FIELDS[3]]),
-];
-
 /**
- * The fields after the Actor: what the Actor's server offers, the Endpoint dropdown, and the chosen endpoint's
+ * The fields after the Actor: what the Actor's server offers, the Endpoint dropdown, and the chosen endpoint's typed
  * parameters or the Custom path fields. The Zap editor doesn't show errors thrown here, so problems are shown as
  * read-only `copy` fields, and `perform` throws the same message.
  */
@@ -119,7 +112,7 @@ const getEndpointFields = async (z, bundle) => {
     if (serverActor.type === 'noServer') return [actorNotice(MESSAGES.noServerInterface)];
     if (serverActor.type === 'mcpOnly') return [actorNotice(MESSAGES.mcpOnly)];
 
-    const { actor, endpoints } = serverActor;
+    const { actor, document, endpoints } = serverActor;
     const fields = [
         ...(endpoints.length ? [] : [actorNotice(getNoOpenApiMessage(actor.id || actorId))]),
         getEndpointField(endpoints),
@@ -134,7 +127,8 @@ const getEndpointFields = async (z, bundle) => {
         return [...fields, endpointNotice(getStaleEndpointMessage(escapeMarkdown(endpointValue)))];
     }
 
-    return [...fields, ...getEndpointParameterFields(endpoint.method)];
+    const parameterFields = getEndpointInputFields(document, endpoint.method, endpoint.path);
+    return [...fields, ...(parameterFields.length ? parameterFields : [endpointNotice(MESSAGES.noParameters)])];
 };
 
 const sendRequest = async (z, bundle) => {
@@ -164,7 +158,8 @@ const sendRequest = async (z, bundle) => {
         if (!serverActor.endpoints.some(({ value }) => value === endpointValue)) {
             throw invalidInput(z, getStaleEndpointMessage(endpointValue));
         }
-        request = buildEndpointRequest(z, endpoint, inputData);
+        const entries = getEndpointEntries(serverActor.document, endpoint.method, endpoint.path);
+        request = buildEndpointRequest(z, endpoint, entries, inputData);
     }
 
     const url = buildRequestUrl(z, serverActor.origin, request);

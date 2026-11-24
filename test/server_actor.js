@@ -1,17 +1,31 @@
 /* eslint-env mocha */
 const { expect } = require('chai');
+const FieldSchema = require('zapier-platform-schema/lib/schemas/PlainInputFieldSchema');
+const makeValidator = require('zapier-platform-schema/lib/utils/makeValidator');
 
 const {
     decodeResponseBody,
     escapeMarkdown,
+    getEndpointEntries,
+    getEndpointInputFields,
     getErrorFromBody,
     getServerActorOrigin,
     parseActorReference,
     parseEndpointValue,
     parseOpenApiDocument,
     parseOpenApiEndpoints,
+    resolveRefs,
 } = require('../src/server_actor');
 const { ITEMS_OPENAPI, WEB_FETCH_OPENAPI } = require('./helpers/server_actor');
+
+const validator = makeValidator(FieldSchema);
+
+const expectValidFields = (fields) => fields.forEach((field) => {
+    const { errors } = validator.validate(field);
+    expect(errors, `${field.key}: ${errors.map(String).join(', ')}`).to.have.lengthOf(0);
+});
+
+const byKey = (fields) => Object.fromEntries(fields.map((field) => [field.key, field]));
 
 describe('server actor', () => {
     describe('parseOpenApiDocument', () => {
@@ -68,10 +82,192 @@ describe('server actor', () => {
         });
     });
 
-    describe('escapeMarkdown', () => {
-        it('escapes what would turn the Actor\'s text into links, images or HTML', () => {
-            expect(escapeMarkdown('The item\'s [name](https://example.com) with *emphasis* and <b>HTML</b>.'))
-                .to.equal('The item\'s \\[name\\]\\(https://example.com\\) with \\*emphasis\\* and \\<b\\>HTML\\</b\\>.');
+    describe('resolveRefs', () => {
+        it('resolves a pointer into a property of another schema', () => {
+            const schema = resolveRefs(WEB_FETCH_OPENAPI, { $ref: '#/components/schemas/FetchRequest/properties/url' });
+            expect(schema.type).to.equal('string');
+        });
+
+        it('follows a chain of refs, and stops after 10', () => {
+            const schemas = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`S${i}`, { $ref: `#/components/schemas/S${i + 1}` }]));
+            schemas.S12 = { type: 'string' };
+            const document = { components: { schemas } };
+            expect(resolveRefs(document, { $ref: '#/components/schemas/S3' })).to.eql({ type: 'string' });
+            expect(resolveRefs(document, { $ref: '#/components/schemas/S0' })).to.eql({});
+        });
+
+        it('cuts a cycle to the target\'s own keywords, and turns a missing target and a remote ref into {}', () => {
+            const document = {
+                components: {
+                    schemas: {
+                        Node: { type: 'object', description: 'A tree node.', properties: { child: { $ref: '#/components/schemas/Node' } } },
+                    },
+                },
+            };
+            const node = resolveRefs(document, { $ref: '#/components/schemas/Node' });
+            expect(node.properties.child).to.eql({ type: 'object', description: 'A tree node.' });
+            expect(resolveRefs(document, { $ref: '#/components/schemas/Missing' })).to.eql({});
+            expect(resolveRefs(document, { $ref: 'https://example.com/schema.json' })).to.eql({});
+            expect(resolveRefs(document, { $ref: '#/components/%E0%A4%A' })).to.eql({});
+        });
+
+        it('keeps the type of a schema that a cycle cut short, also where the cached copy is used again', () => {
+            // Filter and Req reference each other. Resolved through the query parameter first, the cached Req has its
+            // `f` cut; the body then reuses that copy, and `f` must still be an object.
+            const schemas = {
+                Filter: { type: 'object', properties: { req: { $ref: '#/components/schemas/Req' } } },
+                Req: { type: 'object', properties: { f: { $ref: '#/components/schemas/Filter' } } },
+            };
+            const document = {
+                components: { schemas },
+                paths: {
+                    '/': {
+                        post: {
+                            parameters: [{ name: 'filter', in: 'query', schema: { $ref: '#/components/schemas/Filter' } }],
+                            requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Req' } } } },
+                        },
+                    },
+                },
+            };
+
+            const fieldsByKey = byKey(getEndpointInputFields(document, 'POST', '/'));
+            expect(fieldsByKey.body_f).to.include({ type: 'text', helpText: 'Enter a JSON object.' });
+            expect(fieldsByKey.query_filter).to.include({ type: 'text', helpText: 'Enter a JSON object.' });
+        });
+
+        it('resolves a document whose schemas fan out exponentially in linear time', () => {
+            // Each schema references the next one 10 times. Expanded without a cache, that is 10^30 nodes.
+            const schemas = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`S${i}`, {
+                type: 'object',
+                properties: Object.fromEntries(Array.from({ length: 10 }, (__, j) => [`p${j}`, { $ref: `#/components/schemas/S${i + 1}` }])),
+            }]));
+            schemas.S30 = { type: 'string' };
+            const document = {
+                components: { schemas },
+                paths: { '/': { post: { requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/S0' } } } } } } },
+            };
+
+            const startedAt = Date.now();
+            const fields = getEndpointInputFields(document, 'POST', '/');
+            expect(Date.now() - startedAt).to.be.below(1000);
+            expect(fields.map(({ key }) => key)).to.eql(Array.from({ length: 10 }, (_, j) => `body_p${j}`));
+        });
+    });
+
+    describe('getEndpointInputFields', () => {
+        it('turns Web Fetch\'s GET / into typed query fields', () => {
+            const fields = getEndpointInputFields(WEB_FETCH_OPENAPI, 'GET', '/');
+            expectValidFields(fields);
+            const fieldsByKey = byKey(fields);
+
+            expect(Object.keys(fieldsByKey)).to.eql(['query_url', 'query_formats', 'query_unwrap', 'query_headers', 'query_wait']);
+            expect(fieldsByKey.query_url).to.include({ type: 'string', required: true, placeholder: 'https://apify.com' });
+            expect(fieldsByKey.query_formats).to.include({ type: 'string', list: true, required: false });
+            expect(fieldsByKey.query_formats.choices).to.eql(['markdown', 'html', 'text', 'links', 'raw']);
+            expect(fieldsByKey.query_unwrap).to.include({ type: 'boolean' });
+            // A text field: Zapier would turn invalid input in an `integer` field into 0 before `perform` sees it.
+            expect(fieldsByKey.query_wait).to.include({ type: 'string' });
+            expect(fieldsByKey.query_wait.helpText.endsWith(' Enter a whole number.')).to.equal(true);
+            // The choices already say what to enter.
+            expect(fieldsByKey.query_formats.helpText).to.not.include('Enter');
+        });
+
+        it('turns Web Fetch\'s POST / body into one field per property', () => {
+            const fields = getEndpointInputFields(WEB_FETCH_OPENAPI, 'POST', '/');
+            expectValidFields(fields);
+            const fieldsByKey = byKey(fields);
+
+            expect(Object.keys(fieldsByKey)).to.eql(['body_url', 'body_formats', 'body_unwrap', 'body_headers', 'body_wait']);
+            expect(fieldsByKey.body_url.required).to.equal(true);
+            expect(fieldsByKey.body_formats.required).to.equal(false);
+            // An object with only additionalProperties is edited as key-value pairs.
+            expect(fieldsByKey.body_headers).to.include({ dict: true });
+        });
+
+        it('merges path-level and operation-level parameters, the operation\'s winning', () => {
+            const fieldsByKey = byKey(getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}'));
+            expect(fieldsByKey.query_limit.helpText).to.equal('Operation-level limit. Enter a whole number.');
+            expect(fieldsByKey.query_limit.placeholder).to.equal('20');
+            expect(fieldsByKey.path_itemId.required).to.equal(true);
+        });
+
+        it('adds a required field for a path placeholder that no parameter declares', () => {
+            const fields = getEndpointInputFields(ITEMS_OPENAPI, 'GET', '/items/{itemId}/notes/{noteId}');
+            expectValidFields(fields);
+            expect(fields.map(({ key, required }) => [key, required])).to.eql([['path_noteId', true], ['path_itemId', true]]);
+        });
+
+        it('reads a +json body behind a $ref and types its properties', () => {
+            const fields = getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}');
+            expectValidFields(fields);
+            const fieldsByKey = byKey(fields);
+
+            expect(fieldsByKey.body_name).to.include({ type: 'string', required: true, placeholder: 'Lamp' });
+            expect(fieldsByKey.body_count).to.include({ type: 'string', required: false, helpText: 'Enter a whole number.' });
+            expect(fieldsByKey.body_ratio).to.include({ type: 'string', helpText: 'Enter a number.' });
+            expect(fieldsByKey.body_active).to.include({ type: 'boolean', placeholder: 'true' });
+            // pydantic's Optional[str] is a string, and a null default isn't shown.
+            expect(fieldsByKey.body_note).to.include({ type: 'string' });
+            expect(fieldsByKey.body_note).to.not.have.property('placeholder');
+            expect(fieldsByKey.body_ids).to.include({ type: 'string', list: true, helpText: 'Enter whole numbers.' });
+            expect(fieldsByKey.body_labels).to.include({ dict: true });
+            expect(fieldsByKey.body_labels).to.not.have.property('helpText');
+            expect(fieldsByKey.body_weights).to.include({ dict: true, helpText: 'Enter numbers as the values.' });
+            expect(fieldsByKey.body_meta).to.include({ type: 'text', helpText: 'Enter a JSON object.' });
+            expect(fieldsByKey.query_mode.choices).to.eql(['fast', 'full']);
+        });
+
+        it('edits an object of objects or arrays as JSON, since key-value pairs only hold text', () => {
+            const document = {
+                paths: {
+                    '/': {
+                        post: {
+                            requestBody: {
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            type: 'object',
+                                            properties: {
+                                                groups: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } },
+                                                any: { type: 'object', additionalProperties: true },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+            const fieldsByKey = byKey(getEndpointInputFields(document, 'POST', '/'));
+            expect(fieldsByKey.body_groups).to.include({ type: 'text', helpText: 'Enter a JSON object.' });
+            expect(fieldsByKey.body_any).to.include({ dict: true });
+        });
+
+        it('adds the location to the label of a query parameter and a body property with the same name', () => {
+            const fieldsByKey = byKey(getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}'));
+            expect(fieldsByKey.query_limit.label).to.equal('limit (query)');
+            expect(fieldsByKey.body_limit.label).to.equal('limit (body)');
+            expect(fieldsByKey.body_count.label).to.equal('count');
+        });
+
+        it('gives a body that is not an object with properties a single JSON field', () => {
+            const fields = getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/batch');
+            expectValidFields(fields);
+            expect(fields).to.eql([{ key: 'bodyJson', label: 'Body (JSON)', required: false, type: 'text', helpText: 'Enter a JSON array.' }]);
+        });
+
+        it('never puts an OpenAPI default into the Zapier default', () => {
+            [
+                getEndpointInputFields(WEB_FETCH_OPENAPI, 'GET', '/'),
+                getEndpointInputFields(WEB_FETCH_OPENAPI, 'POST', '/'),
+                getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}'),
+            ].flat().forEach((field) => expect(field, field.key).to.not.have.property('default'));
+        });
+
+        it('escapes the Actor\'s Markdown in help texts and keeps them within 1000 characters', () => {
+            const fieldsByKey = byKey(getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}'));
+            expect(fieldsByKey.body_name.helpText).to.equal('The item\'s \\[name\\]\\(https://example.com\\) with \\*emphasis\\*.');
 
             // Backticks are escaped too. Renderers pair backtick runs in their own way (run lengths, table cells), so
             // text left alone as inline code could end up outside a code span, as a link.
@@ -79,6 +275,39 @@ describe('server actor', () => {
                 .to.equal('Use \\`snake\\_case\\` keys, not \\[links\\]\\(https://x.y\\).');
             expect(escapeMarkdown('`` ` ``[Reconnect your account](https://evil.example)`'))
                 .to.equal('\\`\\` \\` \\`\\`\\[Reconnect your account\\]\\(https://evil.example\\)\\`');
+
+            const document = {
+                paths: {
+                    '/': {
+                        get: {
+                            parameters: [
+                                { name: 'long', in: 'query', description: '_'.repeat(900), schema: { type: 'string' } },
+                                { name: 'json', in: 'query', description: 'x'.repeat(2000), schema: { type: 'object' } },
+                            ],
+                        },
+                    },
+                },
+            };
+            const fields = getEndpointInputFields(document, 'GET', '/');
+            expectValidFields(fields);
+            const [longField, jsonField] = fields;
+            expect(longField.helpText.length).to.be.within(999, 1000);
+            // Every underscore stays escaped: the cut doesn't leave a lone backslash.
+            expect(longField.helpText).to.match(/^(\\_)+…$/);
+            expect(jsonField.helpText).to.have.lengthOf(1000);
+            expect(jsonField.helpText.endsWith('… Enter a JSON object.')).to.equal(true);
+        });
+
+        it('returns undefined for an endpoint that is not in the document', () => {
+            expect(getEndpointInputFields(WEB_FETCH_OPENAPI, 'DELETE', '/')).to.equal(undefined);
+            expect(getEndpointInputFields(undefined, 'GET', '/')).to.equal(undefined);
+        });
+
+        it('builds the field keys and the request targets from the same entries', () => {
+            const entries = getEndpointEntries(ITEMS_OPENAPI, 'POST', '/items/{itemId}');
+            const fields = getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}');
+            expect(entries.map(({ key }) => key)).to.eql(fields.map(({ key }) => key));
+            expect(entries.find(({ key }) => key === 'query_tags')).to.include({ location: 'query', name: 'tags', explode: true });
         });
     });
 
