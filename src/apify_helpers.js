@@ -1019,4 +1019,6 @@ module.exports = {
     prefixInputFieldKey,
     getActorStatusesFromBundle,
     slugifyText,
+    getActorNotFoundMessage,
+    isActorNotFoundError,
 };
