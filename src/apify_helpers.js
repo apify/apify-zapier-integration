@@ -17,7 +17,7 @@ const { wrapRequestWithRetries, isNotFoundError, isValidApiPathSegment, toApiPat
 const ACTOR_ID_REFERENCE_FIELD_KEY = 'referenceActorId';
 
 // A full-string Apify resource ID; anything else is treated as a resource name.
-const looksLikeApifyId = (value) => new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
+const looksLikeApifyId = (value) => typeof value === 'string' && new RegExp(`^${APIFY_ID_REGEX.source}$`).test(value);
 
 // API wordings: "Actor was not found", "Actor was not found or access denied" (ID form),
 // "Actor with this name was not found" (username~name form). Anchored, because matching just
@@ -348,13 +348,39 @@ const unsubscribeWebhook = async (z, bundle) => {
 };
 
 /**
+ * Returns the ID of the Actor or task a finished-run trigger watches, or `null` if it can't be found.
+ * The field can hold a name (`username~name` or `username/name`) instead of an ID. Then the ID is taken from the
+ * webhook condition stored at subscribe time if the API saved an ID there, or else looked up with the API.
+ */
+const getWatchedResourceId = async (z, idOrName, storedConditionValue, apiUrl) => {
+    if (typeof idOrName !== 'string') return null;
+    if (looksLikeApifyId(idOrName)) return idOrName;
+    if (looksLikeApifyId(storedConditionValue)) return storedConditionValue;
+
+    const name = idOrName.trim().replaceAll('/', '~');
+    if (!isValidApiPathSegment(name)) return null;
+
+    try {
+        const { data } = await wrapRequestWithRetries(z.request, { url: `${apiUrl}/${name}` });
+        return looksLikeApifyId(data?.id) ? data.id : null;
+    } catch (err) {
+        if (isNotFoundError(err)) return null;
+        throw err;
+    }
+};
+
+/**
  * Gets the run a finished-run hook reports and enriches it. Only the run ID is taken from the hook request:
  * the run is loaded from the API, so the storages read below are the ones that run really has, and a run of
- * another Actor or task than the watched one is skipped.
+ * another Actor or task than the watched one is skipped. The watched Actor or task is compared by ID, so a
+ * name in the field is resolved to its ID first; a run is skipped if that ID can't be found.
  */
 const getActorRun = async (z, bundle) => {
     const runId = bundle.cleanedRequest?.resource?.id;
-    if (!isValidApiPathSegment(runId)) return [];
+    if (!looksLikeApifyId(runId)) return [];
+
+    const { actorId, taskId } = bundle.inputData || {};
+    if (!actorId && !taskId) return [];
 
     let run;
     try {
@@ -366,10 +392,15 @@ const getActorRun = async (z, bundle) => {
         throw err;
     }
 
-    // A name instead of an ID can't be compared with the run, which only has IDs.
-    const { actorId, taskId } = bundle.inputData || {};
-    if (actorId && looksLikeApifyId(actorId) && run.actId !== actorId) return [];
-    if (taskId && looksLikeApifyId(taskId) && run.actorTaskId !== taskId) return [];
+    const condition = bundle.subscribeData?.condition || {};
+    if (actorId) {
+        const watchedActorId = await getWatchedResourceId(z, actorId, condition.actorId, APIFY_API_ENDPOINTS.actors);
+        if (!watchedActorId || run.actId !== watchedActorId) return [];
+    }
+    if (taskId) {
+        const watchedTaskId = await getWatchedResourceId(z, taskId, condition.actorTaskId, APIFY_API_ENDPOINTS.tasks);
+        if (!watchedTaskId || run.actorTaskId !== watchedTaskId) return [];
+    }
 
     const enrichedRun = await enrichActorRun(z, bundle.authData.access_token, run);
     return [enrichedRun];
