@@ -16,7 +16,9 @@ on:
 jobs:
     setup_and_test:
         runs-on: ubuntu-latest
-        environment: automation
+        environment:
+            name: automation
+            deployment: false
         permissions:
             contents: write
         steps:
