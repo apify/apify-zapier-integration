@@ -165,6 +165,8 @@ exactly once:
   **Path** refuses a path with a host or scheme.
 - The Actor field becomes the `/v2/acts/<id>` path segment, so `parseActorReference` accepts only an
   ID or `username~name` that `isValidApiPathSegment` allows.
+- **Endpoint** lists the default build's OpenAPI paths. `perform` refuses one no longer listed and
+  reads only `customQuery`/`customBody` for it. Pass Actor text through `escapeMarkdown` for `helpText`.
 - Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
   live call: each one costs money. They shorten the budget through `requestTiming`.
 
