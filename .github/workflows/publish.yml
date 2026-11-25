@@ -1,18 +1,45 @@
 name: Release & Publish Apify on Zapier
+# Started by `release-published.yml`, so that it runs from master and can use the environment that holds the token.
 on:
-    release:
-        types: [published]
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: Release tag to publish (e.g. v1.2.3)
+                required: true
+                type: string
+            target-branch:
+                description: Branch that receives the version bump commit
+                required: false
+                type: string
+                default: master
 
 jobs:
     setup_and_test:
         runs-on: ubuntu-latest
+        environment:
+            name: automation
+            deployment: false
         permissions:
             contents: write
         steps:
+            # The tag's code runs with the token below, so it has to be code that already went through master.
+            - name: Check that the tag is on master
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ inputs.tag }}
+              run: |
+                  set -euo pipefail
+                  status=$(gh api "repos/${GITHUB_REPOSITORY}/compare/master...refs/tags/${TAG}" --jq .status)
+                  if [[ "$status" != "identical" && "$status" != "behind" ]]; then
+                      echo "::error::${TAG} is not on master"
+                      exit 1
+                  fi
+
             - name: Checkout code
               uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
               with:
                   token: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
+                  ref: refs/tags/${{ inputs.tag }}
                   persist-credentials: false
 
             - name: Set up Node.js
@@ -42,7 +69,7 @@ jobs:
             - name: Extract release version
               id: get_version
               run: |
-                  FULL_TAG_NAME="${{ github.event.release.tag_name }}"
+                  FULL_TAG_NAME="${{ inputs.tag }}"
                   VERSION_NUMBER="${FULL_TAG_NAME#v}"
                   echo "VERSION=${VERSION_NUMBER}" >> $GITHUB_ENV
 
@@ -53,6 +80,7 @@ jobs:
 
             - name: Update CHANGELOG.md
               run: |
+                  RELEASE_BODY=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)
                   if [ -n "$RELEASE_BODY" ]; then
                     # Get current date in YYYY-MM-DD format
                     CURRENT_DATE=$(date '+%Y-%m-%d')
@@ -77,13 +105,14 @@ jobs:
                     fi
                   fi
               env:
-                  RELEASE_BODY: ${{ github.event.release.body }}
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ inputs.tag }}
 
             - name: Commit changes
               run: |
                   git add package.json package-lock.json CHANGELOG.md
                   if ! git diff --staged --quiet; then
-                      TARGET_BRANCH="${{ github.event.release.target_commitish }}"
+                      TARGET_BRANCH="${{ inputs.target-branch }}"
                       echo "Target branch for push: $TARGET_BRANCH"
                       git commit -m "chore(release): set version to ${{ env.VERSION }}"
                       echo "Pushing changes to $TARGET_BRANCH"

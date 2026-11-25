@@ -154,7 +154,8 @@ node-fetch `request-timeout` error and is handled in the create. Each output for
   capitalized, "Apify Console"/"Apify Store", "e.g." for examples, step and field names in bold
   (**Run Task**), no "Please".
 - Style: Airbnb base, 4-space indent, 150-char lines, `arrow-parens: always`, final newline.
-- **Releases** are a GitHub Release: `publish.yml` sets `package.json` to the tag version, prepends
+- **Releases** are a GitHub Release: `release-published.yml` dispatches `publish.yml` on master,
+  which fails unless the tag is on master. It sets `package.json` to the tag version, prepends
   the release body to `CHANGELOG.md` under `## <version> / <date>`, commits, then
   `zapier-platform push` and `promote`. Only those two steps get the deploy key, as the
   `ZAPIER_DEPLOY_KEY` env var (no `~/.zapierrc`). Checkout doesn't persist credentials, so the commit
