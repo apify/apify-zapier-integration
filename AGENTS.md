@@ -163,10 +163,9 @@ exactly once:
   replays.
 - The token goes only to `https://*.apify.actor`. The host comes from the Actor's `standbyUrl`, and
   Custom path refuses a path with a host or scheme.
-- The Actor field becomes the `/v2/acts/<id>` path segment. `parseActorReference` turns
-  `username/name` into `username~name` and a Store or Console URL into an ID, then accepts only what
-  `isValidApiPathSegment` allows. Path parameters are percent-encoded and can't be `.` or `..`, but
-  aren't held to the ID format: each Actor defines its own.
+- The Actor field becomes the `/v2/acts/<id>` path segment, so `parseActorReference` accepts only an
+  ID or `username~name` that `isValidApiPathSegment` allows. Path parameters are percent-encoded and
+  can't be `.` or `..`, but aren't held to the ID format: each Actor defines its own.
 - Field keys are `endpoint` and `custom*`. A documented endpoint takes its query parameters, the
   values of its path placeholders and its JSON body from `customQuery` and `customBody`. `perform`
   reads only the chosen endpoint's keys, because Zapier keeps old values under "Extra Fields" and
@@ -177,9 +176,6 @@ exactly once:
 - While the editor loads fields, an Actor mapped from an earlier step is missing from `inputData`
   and `inputDataRaw` is empty, so it looks like no Actor. Without an Actor the form still offers
   Endpoint with only Custom path, which works for a mapped Actor.
-- The Actor dropdown (`serverActors` hidden trigger) reads a snapshot record shaped like
-  `GET /v2/store` and pages it locally. Switching to the real Store API is a change of
-  `SERVER_ACTORS_LIST_URL`.
 - Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
   live call: each one costs money. They shorten the budget through `requestTiming`.
 
