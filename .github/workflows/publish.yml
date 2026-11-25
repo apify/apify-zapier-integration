@@ -68,15 +68,17 @@ jobs:
 
             - name: Extract release version
               id: get_version
+              env:
+                  TAG: ${{ inputs.tag }}
               run: |
-                  FULL_TAG_NAME="${{ inputs.tag }}"
+                  FULL_TAG_NAME="$TAG"
                   VERSION_NUMBER="${FULL_TAG_NAME#v}"
                   echo "VERSION=${VERSION_NUMBER}" >> $GITHUB_ENV
 
             - name: Bump package.json version
               run: |
-                  echo "Updating package.json version to ${{ env.VERSION }}"
-                  npm version ${{ env.VERSION }} --no-git-tag-version --allow-same-version
+                  echo "Updating package.json version to $VERSION"
+                  npm version "$VERSION" --no-git-tag-version --allow-same-version
 
             - name: Update CHANGELOG.md
               run: |
@@ -86,11 +88,11 @@ jobs:
                     CURRENT_DATE=$(date '+%Y-%m-%d')
 
                     # Check if CHANGELOG.md already contains this version
-                    if [ -f CHANGELOG.md ] && grep -q "## ${{ env.VERSION }} /" CHANGELOG.md; then
-                      echo "CHANGELOG.md already contains version ${{ env.VERSION }}. Skipping update."
+                    if [ -f CHANGELOG.md ] && grep -q "## $VERSION /" CHANGELOG.md; then
+                      echo "CHANGELOG.md already contains version $VERSION. Skipping update."
                     else
                       # Create temporary file with new entry
-                      echo "## ${{ env.VERSION }} / ${CURRENT_DATE}" > temp_changelog.md
+                      echo "## $VERSION / ${CURRENT_DATE}" > temp_changelog.md
                       echo "$RELEASE_BODY" >> temp_changelog.md
                       echo "" >> temp_changelog.md
 
@@ -101,7 +103,7 @@ jobs:
 
                       # Replace the original CHANGELOG.md with the new one
                       mv temp_changelog.md CHANGELOG.md
-                      echo "CHANGELOG.md updated with release notes for version ${{ env.VERSION }}."
+                      echo "CHANGELOG.md updated with release notes for version $VERSION."
                     fi
                   fi
               env:
@@ -112,15 +114,15 @@ jobs:
               run: |
                   git add package.json package-lock.json CHANGELOG.md
                   if ! git diff --staged --quiet; then
-                      TARGET_BRANCH="${{ inputs.target-branch }}"
                       echo "Target branch for push: $TARGET_BRANCH"
-                      git commit -m "chore(release): set version to ${{ env.VERSION }}"
+                      git commit -m "chore(release): set version to $VERSION"
                       echo "Pushing changes to $TARGET_BRANCH"
                       git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:"refs/heads/$TARGET_BRANCH"
                   else
                       echo "No changes to commit."
                   fi
               env:
+                  TARGET_BRANCH: ${{ inputs.target-branch }}
                   GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
 
             - name: Push Zapier app
