@@ -31,7 +31,7 @@ const isActorNotFoundError = (err) => ACTOR_NOT_FOUND_MESSAGE_REGEX.test((err.me
 const getActorNotFoundMessage = (actorId) => {
     const message = `Actor "${actorId}" was not found or your Apify account cannot access it. `
         + 'Check that the Actor ID or username~name is correct.';
-    const isBareName = !actorId.includes('~') && !looksLikeApifyId(actorId);
+    const isBareName = !/[~/]/.test(actorId) && !looksLikeApifyId(actorId);
     return isBareName
         ? `${message} A name without the username is not enough. `
             + 'If you mapped it from Search Apify Store, map Actor slug or Actor ID instead.'

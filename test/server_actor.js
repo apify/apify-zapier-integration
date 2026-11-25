@@ -143,19 +143,40 @@ describe('server actor', () => {
             expect(parseActorReference(undefined)).to.equal('');
         });
 
+        it('turns username/name into username~name, so it stays one segment of the API URL path', () => {
+            expect(parseActorReference('apify/web-fetch')).to.equal('apify~web-fetch');
+        });
+
         it('rejects values that are not an ID or name, as they go into the API URL path', () => {
             // URLs resolve "." and ".." as dot segments: /v2/acts/.. would be /v2/.
             [
                 '.',
                 '..',
                 ' .. ',
-                'apify/web-fetch',
                 'apify/web-fetch/x',
                 '/web-fetch',
                 'apify web-fetch',
                 'apify~web-fetch?x=1',
                 '%2e%2e',
-                'https://apify.com/apify/web-fetch',
+                'https://apify.com/apify/web-fetch%3F',
+                'https://console.apify.com/actors/a%2Fb',
+            ].forEach((value) => expect(parseActorReference(value), value).to.equal(undefined));
+        });
+
+        it('reads Apify Store and Console URLs', () => {
+            expect(parseActorReference('https://apify.com/apify/web-fetch')).to.equal('apify~web-fetch');
+            expect(parseActorReference('https://www.apify.com/apify/web-fetch/input-schema?fpr=abc')).to.equal('apify~web-fetch');
+            expect(parseActorReference('https://console.apify.com/actors/a6Sqhlnt4touIHTub/information/latest/readme'))
+                .to.equal('a6Sqhlnt4touIHTub');
+        });
+
+        it('rejects other URLs', () => {
+            [
+                'https://example.com/apify/web-fetch',
+                'https://apify.com/apify',
+                'https://console.apify.com/actors/tasks/abc',
+                'https://web-fetch.apify.actor/',
+                'https://',
             ].forEach((value) => expect(parseActorReference(value), value).to.equal(undefined));
         });
     });

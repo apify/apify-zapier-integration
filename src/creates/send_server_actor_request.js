@@ -184,12 +184,13 @@ module.exports = {
         inputFields: [
             {
                 label: 'Actor',
-                helpText: 'Choose a Server Actor, or enter an Actor ID or `username~name`. Zapier stops a step after 30 seconds, '
-                    + 'so the Actor must answer within about 25 seconds.',
+                helpText: 'Choose a Server Actor from Apify Store, or enter an Actor ID, `username~name` or the Actor\'s Apify Store '
+                    + 'URL. Private Server Actors aren\'t in the list. Zapier stops a step after 30 seconds, so the Actor must '
+                    + 'answer within about 25 seconds.',
                 key: FIELD_KEYS.actorId,
                 required: true,
                 altersDynamicFields: true,
-                dynamic: 'actorsWithStore.id.name',
+                dynamic: 'serverActors.id.name',
             },
             getEndpointFields,
         ],
