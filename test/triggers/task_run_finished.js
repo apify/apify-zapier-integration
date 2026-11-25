@@ -17,7 +17,7 @@ const appTester = zapier.createAppTester(App);
 
 describe('task run finished trigger', () => {
     const testedResult = { testedField: 'testValue', url: 'https://apify.com' };
-    let testTaskId = randomString();
+    let testTaskId = randomApifyId();
     let legacyCrawlerTaskId = randomString();
     let subscribeData;
 
@@ -123,7 +123,7 @@ describe('task run finished trigger', () => {
             run = await apifyClient.task(testTaskId).call({ waitSecs: 120 });
         } else {
             // No storages, so the run needs no further mocks.
-            run = { id: randomString(), actId: randomString(), actorTaskId: testTaskId, status: 'SUCCEEDED' };
+            run = { id: randomApifyId(), actId: randomApifyId(), actorTaskId: testTaskId, status: 'SUCCEEDED' };
             scope = nock('https://api.apify.com')
                 .get(`/v2/actor-runs/${run.id}`)
                 .reply(200, { data: run });
@@ -153,7 +153,7 @@ describe('task run finished trigger', () => {
     it('perform skips a run of another task', async function () {
         if (TEST_USER_TOKEN) this.skip();
 
-        const run = { id: randomString(), actId: randomApifyId(), actorTaskId: randomApifyId(), status: 'SUCCEEDED' };
+        const run = { id: randomApifyId(), actId: randomApifyId(), actorTaskId: randomApifyId(), status: 'SUCCEEDED' };
         const scope = nock('https://api.apify.com')
             .get(`/v2/actor-runs/${run.id}`)
             .reply(200, { data: run });
@@ -161,6 +161,48 @@ describe('task run finished trigger', () => {
         const results = await appTester(App.triggers.taskRunFinished.operation.perform, {
             authData: { access_token: TEST_USER_TOKEN },
             inputData: { taskId: randomApifyId() },
+            cleanedRequest: { resource: { id: run.id } },
+        });
+
+        expect(results).to.be.eql([]);
+        scope.done();
+    });
+
+    it('perform looks up a task selected by name and returns its run', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const taskId = randomApifyId();
+        const run = { id: randomApifyId(), actId: randomApifyId(), actorTaskId: taskId, status: 'SUCCEEDED' };
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run })
+            .get('/v2/actor-tasks/username~task-name')
+            .reply(200, { data: { id: taskId } });
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { taskId: 'username~task-name' },
+            cleanedRequest: { resource: { id: run.id } },
+        });
+
+        expect(results.length).to.be.eql(1);
+        expect(results[0].id).to.be.eql(run.id);
+        scope.done();
+    });
+
+    it('perform skips a run of another task when the task is selected by name', async function () {
+        if (TEST_USER_TOKEN) this.skip();
+
+        const run = { id: randomApifyId(), actId: randomApifyId(), actorTaskId: randomApifyId(), status: 'SUCCEEDED' };
+        const scope = nock('https://api.apify.com')
+            .get(`/v2/actor-runs/${run.id}`)
+            .reply(200, { data: run })
+            .get('/v2/actor-tasks/username~task-name')
+            .reply(200, { data: { id: randomApifyId() } });
+
+        const results = await appTester(App.triggers.taskRunFinished.operation.perform, {
+            authData: { access_token: TEST_USER_TOKEN },
+            inputData: { taskId: 'username/task-name' },
             cleanedRequest: { resource: { id: run.id } },
         });
 
