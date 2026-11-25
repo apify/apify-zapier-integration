@@ -162,20 +162,11 @@ exactly once:
   restarts it for the body. Running out throws `HaltedError`, the only error Autoreplay never
   replays.
 - The token goes only to `https://*.apify.actor`. The host comes from the Actor's `standbyUrl`, and
-  Custom path refuses a path with a host or scheme.
+  **Path** refuses a path with a host or scheme.
 - The Actor field becomes the `/v2/acts/<id>` path segment, so `parseActorReference` accepts only an
-  ID or `username~name` that `isValidApiPathSegment` allows. Path parameters are percent-encoded and
-  can't be `.` or `..`, but aren't held to the ID format: each Actor defines its own.
-- Field keys are `endpoint` and `custom*`. A documented endpoint takes its query parameters, the
-  values of its path placeholders and its JSON body from `customQuery` and `customBody`. `perform`
-  reads only the chosen endpoint's keys, because Zapier keeps old values under "Extra Fields" and
-  sends them, and it refuses an endpoint that isn't in the Actor's current OpenAPI before sending.
-  Escape Actor-supplied text with `escapeMarkdown` before it goes into `helpText`. It escapes
-  backticks too, because renderers pair backtick runs differently and text kept as inline code
-  could end up a link.
-- While the editor loads fields, an Actor mapped from an earlier step is missing from `inputData`
-  and `inputDataRaw` is empty, so it looks like no Actor. Without an Actor the form still offers
-  Endpoint with only Custom path, which works for a mapped Actor.
+  ID or `username~name` that `isValidApiPathSegment` allows.
+- **Endpoint** lists the default build's OpenAPI paths. `perform` refuses one no longer listed and
+  reads only `customQuery`/`customBody` for it. Pass Actor text through `escapeMarkdown` for `helpText`.
 - Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
   live call: each one costs money. They shorten the budget through `requestTiming`.
 
