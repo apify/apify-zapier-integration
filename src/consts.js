@@ -46,6 +46,9 @@ const WEB_FETCH_FORMATS = {
 
 const WEB_FETCH_TIMEOUT_MILLIS = 25000;
 
+// Outside api.apify.com, only https hosts ending with this receive the Apify token.
+const APIFY_ACTOR_HOST_SUFFIX = '.apify.actor';
+
 const ACTOR_RUN_SAMPLE = {
     id: 'HG7ML7M8z78YcAPEB',
     actId: 'h3J7Uk3kMAmLCLRAh',
@@ -548,6 +551,7 @@ module.exports = {
     WEB_FETCH_TIMEOUT_MILLIS,
     WEB_FETCH_SAMPLE,
     WEB_FETCH_OUTPUT_FIELDS,
+    APIFY_ACTOR_HOST_SUFFIX,
     ACTOR_RUN_TERMINAL_STATUSES,
     ACTOR_RUN_TERMINAL_EVENT_TYPES,
     ACTOR_RUN_STATUSES,
