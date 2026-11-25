@@ -46,13 +46,12 @@ All HTTP goes through `z.request`, so the app-wide middleware in `src/request_he
 
 - `setApifyRequestHeaders` (`beforeRequest`) adds `Authorization: Bearer <access_token>` and
   `x-apify-integration-platform: zapier`, but only for hosts in `APIFY_HOSTS` (`api.apify.com`) and
-  for any `https://*.apify.actor` host (Web Fetch and other Server Actors). Add a host there if a new
+  any `https://*.apify.actor` host (Web Fetch and other Server Actors). Add a host there if a new
   endpoint needs the token.
 - `parseDataApiObject` unwraps the API's `{ data: ... }` envelope into `response.data`.
 - Both response middlewares return a response untouched when its request sets
-  `serverActorRequest: true`. A Server Actor request may be charged, so its errors must be neither
-  retried nor reworded as Apify API errors; `src/server_actor.js` maps the Actor's own status and
-  body instead.
+  `serverActorRequest: true`: a Server Actor request may be charged, so it is never retried, and
+  `src/server_actor.js` maps the Actor's own status and body instead.
 - `validateApiResponse` is the single place for user-facing API errors. Order matters: a 404 on a
   key-value store `/records/` GET/HEAD is let through (callers check `status === 404`); Web Fetch
   errors are mapped next; then 5xx throws `RetryableError`; other ≥300 statuses are matched on
