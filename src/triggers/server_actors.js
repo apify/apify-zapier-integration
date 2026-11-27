@@ -1,27 +1,21 @@
-const { SERVER_ACTORS_LIST_URL, SERVER_ACTORS_PAGE_SIZE } = require('../consts');
+const { APIFY_API_ENDPOINTS, SERVER_ACTOR_STORE_CATEGORIES, SERVER_ACTORS_PAGE_SIZE } = require('../consts');
 const { wrapRequestWithRetries } = require('../request_helpers');
 const { printPrettyActorOrTaskName } = require('../apify_helpers');
 
-// The snapshot record returns every item and ignores limit and offset, while the real Store API pages itself.
-const isSnapshotRecord = SERVER_ACTORS_LIST_URL.includes('/key-value-stores/');
-
 // Lists Server Actors from Apify Store for the Actor dropdown of Send Server Actor Request.
 const listServerActors = async (z, bundle) => {
-    const offset = (bundle.meta.page || 0) * SERVER_ACTORS_PAGE_SIZE;
     const response = await wrapRequestWithRetries(z.request, {
-        url: SERVER_ACTORS_LIST_URL,
-        // Ignored by the snapshot record, but sent, so switching to /v2/store works as it is.
-        params: { limit: SERVER_ACTORS_PAGE_SIZE, offset },
+        url: APIFY_API_ENDPOINTS.store,
+        params: {
+            category: SERVER_ACTOR_STORE_CATEGORIES,
+            limit: SERVER_ACTORS_PAGE_SIZE,
+            offset: (bundle.meta.page || 0) * SERVER_ACTORS_PAGE_SIZE,
+            sortBy: 'popularity',
+        },
     });
 
-    // validateApiResponse lets a 404 on a key-value store record through, but an empty list would hide the problem.
-    if (response.status === 404) {
-        throw new z.errors.Error('The list of Server Actors isn\'t available. Enter the Actor ID instead.', 'NotFound', 404);
-    }
-
     const items = (response.data && response.data.items) || [];
-    const pageItems = isSnapshotRecord ? items.slice(offset, offset + SERVER_ACTORS_PAGE_SIZE) : items;
-    return pageItems.map((actor) => ({
+    return items.map((actor) => ({
         id: actor.id,
         name: printPrettyActorOrTaskName(actor),
     }));

@@ -181,9 +181,9 @@ exactly once:
 - While the editor loads fields, an Actor mapped from an earlier step is missing from `inputData`
   and `inputDataRaw` is empty, so it looks like no Actor. Without an Actor the form still offers
   Endpoint with only Custom path, which works for a mapped Actor.
-- The Actor dropdown (`serverActors` hidden trigger) reads a snapshot record shaped like
-  `GET /v2/store` and pages it locally. Switching to the real Store API is a change of
-  `SERVER_ACTORS_LIST_URL`.
+- The Actor dropdown (`serverActors` hidden trigger) lists `GET /v2/store` with
+  `category=SINGLE_TENANT_SERVER,MULTI_TENANT_SERVER` (`SERVER_ACTOR_STORE_CATEGORIES`) and pages it
+  by `offset`. The API returns Actors in either category.
 - Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
   live call: each one costs money. They shorten the budget through `requestTiming`.
 

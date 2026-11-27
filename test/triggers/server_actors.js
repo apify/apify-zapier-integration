@@ -5,26 +5,29 @@ const nock = require('nock');
 
 const App = require('../../index');
 const { TEST_USER_TOKEN } = require('../helpers');
-const { parseAppError } = require('../helpers/server_actor');
-const { SERVER_ACTORS_LIST_URL } = require('../../src/consts');
+const { APIFY_API_ENDPOINTS, SERVER_ACTOR_STORE_CATEGORIES } = require('../../src/consts');
 
 const appTester = zapier.createAppTester(App);
 const { perform } = App.triggers.serverActors.operation;
 
-const { origin: LIST_ORIGIN, pathname: LIST_PATH } = new URL(SERVER_ACTORS_LIST_URL);
+const { origin: STORE_ORIGIN, pathname: STORE_PATH } = new URL(APIFY_API_ENDPOINTS.store);
 
-// The snapshot record is shaped like GET /v2/store, but returns every item whatever limit and offset say.
-const SNAPSHOT_ITEMS = Array.from({ length: 250 }, (_, i) => ({
+const TOTAL = 150;
+const STORE_ITEMS = Array.from({ length: TOTAL }, (_, i) => ({
     id: `serverActor${String(i).padStart(7, '0')}`,
     title: `Server Actor ${i}`,
     username: 'someone',
     name: `server-actor-${i}`,
 }));
 
-const mockSnapshot = (offset) => nock(LIST_ORIGIN)
-    .get(LIST_PATH)
-    .query({ limit: 100, offset })
-    .reply(200, { data: { total: 250, count: 250, offset: 0, limit: 250, desc: false, items: SNAPSHOT_ITEMS } });
+// GET /v2/store pages itself, so each dropdown page is one request with its own offset.
+const mockStorePage = (offset) => {
+    const items = STORE_ITEMS.slice(offset, offset + 100);
+    return nock(STORE_ORIGIN)
+        .get(STORE_PATH)
+        .query({ category: SERVER_ACTOR_STORE_CATEGORIES, limit: 100, offset, sortBy: 'popularity' })
+        .reply(200, { data: { total: TOTAL, count: items.length, offset, limit: 100, desc: false, items } });
+};
 
 const getBundle = (page, token = 'apify_api_mocked_token') => ({ authData: { access_token: token }, inputData: {}, meta: { page } });
 
@@ -33,8 +36,8 @@ describe('server actors trigger', () => {
         nock.cleanAll();
     });
 
-    it('returns the first 100 Server Actors with readable names (mocked)', async () => {
-        const scope = mockSnapshot(0);
+    it('lists the first 100 Server Actors from Apify Store with readable names (mocked)', async () => {
+        const scope = mockStorePage(0);
 
         const result = await appTester(perform, getBundle(0));
 
@@ -44,44 +47,38 @@ describe('server actors trigger', () => {
         scope.done();
     });
 
-    it('pages through the snapshot locally (mocked)', async () => {
-        const scopes = [mockSnapshot(100), mockSnapshot(200), mockSnapshot(300)];
+    it('asks the Store API for the next page by offset (mocked)', async () => {
+        const scopes = [mockStorePage(100), mockStorePage(200)];
 
         const pages = [
             await appTester(perform, getBundle(1)),
             await appTester(perform, getBundle(2)),
-            await appTester(perform, getBundle(3)),
         ];
 
-        expect(pages.map((page) => page.length)).to.eql([100, 50, 0]);
+        expect(pages.map((page) => page.length)).to.eql([50, 0]);
         expect(pages[0][0].id).to.equal('serverActor0000100');
-        expect(pages[1][49].id).to.equal('serverActor0000249');
+        expect(pages[0][49].id).to.equal('serverActor0000149');
         scopes.forEach((scope) => scope.done());
     });
 
-    it('fails with a clear error when the snapshot record is missing (mocked)', async () => {
-        nock(LIST_ORIGIN)
-            .get(LIST_PATH)
+    it('surfaces the API error when the Store rejects the request (mocked)', async () => {
+        nock(STORE_ORIGIN)
+            .get(STORE_PATH)
             .query(true)
-            .reply(404, { error: { type: 'record-not-found', message: 'Record was not found' } });
+            .reply(400, { error: { type: 'invalid-parameter', message: 'Parameter \'category\' contains an unknown category id' } });
 
         const error = await appTester(perform, getBundle(0)).then(() => {
             throw new Error('Expected the trigger to fail');
-        }, parseAppError);
+        }, (err) => err);
 
-        expect(error).to.include({
-            name: 'AppError',
-            message: 'The list of Server Actors isn\'t available. Enter the Actor ID instead.',
-            status: 404,
-        });
+        expect(error.message).to.include('unknown category id');
     });
 
     if (TEST_USER_TOKEN) {
-        // Reads the public snapshot record, which is free. No Server Actor is called. The API rejects an invalid token
-        // even for a public record, so this needs the real one.
-        it('reads the live snapshot record (E2E)', async () => {
+        // Lists Apify Store, which is free. No Server Actor is called.
+        it('lists live Server Actors from Apify Store (E2E)', async () => {
             const result = await appTester(perform, getBundle(0, TEST_USER_TOKEN)).catch((err) => {
-                throw new Error(`Reading ${SERVER_ACTORS_LIST_URL} failed: ${err.message}`);
+                throw new Error(`Listing Server Actors from ${APIFY_API_ENDPOINTS.store} failed: ${err.message}`);
             });
 
             expect(result).to.have.lengthOf(100);

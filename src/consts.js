@@ -47,10 +47,10 @@ const WEB_FETCH_FORMATS = {
 const WEB_FETCH_TIMEOUT_MILLIS = 25000;
 
 /**
- * Server Actors answer HTTP requests at their own `https://<name>.apify.actor` host. Until /v2/store can filter them,
- * the Actor list is a snapshot record shaped like GET /v2/store, so switching to the real API is a change of this URL.
+ * Server Actors answer HTTP requests at their own `https://<name>.apify.actor` host. GET /v2/store lists them with
+ * these categories, one per tenancy; the API returns Actors in either one.
  */
-const SERVER_ACTORS_LIST_URL = `${APIFY_API_BASE_URL}/v2/key-value-stores/Cw412CNrZrtrhnoty/records/SERVER_ACTORS_SLIM`;
+const SERVER_ACTOR_STORE_CATEGORIES = 'SINGLE_TENANT_SERVER,MULTI_TENANT_SERVER';
 const SERVER_ACTORS_PAGE_SIZE = 100;
 // Outside api.apify.com, only https hosts ending with this receive the Apify token.
 const APIFY_ACTOR_HOST_SUFFIX = '.apify.actor';
@@ -576,7 +576,7 @@ module.exports = {
     WEB_FETCH_TIMEOUT_MILLIS,
     WEB_FETCH_SAMPLE,
     WEB_FETCH_OUTPUT_FIELDS,
-    SERVER_ACTORS_LIST_URL,
+    SERVER_ACTOR_STORE_CATEGORIES,
     SERVER_ACTORS_PAGE_SIZE,
     APIFY_ACTOR_HOST_SUFFIX,
     SERVER_ACTOR_STEP_BUDGET_MILLIS,
