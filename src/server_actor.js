@@ -183,13 +183,29 @@ const resolveRefs = (document, node, refs = [], resolved = new Map()) => {
     return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, resolveRefs(document, value, refs, resolved)]));
 };
 
+/**
+ * A path item, with the shared path item its `$ref` points to (OpenAPI 3.1's `components.pathItems`) merged in, and the
+ * operations next to the `$ref` kept. The endpoint list and the endpoint's fields both read it, so every listed endpoint
+ * can be loaded.
+ */
+const getPathItem = (document, path) => {
+    const paths = document && document.paths;
+    const pathItem = isObject(paths) ? paths[path] : undefined;
+    if (!isObject(pathItem) || typeof pathItem.$ref !== 'string') return pathItem;
+    const { $ref, ...operations } = pathItem;
+    const shared = resolvePointer(document, $ref);
+    return { ...(isObject(shared) ? shared : {}), ...operations };
+};
+
 /** The endpoints of an OpenAPI document, e.g. `{ value: 'POST /search', label: 'POST /search - Search', method, path }`. */
 const parseOpenApiEndpoints = (document) => {
     const paths = document && document.paths;
     if (!isObject(paths)) return [];
 
-    return Object.entries(paths)
-        .filter(([path, pathItem]) => !HIDDEN_PATHS.has(path) && isObject(pathItem))
+    return Object.keys(paths)
+        .filter((path) => !HIDDEN_PATHS.has(path))
+        .map((path) => [path, getPathItem(document, path)])
+        .filter(([, pathItem]) => isObject(pathItem))
         .flatMap(([path, pathItem]) => HTTP_METHODS
             .filter((method) => isObject(pathItem[method.toLowerCase()]))
             .map((method) => {
@@ -211,9 +227,7 @@ const parseEndpointValue = (value) => {
 
 /** Finds an endpoint's operation, with path-level and operation-level parameters merged and `$ref`s resolved. */
 const getEndpointOperation = (document, method, path) => {
-    const paths = document && document.paths;
-    if (!isObject(paths)) return undefined;
-    const pathItem = resolveRefs(document, paths[path]);
+    const pathItem = resolveRefs(document, getPathItem(document, path));
     if (!isObject(pathItem)) return undefined;
     const operation = pathItem[method.toLowerCase()];
     if (!isObject(operation)) return undefined;
@@ -305,21 +319,50 @@ const getFieldKind = (schema) => {
 
 const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null);
 
+// Words a label writes in capitals, e.g. `userId` → "User ID".
+const LABEL_WORDS = {
+    api: 'API', html: 'HTML', http: 'HTTP', https: 'HTTPS', id: 'ID', ids: 'IDs', ip: 'IP', json: 'JSON', url: 'URL', urls: 'URLs', uuid: 'UUID',
+};
+
+/**
+ * A readable label for a parameter or property name, in sentence case: `includeAboutSection` → "Include about section",
+ * `max_results` → "Max results", `url` → "URL". Other words written in capitals, such as `SKU`, stay as they are.
+ */
+const toFieldLabel = (name) => {
+    const words = name
+        .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+        .split(/[\s_-]+/)
+        .filter(Boolean)
+        .map((word) => LABEL_WORDS[word.toLowerCase()] || (/^[A-Z\d]{2,}$/.test(word) ? word : word.toLowerCase()));
+    if (!words.length) return name;
+    const label = words.join(' ');
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+};
+
 /**
  * Where a value goes and how it's typed. The input fields and the request are both built from these entries, so a
  * value can only end up where the field shown for it says.
  */
-const createEntry = (location, name, rawSchema, { required, description, example, explode } = {}) => {
+const createEntry = (location, name, rawSchema, {
+    required, requiredInBody, bodyRequired, description, example, style, explode,
+} = {}) => {
     const schema = normalizeSchema(rawSchema);
     const examples = Array.isArray(schema.examples) ? schema.examples : [];
+    const queryStyle = typeof style === 'string' ? style : 'form';
     return {
         key: location === 'wholeBody' ? FIELD_KEYS.wholeBody : `${PARAMETER_KEY_PREFIXES[location]}${name}`,
-        label: location === 'wholeBody' ? 'Body (JSON)' : name,
+        label: location === 'wholeBody' ? 'Body (JSON)' : toFieldLabel(name),
         location,
         name,
         required: Boolean(required),
-        // OpenAPI's default for query arrays is `explode: true`, i.e. `?a=1&a=2`. `false` means `?a=1,2`.
-        explode: explode !== false,
+        // For a body property: the body's schema requires it, and whether the body itself is required.
+        requiredInBody: Boolean(requiredInBody),
+        bodyRequired: Boolean(bodyRequired),
+        // How a query parameter is serialized (see appendQueryParameter). OpenAPI's default is `style: form`, and
+        // `explode` defaults to true only for form: `?a=1&a=2`, or `?a=1,2` without it.
+        style: queryStyle,
+        explode: typeof explode === 'boolean' ? explode : queryStyle === 'form',
         schema,
         description: [description, schema.description].find((text) => typeof text === 'string' && text.trim()),
         // A default goes into `placeholder`, never `default`: Zapier would save today's default into the Zap.
@@ -349,6 +392,7 @@ const getEndpointEntries = (document, method, path) => {
             required: parameter.in === 'path' || parameter.required === true,
             description: parameter.description,
             example: parameter.example,
+            style: parameter.style,
             explode: parameter.explode,
         }));
 
@@ -357,7 +401,12 @@ const getEndpointEntries = (document, method, path) => {
         const properties = isObject(bodySchema.properties) ? Object.entries(bodySchema.properties).filter(([name]) => name) : [];
         if (properties.length) {
             const requiredNames = new Set(Array.isArray(bodySchema.required) ? bodySchema.required : []);
-            properties.forEach(([name, schema]) => entries.push(createEntry('body', name, schema, { required: requiredNames.has(name) })));
+            properties.forEach(([name, schema]) => entries.push(createEntry('body', name, schema, {
+                // The properties an optional body requires are needed only once the body is sent (buildEndpointRequest).
+                required: operation.bodyRequired && requiredNames.has(name),
+                requiredInBody: requiredNames.has(name),
+                bodyRequired: operation.bodyRequired,
+            })));
         } else {
             // A body without properties is edited as JSON, whatever its schema says.
             entries.push({
@@ -368,11 +417,14 @@ const getEndpointEntries = (document, method, path) => {
         }
     }
 
-    // Add the location to a label only when a parameter and a body property, or two parameters, share a name.
-    const nameCounts = entries.reduce((counts, { name }) => counts.set(name, (counts.get(name) || 0) + 1), new Map());
-    return entries.map((entry) => (entry.location !== 'wholeBody' && nameCounts.get(entry.name) > 1
-        ? { ...entry, label: `${entry.name} (${entry.location})` }
-        : entry));
+    // Fields that would share a label get the location added, e.g. a query parameter and a body property named `limit`,
+    // or the name when both are in the same place, e.g. `user_id` and `userId`.
+    return entries.map((entry) => {
+        const sameLabel = entries.filter(({ label }) => label === entry.label);
+        if (entry.location === 'wholeBody' || sameLabel.length === 1) return entry;
+        const isSameLocation = sameLabel.filter(({ location }) => location === entry.location).length > 1;
+        return { ...entry, label: `${entry.label} (${isSameLocation ? entry.name : entry.location})` };
+    });
 };
 
 const JSON_HINTS = { array: 'Enter a JSON array.', object: 'Enter a JSON object.' };
@@ -452,11 +504,26 @@ const invalidInput = (z, message) => new z.errors.Error(toPlainText(message), 'I
 const TRUE_VALUES = ['true', 'yes'];
 const FALSE_VALUES = ['false', 'no'];
 
-const convertScalar = (z, kind, value, label) => {
+// Decimal notation only. Number() also reads hex, binary, octal, exponents and Infinity, which nobody means to send.
+const DECIMAL_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)$/;
+
+const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    const text = String(value).trim();
+    return DECIMAL_NUMBER.test(text) ? Number(text) : NaN;
+};
+
+/** Converts one value to `kind`. `name` is how the error names the field, e.g. `"Count"`. */
+const convertScalar = (z, kind, value, name) => {
     if (kind === 'integer' || kind === 'number') {
-        const number = typeof value === 'number' ? value : Number(String(value).trim());
-        if (!Number.isFinite(number)) throw invalidInput(z, `"${label}" must be a number, but it is "${value}".`);
-        if (kind === 'integer' && !Number.isInteger(number)) throw invalidInput(z, `"${label}" must be a whole number, but it is "${value}".`);
+        const number = toNumber(value);
+        if (!Number.isFinite(number)) throw invalidInput(z, `${name} must be a number, but it is "${value}".`);
+        if (kind === 'integer' && !Number.isInteger(number)) throw invalidInput(z, `${name} must be a whole number, but it is "${value}".`);
+        // A larger integer can't be sent exactly: 9007199254740993 would be sent as 9007199254740992.
+        if (kind === 'integer' && !Number.isSafeInteger(number)) {
+            throw invalidInput(z, `${name} must be a whole number between ${Number.MIN_SAFE_INTEGER} and ${Number.MAX_SAFE_INTEGER}, `
+                + `but it is "${value}".`);
+        }
         return number;
     }
     if (kind === 'boolean') {
@@ -464,7 +531,7 @@ const convertScalar = (z, kind, value, label) => {
         const text = String(value).trim().toLowerCase();
         if (TRUE_VALUES.includes(text)) return true;
         if (FALSE_VALUES.includes(text)) return false;
-        throw invalidInput(z, `"${label}" must be true or false, but it is "${value}".`);
+        throw invalidInput(z, `${name} must be true or false, but it is "${value}".`);
     }
     // A mapped number or boolean, e.g. for a string ID. Servers such as pydantic don't take it as a string.
     return ['number', 'boolean'].includes(typeof value) ? String(value) : value;
@@ -477,7 +544,7 @@ const convertFieldValue = (z, entry, value) => {
     if (entry.kind === 'list') {
         const items = (Array.isArray(value) ? value : [value])
             .filter((item) => !isBlank(item))
-            .map((item) => convertScalar(z, entry.itemKind, item, entry.label));
+            .map((item) => convertScalar(z, entry.itemKind, item, `"${entry.label}"`));
         return items.length ? items : undefined;
     }
     if (entry.kind === 'dict') {
@@ -486,7 +553,7 @@ const convertFieldValue = (z, entry, value) => {
         const isTyped = entry.valueKind && entry.valueKind !== 'string';
         const pairs = Object.entries(value)
             .filter(([key, item]) => key.trim() && !(isTyped && isBlank(item)))
-            .map(([key, item]) => [key, entry.valueKind ? convertScalar(z, entry.valueKind, item, `${entry.label}.${key}`) : item]);
+            .map(([key, item]) => [key, entry.valueKind ? convertScalar(z, entry.valueKind, item, `"${key}" in "${entry.label}"`) : item]);
         return pairs.length ? Object.fromEntries(pairs) : undefined;
     }
     if (entry.kind === 'json') {
@@ -497,7 +564,7 @@ const convertFieldValue = (z, entry, value) => {
             throw invalidInput(z, `"${entry.label}" isn't valid JSON: ${err.message}`);
         }
     }
-    return convertScalar(z, entry.kind, value, entry.label);
+    return convertScalar(z, entry.kind, value, `"${entry.label}"`);
 };
 
 /**
@@ -505,27 +572,41 @@ const convertFieldValue = (z, entry, value) => {
  * values of other endpoints and of Custom path under "Extra Fields" and sends them, and they must not leak in.
  */
 const buildEndpointRequest = (z, { method, path }, entries, inputData) => {
+    const filled = entries
+        .map((entry) => ({ entry, value: convertFieldValue(z, entry, inputData[entry.key]) }))
+        .filter(({ value }) => value !== undefined);
+
+    // Zapier checks required fields in the editor, but a mapped value can still be empty when the Zap runs.
+    const filledEntries = new Set(filled.map(({ entry }) => entry));
+    const isBodyFilled = filled.some(({ entry }) => entry.location === 'body');
+    entries.forEach((entry) => {
+        if (filledEntries.has(entry)) return;
+        if (entry.required) throw invalidInput(z, `Fill in "${entry.label}".`);
+        if (entry.requiredInBody && isBodyFilled) throw invalidInput(z, `Fill in "${entry.label}", or leave all body fields empty.`);
+    });
+
     const pathValues = new Map();
     const query = [];
     let body;
-    entries.forEach((entry) => {
-        const value = convertFieldValue(z, entry, inputData[entry.key]);
-        if (value === undefined) return;
-        if (entry.location === 'path') pathValues.set(entry.name, value);
-        else if (entry.location === 'query') query.push({ name: entry.name, value, explode: entry.explode });
+    filled.forEach(({ entry, value }) => {
+        if (entry.location === 'path') pathValues.set(entry.name, { value: String(value), label: entry.label });
+        else if (entry.location === 'query') query.push({ name: entry.name, value, style: entry.style, explode: entry.explode });
         else if (entry.location === 'wholeBody') body = value;
         else body = { ...body, [entry.name]: value };
     });
+    // A required body is sent even when all its fields are empty. An optional one is left out: `{}` could lack the
+    // properties its schema requires, and the server would refuse it.
+    if (body === undefined && entries.some(({ bodyRequired }) => bodyRequired)) body = {};
 
     const filledPath = path.replace(/\{([^}]+)\}/g, (placeholder, name) => {
         if (!pathValues.has(name)) throw invalidInput(z, `Fill in the path parameter "${name}".`);
-        const value = String(pathValues.get(name));
+        const { value, label } = pathValues.get(name);
         // The URL would resolve `.` and `..` as path segments and send the request to another endpoint.
-        if (value === '.' || value === '..') throw invalidInput(z, `The path parameter "${name}" can't be "${value}".`);
+        if (value === '.' || value === '..') throw invalidInput(z, `"${label}" can't be "${value}".`);
         return encodeURIComponent(value);
     });
 
-    return { method, path: filledPath, query, body: method === 'GET' ? undefined : body ?? {} };
+    return { method, path: filledPath, query, body: method === 'GET' ? undefined : body };
 };
 
 const parseJsonBody = (z, value, label) => {
@@ -569,12 +650,31 @@ const buildCustomRequest = (z, inputData) => {
     return { method, path, query, body };
 };
 
+// A nested object or array has no OpenAPI serialization in a query, so it is sent as JSON.
 const toQueryText = (value) => (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value));
 
+// What joins the items of an array that isn't exploded. Objects are always joined with commas.
+const ARRAY_DELIMITERS = { spaceDelimited: ' ', pipeDelimited: '|' };
+
 /**
- * The request URL: the Actor's origin, the path, then the query parameters after any query already in the path. Arrays
- * are repeated (`?a=1&a=2`), or comma-joined for `explode: false`; objects are sent as JSON.
+ * Adds a query parameter as its OpenAPI `style` and `explode` say. Style form with explode, the default: `?a=1&a=2` for
+ * an array and `?color=red&size=L` for an object. Without explode: `?a=1,2` and `?filter=color,red,size,L`. Style
+ * deepObject: `?filter[color]=red`. Custom path's parameters are scalars with explode.
  */
+const appendQueryParameter = (params, { name, value, style, explode }) => {
+    if (isObject(value)) {
+        const pairs = Object.entries(value);
+        if (style === 'deepObject') pairs.forEach(([key, item]) => params.append(`${name}[${key}]`, toQueryText(item)));
+        else if (explode) pairs.forEach(([key, item]) => params.append(key, toQueryText(item)));
+        else params.append(name, pairs.flat().map(toQueryText).join(','));
+    } else if (Array.isArray(value) && !explode) {
+        params.append(name, value.map(toQueryText).join(ARRAY_DELIMITERS[style] || ','));
+    } else {
+        (Array.isArray(value) ? value : [value]).forEach((item) => params.append(name, toQueryText(item)));
+    }
+};
+
+/** The request URL: the Actor's origin, the path, then the query parameters after any query already in the path. */
 const buildRequestUrl = (z, origin, { path, query }) => {
     let url;
     try {
@@ -584,10 +684,7 @@ const buildRequestUrl = (z, origin, { path, query }) => {
     }
 
     const params = new URLSearchParams();
-    query.forEach(({ name, value, explode }) => {
-        if (Array.isArray(value) && !explode) params.append(name, value.map(toQueryText).join(','));
-        else (Array.isArray(value) ? value : [value]).forEach((item) => params.append(name, toQueryText(item)));
-    });
+    query.forEach((parameter) => appendQueryParameter(params, parameter));
     const added = params.toString();
     if (added) url.search = url.search ? `${url.search}&${added}` : added;
 

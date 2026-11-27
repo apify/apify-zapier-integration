@@ -123,11 +123,10 @@ const getEndpointFields = async (z, bundle) => {
     if (endpointValue === CUSTOM_ENDPOINT) return [...fields, ...CUSTOM_PATH_FIELDS];
 
     const endpoint = parseEndpointValue(endpointValue);
-    if (!endpoint || !endpoints.some(({ value }) => value === endpointValue)) {
-        return [...fields, endpointNotice(getStaleEndpointMessage(escapeMarkdown(endpointValue)))];
-    }
-
-    const parameterFields = getEndpointInputFields(document, endpoint.method, endpoint.path);
+    const isListed = endpoint && endpoints.some(({ value }) => value === endpointValue);
+    // A listed endpoint whose operation can't be read, e.g. behind a chain of `$ref`s, counts as missing too.
+    const parameterFields = isListed ? getEndpointInputFields(document, endpoint.method, endpoint.path) : undefined;
+    if (!parameterFields) return [...fields, endpointNotice(getStaleEndpointMessage(escapeMarkdown(endpointValue)))];
     return [...fields, ...(parameterFields.length ? parameterFields : [endpointNotice(MESSAGES.noParameters)])];
 };
 
@@ -154,11 +153,11 @@ const sendRequest = async (z, bundle) => {
     if (isCustom) {
         request = buildCustomRequest(z, inputData);
     } else {
-        // After the Actor is changed, a saved endpoint of the previous Actor would otherwise go to the new one.
-        if (!serverActor.endpoints.some(({ value }) => value === endpointValue)) {
-            throw invalidInput(z, getStaleEndpointMessage(endpointValue));
-        }
-        const entries = getEndpointEntries(serverActor.document, endpoint.method, endpoint.path);
+        // After the Actor is changed, a saved endpoint of the previous Actor would otherwise go to the new one. A listed
+        // endpoint whose operation can't be read is refused the same way.
+        const isListed = serverActor.endpoints.some(({ value }) => value === endpointValue);
+        const entries = isListed ? getEndpointEntries(serverActor.document, endpoint.method, endpoint.path) : undefined;
+        if (!entries) throw invalidInput(z, getStaleEndpointMessage(endpointValue));
         request = buildEndpointRequest(z, endpoint, entries, inputData);
     }
 

@@ -50,6 +50,12 @@ const performAndGetError = async (inputData) => {
     throw new Error('Expected the step to fail');
 };
 
+// The GET next to the `$ref` is listed, but the `$ref` points on to a path item without it, so it can't be loaded.
+const CHAINED_PATH_ITEM_OPENAPI = {
+    paths: { '/chained': { $ref: '#/components/pathItems/A', get: { summary: 'Listed' } } },
+    components: { pathItems: { A: { $ref: '#/components/pathItems/B' }, B: { post: {} } } },
+};
+
 // A message must never suggest sending a possibly charged request again.
 const expectNoRetryAdvice = ({ message }) => expect(message).to.not.match(/try again|retry|later/i);
 
@@ -211,6 +217,16 @@ describe('send server actor request', () => {
                 + 'Choose the endpoint again, or use **Custom path**.');
         });
 
+        it('flags a listed endpoint whose operation can\'t be read, instead of failing', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: CHAINED_PATH_ITEM_OPENAPI } });
+
+            const fields = await getInputFields({ endpoint: 'GET /chained' });
+
+            expect(getKeys(fields)).to.eql(['endpoint', 'endpointNotice']);
+            expect(fields[0].choices.map(({ value }) => value)).to.include('GET /chained');
+            expect(fields[1].helpText).to.match(/^The endpoint "GET \/chained" isn't in this Actor's OpenAPI definition\./);
+        });
+
         it('shows why the endpoints could not be loaded', async () => {
             nock('https://api.apify.com')
                 .get(`/v2/acts/${WEB_FETCH_ACTOR_ID}`)
@@ -360,7 +376,7 @@ describe('send server actor request', () => {
             expect(body).to.equal('');
         });
 
-        it('sends the whole body from the JSON field, and {} when it is empty', async () => {
+        it('sends the whole body from the JSON field, and no body when it is empty and optional', async () => {
             mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
             const actor = mockServerActor({ method: 'POST', path: '/batch' });
             await appTester(perform, getBundle({ endpoint: 'POST /batch', bodyJson: '[{"name":"Lamp"}]' }));
@@ -368,7 +384,88 @@ describe('send server actor request', () => {
             mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
             await appTester(perform, getBundle({ endpoint: 'POST /batch' }));
 
-            expect(actor.requests.map(({ body }) => body)).to.eql([[{ name: 'Lamp' }], {}]);
+            expect(actor.requests.map(({ body }) => body)).to.eql([[{ name: 'Lamp' }], '']);
+            expect(actor.requests[1].headers).to.not.have.property('content-type');
+        });
+
+        describe('an optional body with a required property', () => {
+            const schema = { type: 'object', required: ['title'], properties: { title: { type: 'string' }, text: { type: 'string' } } };
+            const OPTIONAL_BODY_OPENAPI = { paths: { '/notes': { post: { requestBody: { content: { 'application/json': { schema } } } } } } };
+
+            it('sends no body when its fields are empty, as {} would be missing the required property', async () => {
+                mockActorLookup({ actorDefinition: { webServerSchema: OPTIONAL_BODY_OPENAPI } });
+                const actor = mockServerActor({ method: 'POST', path: '/notes' });
+
+                await appTester(perform, getBundle({ endpoint: 'POST /notes', body_title: '', body_text: ' ' }));
+
+                expect(actor.requests[0].body).to.equal('');
+                expect(actor.requests[0].headers).to.not.have.property('content-type');
+            });
+
+            it('needs the required property once another field of the body is filled', async () => {
+                const actor = mockServerActor({ method: 'POST', path: '/notes' });
+
+                mockActorLookup({ actorDefinition: { webServerSchema: OPTIONAL_BODY_OPENAPI } });
+                const error = await performAndGetError({ endpoint: 'POST /notes', body_text: 'Buy milk' });
+                expect(error).to.include({ code: 'InvalidInput', message: 'Fill in "Title", or leave all body fields empty.' });
+                expect(actor.getCallCount()).to.equal(0);
+
+                mockActorLookup({ actorDefinition: { webServerSchema: OPTIONAL_BODY_OPENAPI } });
+                await appTester(perform, getBundle({ endpoint: 'POST /notes', body_title: 'Shopping', body_text: 'Buy milk' }));
+                expect(actor.requests[0].body).to.eql({ title: 'Shopping', text: 'Buy milk' });
+            });
+        });
+
+        it('sends {} for a required body whose fields are all optional and empty', async () => {
+            const schema = { type: 'object', properties: { note: { type: 'string' } } };
+            const document = { paths: { '/': { post: { requestBody: { required: true, content: { 'application/json': { schema } } } } } } };
+            mockActorLookup({ actorDefinition: { webServerSchema: document } });
+            const actor = mockServerActor({ method: 'POST', path: '/' });
+
+            await appTester(perform, getBundle({ endpoint: 'POST /' }));
+
+            expect(actor.requests[0].body).to.eql({});
+        });
+
+        it('sends object and array query parameters as their style and explode say', async () => {
+            const parameter = (name, schema, extra) => ({ name, in: 'query', schema, ...extra });
+            const stringValues = { type: 'object', additionalProperties: { type: 'string' } };
+            const document = {
+                paths: {
+                    '/': {
+                        get: {
+                            parameters: [
+                                // OpenAPI's default for query parameters, style form with explode: one parameter per key.
+                                parameter('filter', stringValues),
+                                parameter('sort', stringValues, { explode: false }),
+                                parameter('where', { type: 'object', properties: { city: { type: 'string' } } }, { style: 'deepObject' }),
+                                parameter('ids', { type: 'array', items: { type: 'integer' } }, { style: 'pipeDelimited' }),
+                                parameter('words', { type: 'array', items: { type: 'string' } }, { style: 'spaceDelimited' }),
+                            ],
+                        },
+                    },
+                },
+            };
+            mockActorLookup({ actorDefinition: { webServerSchema: document } });
+            const actor = mockServerActor();
+
+            await appTester(perform, getBundle({
+                endpoint: 'GET /',
+                query_filter: { color: 'red', size: 'L' },
+                query_sort: { field: 'name', order: 'asc' },
+                query_where: '{"city":"Prague"}',
+                query_ids: ['1', '2'],
+                query_words: ['a', 'b'],
+            }));
+
+            expect([...actor.requests[0].url.searchParams]).to.eql([
+                ['color', 'red'],
+                ['size', 'L'],
+                ['sort', 'field,name,order,asc'],
+                ['where[city]', 'Prague'],
+                ['ids', '1|2'],
+                ['words', 'a b'],
+            ]);
         });
 
         it('sends a Custom path request with its query after the one in the path', async () => {
@@ -417,12 +514,24 @@ describe('send server actor request', () => {
         it('refuses invalid values before sending anything', async () => {
             const actor = mockServerActor({ method: 'POST', path: '/items/1' });
             const cases = [
-                [{ body_name: 'Lamp', body_count: 'three' }, '"count" must be a number, but it is "three".'],
-                [{ body_name: 'Lamp', body_count: '2.5' }, '"count" must be a whole number, but it is "2.5".'],
-                [{ body_name: 'Lamp', body_active: 'maybe' }, '"active" must be true or false, but it is "maybe".'],
-                [{ body_name: 'Lamp', body_meta: '{color' }, '"meta" isn\'t valid JSON'],
-                [{ body_name: 'Lamp', body_weights: { a: 'heavy' } }, '"weights.a" must be a number, but it is "heavy".'],
-                [{ body_name: 'Lamp', path_itemId: '' }, 'Fill in the path parameter "itemId".'],
+                [{ body_name: 'Lamp', body_count: 'three' }, '"Count" must be a number, but it is "three".'],
+                [{ body_name: 'Lamp', body_count: '2.5' }, '"Count" must be a whole number, but it is "2.5".'],
+                [{ body_name: 'Lamp', body_active: 'maybe' }, '"Active" must be true or false, but it is "maybe".'],
+                [{ body_name: 'Lamp', body_meta: '{color' }, '"Meta" isn\'t valid JSON'],
+                [{ body_name: 'Lamp', body_weights: { a: 'heavy' } }, '"a" in "Weights" must be a number, but it is "heavy".'],
+                // Only decimal numbers: Number() would read these as 16, 3, 1000 and Infinity.
+                [{ body_name: 'Lamp', body_count: '0x10' }, '"Count" must be a number, but it is "0x10".'],
+                [{ body_name: 'Lamp', body_ratio: '0b11' }, '"Ratio" must be a number, but it is "0b11".'],
+                [{ body_name: 'Lamp', body_count: '1e3' }, '"Count" must be a number, but it is "1e3".'],
+                [{ body_name: 'Lamp', body_ratio: 'Infinity' }, '"Ratio" must be a number, but it is "Infinity".'],
+                // A larger integer would be sent as a different number, e.g. 9007199254740993 as …992.
+                [{ body_name: 'Lamp', body_count: '9007199254740993' }, '"Count" must be a whole number between -9007199254740991 and '
+                    + '9007199254740991, but it is "9007199254740993".'],
+                [{ body_name: 'Lamp', body_ids: ['1', 2 ** 53] }, '"IDs" must be a whole number between -9007199254740991 and '
+                    + '9007199254740991, but it is "9007199254740992".'],
+                // Required fields can be empty at run time, when a mapped value is empty.
+                [{ body_name: 'Lamp', path_itemId: '' }, 'Fill in "Item ID".'],
+                [{ body_name: ' ' }, 'Fill in "Name".'],
             ];
 
             await Promise.all(cases.map(async ([inputData, message]) => {
@@ -431,6 +540,10 @@ describe('send server actor request', () => {
                 expect(error).to.include({ name: 'AppError', code: 'InvalidInput' });
                 expect(error.message).to.include(message);
             }));
+
+            mockActorLookup();
+            const emptyQuery = await performAndGetError({ endpoint: 'GET /', query_url: '' });
+            expect(emptyQuery).to.include({ code: 'InvalidInput', message: 'Fill in "URL".' });
 
             mockActorLookup();
             const error = await performAndGetError({ endpoint: '__custom__', customMethod: 'POST', customPath: '/', customBody: '"text"' });
@@ -446,7 +559,7 @@ describe('send server actor request', () => {
             await Promise.all(['..', '.'].map(async (itemId) => {
                 mockActorLookup({ actorDefinition: { webServerSchema: ITEMS_OPENAPI } });
                 const error = await performAndGetError({ endpoint: 'POST /items/{itemId}', path_itemId: itemId, body_name: 'Lamp' });
-                expect(error).to.include({ code: 'InvalidInput', message: `The path parameter "itemId" can't be "${itemId}".` });
+                expect(error).to.include({ code: 'InvalidInput', message: `"Item ID" can't be "${itemId}".` });
             }));
 
             otherEndpoints.forEach((endpoint) => expect(endpoint.getCallCount()).to.equal(0));
@@ -485,6 +598,17 @@ describe('send server actor request', () => {
 
             expect(error.message).to.equal('The endpoint "POST /items/{itemId}" isn\'t in this Actor\'s OpenAPI definition. '
                 + 'Choose the endpoint again, or use Custom path.');
+            expect(actor.getCallCount()).to.equal(0);
+        });
+
+        it('refuses a listed endpoint whose operation can\'t be read, without sending anything', async () => {
+            mockActorLookup({ actorDefinition: { webServerSchema: CHAINED_PATH_ITEM_OPENAPI } });
+            const actor = mockServerActor({ path: '/chained' });
+
+            const error = await performAndGetError({ endpoint: 'GET /chained' });
+
+            expect(error).to.include({ code: 'InvalidInput' });
+            expect(error.message).to.match(/^The endpoint "GET \/chained" isn't in this Actor's OpenAPI definition\./);
             expect(actor.getCallCount()).to.equal(0);
         });
 

@@ -26,6 +26,7 @@ const expectValidFields = (fields) => fields.forEach((field) => {
 });
 
 const byKey = (fields) => Object.fromEntries(fields.map((field) => [field.key, field]));
+const getKeys = (fields) => fields.map(({ key }) => key);
 
 describe('server actor', () => {
     describe('parseOpenApiDocument', () => {
@@ -67,6 +68,22 @@ describe('server actor', () => {
         it('returns no endpoints without paths', () => {
             expect(parseOpenApiEndpoints(undefined)).to.eql([]);
             expect(parseOpenApiEndpoints({ openapi: '3.0.0' })).to.eql([]);
+        });
+
+        it('lists and loads the operations of a path item that references a shared one, and those next to the $ref', () => {
+            const query = (name) => [{ name, in: 'query', schema: { type: 'string' } }];
+            const document = {
+                paths: {
+                    '/shared': { $ref: '#/components/pathItems/Shared' },
+                    '/mixed': { $ref: '#/components/pathItems/Shared', post: { summary: 'Own POST', parameters: query('own') } },
+                },
+                components: { pathItems: { Shared: { get: { summary: 'Shared GET', parameters: query('q') } } } },
+            };
+
+            expect(parseOpenApiEndpoints(document).map(({ value }) => value)).to.eql(['GET /shared', 'GET /mixed', 'POST /mixed']);
+            expect(getKeys(getEndpointInputFields(document, 'GET', '/shared'))).to.eql(['query_q']);
+            expect(getKeys(getEndpointInputFields(document, 'GET', '/mixed'))).to.eql(['query_q']);
+            expect(getKeys(getEndpointInputFields(document, 'POST', '/mixed'))).to.eql(['query_own']);
         });
     });
 
@@ -244,11 +261,73 @@ describe('server actor', () => {
             expect(fieldsByKey.body_any).to.include({ dict: true });
         });
 
+        it('turns parameter and property names into readable labels, and keeps the names as the keys', () => {
+            const query = (name, schema = { type: 'string' }) => ({ name, in: 'query', schema });
+            const document = {
+                paths: {
+                    '/{userId}': {
+                        post: {
+                            parameters: [
+                                query('includeAboutSection', { type: 'boolean' }),
+                                query('url'),
+                                query('max_results', { type: 'integer' }),
+                                query('HTMLContent'),
+                                query('start-urls', { type: 'array', items: { type: 'string' } }),
+                                query('q'),
+                            ],
+                            requestBody: { content: { 'application/json': { schema: { properties: { apiKeyID: { type: 'string' } } } } } },
+                        },
+                    },
+                },
+            };
+
+            const fields = getEndpointInputFields(document, 'POST', '/{userId}');
+            expectValidFields(fields);
+            expect(fields.map(({ key, label }) => [key, label])).to.eql([
+                ['path_userId', 'User ID'],
+                ['query_includeAboutSection', 'Include about section'],
+                ['query_url', 'URL'],
+                ['query_max_results', 'Max results'],
+                ['query_HTMLContent', 'HTML content'],
+                ['query_start-urls', 'Start URLs'],
+                ['query_q', 'Q'],
+                ['body_apiKeyID', 'API key ID'],
+            ]);
+        });
+
         it('adds the location to the label of a query parameter and a body property with the same name', () => {
             const fieldsByKey = byKey(getEndpointInputFields(ITEMS_OPENAPI, 'POST', '/items/{itemId}'));
-            expect(fieldsByKey.query_limit.label).to.equal('limit (query)');
-            expect(fieldsByKey.body_limit.label).to.equal('limit (body)');
-            expect(fieldsByKey.body_count.label).to.equal('count');
+            expect(fieldsByKey.query_limit.label).to.equal('Limit (query)');
+            expect(fieldsByKey.body_limit.label).to.equal('Limit (body)');
+            expect(fieldsByKey.body_count.label).to.equal('Count');
+        });
+
+        it('adds the name to the labels of two parameters whose names read the same', () => {
+            const document = {
+                paths: {
+                    '/': {
+                        get: {
+                            parameters: [
+                                { name: 'user_id', in: 'query', schema: { type: 'string' } },
+                                { name: 'userId', in: 'query', schema: { type: 'string' } },
+                            ],
+                        },
+                    },
+                },
+            };
+            expect(getEndpointInputFields(document, 'GET', '/').map(({ label }) => label)).to.eql(['User ID (user_id)', 'User ID (userId)']);
+        });
+
+        it('marks the required properties of an optional body as optional fields', () => {
+            const getRequired = (requestBodyRequired) => {
+                const schema = { type: 'object', required: ['name'], properties: { name: { type: 'string' }, note: { type: 'string' } } };
+                const requestBody = { required: requestBodyRequired, content: { 'application/json': { schema } } };
+                const document = { paths: { '/': { post: { requestBody } } } };
+                return getEndpointInputFields(document, 'POST', '/').map(({ key, required }) => [key, required]);
+            };
+
+            expect(getRequired(true)).to.eql([['body_name', true], ['body_note', false]]);
+            expect(getRequired(undefined)).to.eql([['body_name', false], ['body_note', false]]);
         });
 
         it('gives a body that is not an object with properties a single JSON field', () => {
