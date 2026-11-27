@@ -183,7 +183,7 @@ exactly once:
   Endpoint with only Custom path, which works for a mapped Actor.
 - The Actor dropdown (`serverActors` hidden trigger) lists `GET /v2/store` with
   `category=SINGLE_TENANT_SERVER,MULTI_TENANT_SERVER` (`SERVER_ACTOR_STORE_CATEGORIES`) and pages it
-  by `offset`. The API returns Actors in either category and answers 400 for an unknown one.
+  by `offset`. The API returns Actors in either category.
 - Tests mock every Server Actor request with nock and disable net connect for the suite. Never add a
   live call: each one costs money. They shorten the budget through `requestTiming`.
 
